@@ -83,6 +83,7 @@ Current bottleneck:
 - `docs/VISION_AND_ARCHITECTURE.md`
 - `docs/ROADMAP.md`
 - `docs/WORKLOG.md`
+- `docs/notes/2026-03-13_12-22-00_PM_HANDOFF_AND_OPERATOR_GUIDE.md` — PM/operator bootstrap, current state, and next-step guidance
 
 ### Historical records
 - `docs/reviews/` — architectural assessments
