@@ -215,6 +215,60 @@ test('processing CLIs enqueue, process, inspect, and retry jobs', () => {
   assert.equal(retryResult.results[0].attemptCount, 0);
 });
 
+test('validate queue CLI reports coverage, exclusions, and representative processed payloads', () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nyc-housing-scout-queue-validation-'));
+  const fixture = seedProcessingFixture(dataDir);
+  fixture.storage.close();
+
+  const firstRun = runCli('src/cli/validate-queue.js', [
+    '--data-dir',
+    dataDir,
+    '--run-id',
+    fixture.run.id,
+    '--sample-limit',
+    '2',
+  ]);
+
+  assert.equal(firstRun.command, 'validate:queue');
+  assert.equal(firstRun.before.observations.totalObservations, 3);
+  assert.equal(firstRun.before.observations.eligibleObservations, 2);
+  assert.equal(firstRun.before.observations.excludedMissingPostUrl, 1);
+  assert.equal(firstRun.before.jobs.totalJobs, 0);
+  assert.equal(firstRun.enqueue.counts.created, 2);
+  assert.equal(firstRun.enqueue.counts.existing, 0);
+  assert.equal(firstRun.enqueue.counts.skipped_missing_post_url, 1);
+  assert.equal(firstRun.processing.claimedCount, 2);
+  assert.equal(firstRun.processing.processedCount, 2);
+  assert.equal(firstRun.after.coverage.eligibleWithJobs, 2);
+  assert.equal(firstRun.after.coverage.eligibleWithoutJobs, 0);
+  assert.equal(firstRun.after.jobs.processed, 2);
+  assert.equal(firstRun.after.jobs.retryable, 0);
+  assert.equal(firstRun.after.jobs.failed, 0);
+  assert.equal(firstRun.samples.excludedMissingPostUrl.length, 1);
+  assert.equal(firstRun.samples.processedPayloads.length, 2);
+  assert.equal(
+    firstRun.samples.processedPayloads.every((sample) => sample.processedPayload?.observation?.postUrl),
+    true,
+  );
+
+  const secondRun = runCli('src/cli/validate-queue.js', [
+    '--data-dir',
+    dataDir,
+    '--run-id',
+    fixture.run.id,
+    '--sample-limit',
+    '2',
+  ]);
+
+  assert.equal(secondRun.enqueue.counts.created, 0);
+  assert.equal(secondRun.enqueue.counts.existing, 2);
+  assert.equal(secondRun.enqueue.counts.skipped_missing_post_url, 1);
+  assert.equal(secondRun.processing.claimedCount, 0);
+  assert.equal(secondRun.processing.processedCount, 0);
+  assert.equal(secondRun.after.jobs.processed, 2);
+  assert.equal(secondRun.samples.processedPayloads.length, 2);
+});
+
 function seedProcessingFixture(dataDir) {
   const storage = createStorage({ dataDir });
   const source = storage.getOrCreateSource({

@@ -16,6 +16,7 @@ We are transitioning from exploratory scraping into a modular ingestion + proces
 - Collector metadata hardening passes
 - Listing extraction quality passes
 - Processing pipeline skeleton
+- Real queue validation on live crawl data
 - Strategy reviews for crawl policy and scale architecture
 
 ## In Progress / Next

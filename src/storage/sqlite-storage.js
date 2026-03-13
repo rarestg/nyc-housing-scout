@@ -628,6 +628,11 @@ export class SqliteStorage {
         params.push(input.runId);
       }
 
+      if (input.freshness) {
+        clauses.push('o.freshness = ?');
+        params.push(input.freshness);
+      }
+
       if (observationIds.length) {
         clauses.push(`j.observation_id IN (${buildPlaceholders(observationIds.length)})`);
         params.push(...observationIds);
@@ -873,6 +878,11 @@ export class SqliteStorage {
       params.push(input.sourceKey);
     }
 
+    if (input.freshness) {
+      clauses.push('o.freshness = ?');
+      params.push(input.freshness);
+    }
+
     if (input.status) {
       clauses.push('j.status = ?');
       params.push(input.status);
@@ -913,6 +923,92 @@ export class SqliteStorage {
       includeObservationPayload,
       includeProcessedPayload,
     }));
+  }
+
+  summarizeProcessingQueueCoverage(input = {}) {
+    const provenance = normalizeRequiredProcessingProvenance(input);
+    const sampleLimit = normalizeLimit(input.sampleLimit, 3);
+    const observationFilters = buildObservationScopeFilters(input, 'o', 's');
+    const hasPostUrlClause = buildNonEmptyTextClause('o.post_url');
+    const coverageRow = this.db.prepare(`
+      SELECT
+        COUNT(*) AS total_observations,
+        SUM(CASE WHEN ${hasPostUrlClause} THEN 1 ELSE 0 END) AS eligible_observations,
+        SUM(CASE WHEN ${hasPostUrlClause} THEN 0 ELSE 1 END) AS excluded_missing_post_url,
+        SUM(CASE WHEN o.freshness = 'fresh' THEN 1 ELSE 0 END) AS fresh_observations,
+        SUM(CASE WHEN o.freshness = 'seen' THEN 1 ELSE 0 END) AS seen_observations,
+        SUM(CASE WHEN o.freshness = 'unidentified' THEN 1 ELSE 0 END) AS unidentified_observations,
+        SUM(CASE WHEN ${hasPostUrlClause} AND j.id IS NOT NULL THEN 1 ELSE 0 END) AS eligible_with_jobs,
+        SUM(CASE WHEN ${hasPostUrlClause} AND j.id IS NULL THEN 1 ELSE 0 END) AS eligible_without_jobs,
+        COUNT(j.id) AS total_jobs,
+        SUM(CASE WHEN j.status = 'pending' THEN 1 ELSE 0 END) AS pending_jobs,
+        SUM(CASE WHEN j.status = 'processing' THEN 1 ELSE 0 END) AS processing_jobs,
+        SUM(CASE WHEN j.status = 'processed' THEN 1 ELSE 0 END) AS processed_jobs,
+        SUM(CASE WHEN j.status = 'retryable' THEN 1 ELSE 0 END) AS retryable_jobs,
+        SUM(CASE WHEN j.status = 'failed' THEN 1 ELSE 0 END) AS failed_jobs
+      FROM post_observations o
+      JOIN sources s ON s.id = o.source_id
+      LEFT JOIN processing_jobs j
+        ON j.observation_id = o.id
+        AND j.processor_version = ?
+        AND j.schema_version = ?
+        AND j.model_name = ?
+      ${buildWhereClause(observationFilters.clauses)}
+    `).get(
+      provenance.processorVersion,
+      provenance.schemaVersion,
+      provenance.modelName,
+      ...observationFilters.params,
+    ) || {};
+
+    const missingPostUrlRows = this.db.prepare(`
+      SELECT
+        o.*,
+        s.platform AS source_platform,
+        s.source_type AS source_type,
+        s.display_name AS source_display_name,
+        sp.times_seen AS stable_post_times_seen
+      FROM post_observations o
+      JOIN sources s ON s.id = o.source_id
+      LEFT JOIN stable_posts sp ON sp.id = o.stable_post_id
+      ${buildWhereClause([
+        ...observationFilters.clauses,
+        `${buildEmptyTextClause('o.post_url')}`,
+      ])}
+      ORDER BY o.captured_at DESC, o.id DESC
+      LIMIT ?
+    `).all(...observationFilters.params, sampleLimit);
+
+    return {
+      provenance,
+      observations: {
+        totalObservations: Number(coverageRow.total_observations || 0),
+        eligibleObservations: Number(coverageRow.eligible_observations || 0),
+        excludedMissingPostUrl: Number(coverageRow.excluded_missing_post_url || 0),
+        freshness: {
+          fresh: Number(coverageRow.fresh_observations || 0),
+          seen: Number(coverageRow.seen_observations || 0),
+          unidentified: Number(coverageRow.unidentified_observations || 0),
+        },
+      },
+      coverage: {
+        eligibleWithJobs: Number(coverageRow.eligible_with_jobs || 0),
+        eligibleWithoutJobs: Number(coverageRow.eligible_without_jobs || 0),
+      },
+      jobs: {
+        totalJobs: Number(coverageRow.total_jobs || 0),
+        pending: Number(coverageRow.pending_jobs || 0),
+        processing: Number(coverageRow.processing_jobs || 0),
+        processed: Number(coverageRow.processed_jobs || 0),
+        retryable: Number(coverageRow.retryable_jobs || 0),
+        failed: Number(coverageRow.failed_jobs || 0),
+      },
+      missingPostUrlSamples: missingPostUrlRows.map((row) => mapObservationSummary(row, {
+        includeFullText: false,
+        includeCollections: false,
+        includePayload: false,
+      })),
+    };
   }
 
   listSources(input = {}) {
@@ -1736,6 +1832,11 @@ export class SqliteStorage {
       params.push(input.runId);
     }
 
+    if (input.freshness) {
+      clauses.push('o.freshness = ?');
+      params.push(input.freshness);
+    }
+
     if (statuses.length) {
       clauses.push(`j.status IN (${buildPlaceholders(statuses.length)})`);
       params.push(...statuses);
@@ -2293,6 +2394,47 @@ function resolveListingCount(payload) {
   }
 
   return 0;
+}
+
+function buildObservationScopeFilters(input, observationAlias = 'o', sourceAlias = 's') {
+  const clauses = [];
+  const params = [];
+  const observationIds = normalizeStringList(input.observationIds || input.observationId);
+
+  if (observationIds.length) {
+    clauses.push(`${observationAlias}.id IN (${buildPlaceholders(observationIds.length)})`);
+    params.push(...observationIds);
+  }
+
+  if (input.runId) {
+    clauses.push(`${observationAlias}.run_id = ?`);
+    params.push(input.runId);
+  }
+
+  if (input.sourceId) {
+    clauses.push(`${observationAlias}.source_id = ?`);
+    params.push(input.sourceId);
+  }
+
+  if (input.sourceKey) {
+    clauses.push(`${sourceAlias}.source_key = ?`);
+    params.push(input.sourceKey);
+  }
+
+  if (input.freshness) {
+    clauses.push(`${observationAlias}.freshness = ?`);
+    params.push(input.freshness);
+  }
+
+  return { clauses, params };
+}
+
+function buildNonEmptyTextClause(columnName) {
+  return `COALESCE(NULLIF(TRIM(${columnName}), ''), '') <> ''`;
+}
+
+function buildEmptyTextClause(columnName) {
+  return `COALESCE(NULLIF(TRIM(${columnName}), ''), '') = ''`;
 }
 
 function toJson(value, fallback = null) {

@@ -11,3 +11,8 @@ Short running notes for important decisions and progress. Keep terse.
 - Confirmed the main remaining bottleneck is crawl strategy / traversal policy, not storage.
 - Agreed that structured LLM extraction should be a core pipeline stage.
 - Agreed that each stage should be independently operable and testable via its own CLI surface.
+
+## 2026-03-13
+
+- Added an observation-scoped queue validator that exercises enqueue, process, and processed-payload inspection on real stored crawl data.
+- Made missing `postUrl` explicit as a queue coverage metric rather than an implicit enqueue side effect only.

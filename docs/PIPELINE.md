@@ -28,6 +28,8 @@ Primary commands:
 
 - enqueue jobs for collected observations:
   - `npm run enqueue:processing -- --run-id <runId>`
+- validate queue coverage and exercise enqueue -> process -> inspect on real stored observations:
+  - `npm run validate:queue -- --run-id <runId>`
 - inspect queue state:
   - `npm run inspect:jobs -- --status pending --limit 20`
 - claim and process a batch locally:
@@ -42,6 +44,18 @@ Current pass-A semantics:
 - `postUrl` is required for queue eligibility
 - `process:jobs` currently runs the heuristic text extractor and stores versioned `processed_payloads`
 - Gemini and mapping `processed_payloads -> listing_records` are intentionally deferred to Pass B
+- `validate:queue` reports scope coverage directly from `post_observations`, including:
+  - total observations in scope
+  - eligible observations
+  - excluded observations missing `postUrl`
+  - jobs created vs already existing
+  - processed vs retryable/failed outcomes for the run
+  - representative excluded observations and processed payload samples
+
+Repeatable validation flow:
+
+- first run on a new crawl scope should usually create and process eligible jobs
+- rerunning the same validation scope should report `existing` jobs and zero newly claimed work unless pending/retryable rows remain
 
 ## Artifact Layers
 

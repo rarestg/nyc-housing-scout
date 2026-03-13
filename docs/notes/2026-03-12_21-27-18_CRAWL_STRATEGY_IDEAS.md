@@ -9,8 +9,8 @@ This note is a strategy pass only. It is based on:
 - current source identity / seen-state behavior in `src/storage/sqlite-storage.js`
 - recent docs, especially:
   - `docs/PIPELINE.md`
-  - `docs/LIVE_BROWSE_2026-03-12.md`
-  - `docs/SCALE_ARCHITECTURE_REVIEW_2026-03-12.md`
+  - `docs/2026-03-12_14-45-07_LIVE_BROWSE.md`
+  - `docs/SCALE_2026-03-12_16-11-15_ARCHITECTURE_REVIEW.md`
 - recent observed artifacts and run summaries, especially the latest crawl:
   - `data/collected/facebook/facebook-default/crawl-2026-03-13T00-35-05-584Z.json`
   - `data/listings/facebook/facebook-default/crawl-2026-03-13T00-35-05-584Z.json`

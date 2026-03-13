@@ -105,6 +105,7 @@ See `docs/INDEX.md` for a full map.
 
 ### Processing queue
 - `npm run enqueue:processing -- --run-id <runId>`
+- `npm run validate:queue -- --run-id <runId>`
 - `npm run inspect:jobs -- --status pending --limit 20`
 - `npm run process:jobs -- --limit 10`
 - `npm run retry:jobs -- --status failed`

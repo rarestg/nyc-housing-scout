@@ -24,6 +24,7 @@ try {
     observationId: readFlag(args, '--observation-id', undefined),
     runId: readFlag(args, '--run-id', undefined),
     sourceKey: readFlag(args, '--source-key', undefined),
+    freshness: readFlag(args, '--freshness', undefined),
     status: readFlag(args, '--status', undefined),
     limit: readFlag(args, '--limit', '20'),
     processorVersion: readFlag(args, '--processor-version', provenance.processorVersion),
@@ -40,6 +41,7 @@ try {
       observationId: readFlag(args, '--observation-id', undefined),
       runId: readFlag(args, '--run-id', undefined),
       sourceKey: readFlag(args, '--source-key', undefined),
+      freshness: readFlag(args, '--freshness', undefined),
       status: readFlag(args, '--status', undefined),
       limit: readFlag(args, '--limit', '20'),
       processorVersion: readFlag(args, '--processor-version', provenance.processorVersion),
@@ -65,8 +67,8 @@ function printUsage(exitCode, message) {
   }
 
   console.error(`Usage:
-  npm run inspect:jobs -- [--status pending] [--source-key key] [--limit 20]
-  npm run inspect:jobs -- --run-id <runId> [--status processed]
+  npm run inspect:jobs -- [--status pending] [--source-key key] [--freshness fresh] [--limit 20]
+  npm run inspect:jobs -- --run-id <runId> [--status processed] [--freshness fresh]
   npm run inspect:jobs -- --job-id <jobId> [--full]
 
 Options:

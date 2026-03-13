@@ -12,7 +12,7 @@ This review is based on the current repository implementation and docs, with emp
 - `src/storage/sqlite-storage.js`
 - `src/storage/migrations/0001_init.sql`
 - `docs/PIPELINE.md`
-- `docs/LIVE_BROWSE_2026-03-12.md`
+- `docs/2026-03-12_14-45-07_LIVE_BROWSE.md`
 
 I also checked the current local runtime state:
 

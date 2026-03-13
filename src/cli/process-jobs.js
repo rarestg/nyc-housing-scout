@@ -1,4 +1,4 @@
-import { processObservationWithHeuristics } from '../processing/heuristic-processor.js';
+import { runProcessingBatch } from '../processing/run-processing-batch.js';
 import { createStorage } from '../storage/storage.js';
 import {
   compactObject,
@@ -27,50 +27,17 @@ const workerId = readFlag(
 const storage = createStorage({ dataDir });
 
 try {
-  const claimed = storage.claimProcessingJobs({
+  const result = runProcessingBatch(storage, {
     runId: readFlag(args, '--run-id', undefined),
     sourceKey: readFlag(args, '--source-key', undefined),
     observationId: readFlag(args, '--observation-id', undefined),
+    freshness: readFlag(args, '--freshness', undefined),
     limit: readFlag(args, '--limit', '10'),
     leaseMs: queueDefaults.leaseMs,
     claimedBy: workerId,
-    includeObservationPayload: true,
+    retryDelayMs,
     ...provenance,
   });
-
-  const results = [];
-
-  for (const job of claimed) {
-    try {
-      const payload = processObservationWithHeuristics(toObservationInput(job), provenance);
-      const completed = storage.completeProcessingJob({
-        jobId: job.id,
-        claimedBy: workerId,
-        payload,
-      });
-
-      results.push({
-        jobId: completed.id,
-        observationId: completed.observationId,
-        status: completed.status,
-        processedListingCount: payload.extracted.listingCount,
-      });
-    } catch (error) {
-      const failed = storage.failProcessingJob({
-        jobId: job.id,
-        claimedBy: workerId,
-        errorMessage: error instanceof Error ? error.message : String(error),
-        retryDelayMs,
-      });
-
-      results.push({
-        jobId: failed.id,
-        observationId: failed.observationId,
-        status: failed.status,
-        error: failed.lastError,
-      });
-    }
-  }
 
   printJson({
     command: 'process:jobs',
@@ -79,6 +46,7 @@ try {
       runId: readFlag(args, '--run-id', undefined),
       sourceKey: readFlag(args, '--source-key', undefined),
       observationId: readFlag(args, '--observation-id', undefined),
+      freshness: readFlag(args, '--freshness', undefined),
       limit: readFlag(args, '--limit', '10'),
       processorVersion: provenance.processorVersion,
       schemaVersion: provenance.schemaVersion,
@@ -86,32 +54,14 @@ try {
       leaseMs: queueDefaults.leaseMs,
       retryDelayMs,
     }),
-    claimedCount: claimed.length,
-    processedCount: results.filter((result) => result.status === 'processed').length,
-    retryableCount: results.filter((result) => result.status === 'retryable').length,
-    failedCount: results.filter((result) => result.status === 'failed').length,
-    results,
+    claimedCount: result.claimedCount,
+    processedCount: result.processedCount,
+    retryableCount: result.retryableCount,
+    failedCount: result.failedCount,
+    results: result.results,
   });
 } finally {
   storage.close?.();
-}
-
-function toObservationInput(job) {
-  return {
-    id: job.observationId,
-    runId: job.observationRunId,
-    sourceId: job.sourceId,
-    stablePostId: job.stablePostId,
-    platformPostId: job.platformPostId,
-    sourceKey: job.sourceKey,
-    groupName: job.sourceDisplayName,
-    postUrl: job.postUrl,
-    authorName: job.authorName,
-    postedAtText: job.postedAtText,
-    capturedAt: job.capturedAt,
-    freshness: job.observationFreshness,
-    payload: job.observationPayload,
-  };
 }
 
 function hasHelpFlag(argv) {
@@ -125,8 +75,8 @@ function printUsage(exitCode, message) {
   }
 
   console.error(`Usage:
-  npm run process:jobs -- [--source-key key] [--limit 10]
-  npm run process:jobs -- --run-id <runId> [--limit 10]
+  npm run process:jobs -- [--source-key key] [--freshness fresh] [--limit 10]
+  npm run process:jobs -- --run-id <runId> [--freshness fresh] [--limit 10]
 
 Options:
   --processor-version <value>  Defaults to heuristic-text-v1

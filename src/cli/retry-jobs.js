@@ -23,6 +23,7 @@ try {
     jobId: readFlag(args, '--job-id', undefined),
     runId: readFlag(args, '--run-id', undefined),
     sourceKey: readFlag(args, '--source-key', undefined),
+    freshness: readFlag(args, '--freshness', undefined),
     status: readFlag(args, '--status', undefined),
     limit: readFlag(args, '--limit', '50'),
     resetAttempts,
@@ -35,6 +36,7 @@ try {
       jobId: readFlag(args, '--job-id', undefined),
       runId: readFlag(args, '--run-id', undefined),
       sourceKey: readFlag(args, '--source-key', undefined),
+      freshness: readFlag(args, '--freshness', undefined),
       status: readFlag(args, '--status', undefined),
       limit: readFlag(args, '--limit', '50'),
       processorVersion: provenance.processorVersion,
@@ -60,7 +62,7 @@ function printUsage(exitCode, message) {
   }
 
   console.error(`Usage:
-  npm run retry:jobs -- [--source-key key] [--status failed] [--limit 50]
+  npm run retry:jobs -- [--source-key key] [--freshness fresh] [--status failed] [--limit 50]
   npm run retry:jobs -- --job-id <jobId>
 
 Options:

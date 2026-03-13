@@ -17,7 +17,8 @@
     "enqueue:processing": "node src/cli/enqueue-processing.js",
     "inspect:jobs": "node src/cli/inspect-jobs.js",
     "process:jobs": "node src/cli/process-jobs.js",
-    "retry:jobs": "node src/cli/retry-jobs.js"
+    "retry:jobs": "node src/cli/retry-jobs.js",
+    "validate:queue": "node src/cli/validate-queue.js"
   },
   "devDependencies": {
     "jsdom": "^26.1.0"
