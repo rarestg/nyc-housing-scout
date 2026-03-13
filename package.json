@@ -1,0 +1,20 @@
+{
+  "name": "nyc-housing-scout",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "extract:text": "node src/cli/extract-text.js",
+    "extract:html": "node src/cli/extract-html.js",
+    "capture:feed": "node src/cli/capture-feed.js",
+    "expand:posts": "node src/cli/expand-posts.js",
+    "crawl:latest": "node src/cli/crawl-latest.js",
+    "capture:dom": "node src/cli/capture-dom-feed.js",
+    "crawl:dom": "node src/cli/crawl-dom-latest.js",
+    "inspect:storage": "node src/cli/inspect-storage.js"
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0"
+  }
+}

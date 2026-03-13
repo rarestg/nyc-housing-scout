@@ -1,0 +1,1019 @@
+│
+◇  Doctor warnings ────────────────────────────────────────────────────────╮
+│                                                                          │
+│  - channels.telegram.groupPolicy is "allowlist" but groupAllowFrom (and  │
+│    allowFrom) is empty — all group messages will be silently dropped.    │
+│    Add sender IDs to channels.telegram.groupAllowFrom or                 │
+│    channels.telegram.allowFrom, or set groupPolicy to "open".            │
+│                                                                          │
+├──────────────────────────────────────────────────────────────────────────╯
+- generic [ref=e5]:
+  - banner:
+    - generic [ref=e6]:
+      - generic:
+        - button [disabled]
+      - link "Facebook" [ref=e7] [cursor=pointer]:
+        - /url: /
+        - img [ref=e8]
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - generic:
+          - generic:
+            - generic:
+              - button:
+                - img
+      - generic [ref=e19]:
+        - generic:
+          - img
+        - combobox "Search Facebook" [ref=e20]
+    - navigation "Facebook" [ref=e24]:
+      - list [ref=e25]:
+        - listitem [ref=e26]:
+          - link "Home, 1 notification" [ref=e29] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e30]:
+              - img [ref=e31]
+              - generic [ref=e36]: New posts
+        - listitem [ref=e37]:
+          - link "Reels" [ref=e40] [cursor=pointer]:
+            - /url: /watch/?ref=tab
+            - img [ref=e42]
+        - listitem [ref=e45]:
+          - link "Marketplace" [ref=e48] [cursor=pointer]:
+            - /url: /marketplace/?ref=app_tab
+            - img [ref=e50]
+        - listitem [ref=e52]:
+          - link "Groups" [ref=e55] [cursor=pointer]:
+            - /url: /groups/
+            - img [ref=e57]
+        - listitem [ref=e59]:
+          - link "Gaming" [ref=e62] [cursor=pointer]:
+            - /url: /gaming/play/?store_visit_source=gaming_tab
+            - img [ref=e64]
+    - navigation "Account Controls and Settings" [ref=e68]:
+      - button "Menu" [ref=e72] [cursor=pointer]:
+        - img [ref=e73]
+      - button "Messenger" [ref=e79] [cursor=pointer]:
+        - img [ref=e80]
+      - generic [ref=e86]:
+        - button "Notifications, 5 unread" [ref=e87] [cursor=pointer]:
+          - img [ref=e88]
+        - button [ref=e90] [cursor=pointer]:
+          - generic [ref=e91]:
+            - generic [ref=e92]: Number of unread notifications
+            - generic [ref=e93]: "5"
+      - button "Your profile" [ref=e96] [cursor=pointer]:
+        - generic [ref=e97]:
+          - img "Your profile" [ref=e98]
+          - img [ref=e105]
+  - main [ref=e112]:
+    - generic [ref=e113]:
+      - link "Cover photo" [ref=e125] [cursor=pointer]:
+        - /url: https://www.facebook.com/photo/?fbid=10101639678792705&set=p.10101639678792705
+      - generic [ref=e134]:
+        - generic [ref=e138]:
+          - generic [ref=e140]:
+            - heading "Williamsburg Greenpoint Housing" [level=1] [ref=e142]:
+              - link "Williamsburg Greenpoint Housing" [ref=e144] [cursor=pointer]:
+                - /url: https://www.facebook.com/groups/williamsburggreenpointhousing/
+            - generic [ref=e150]:
+              - generic [ref=e152]:
+                - img [ref=e154]
+                - generic [ref=e160]: Private group
+              - generic [ref=e162]: ·
+              - link "19.2K members" [ref=e165] [cursor=pointer]:
+                - /url: /groups/2664056243718928/members/
+          - list [ref=e169]:
+            - listitem [ref=e170]:
+              - link "Eddie Murakami" [ref=e174] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/1388852425/
+                - img "Eddie Murakami" [ref=e176]
+            - listitem [ref=e180]:
+              - link "LowKey Ty" [ref=e184] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/1376336117/
+                - img "LowKey Ty" [ref=e186]
+            - listitem [ref=e190]:
+              - link "Hannah Pearce" [ref=e194] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/1316089604/
+                - img "Hannah Pearce" [ref=e196]
+            - listitem [ref=e200]:
+              - link "Diego Santo Del Niñito De Jesus de Praga" [ref=e204] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/1225869045/
+                - img "Diego Santo Del Niñito De Jesus de Praga" [ref=e206]
+            - listitem [ref=e210]:
+              - link "Alex Kelly" [ref=e214] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/1108742041/
+                - img "Alex Kelly" [ref=e216]
+            - listitem [ref=e220]:
+              - link "Zahra Choudhury" [ref=e224] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/100095349991639/
+                - img "Zahra Choudhury" [ref=e226]
+            - listitem [ref=e230]:
+              - link "Ashleigh Cameron" [ref=e234] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/100095329415481/
+                - img "Ashleigh Cameron" [ref=e236]
+            - listitem [ref=e240]:
+              - link "Olga Tertyshna" [ref=e244] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/100095148216703/
+                - img "Olga Tertyshna" [ref=e246]
+            - listitem [ref=e250]:
+              - link "Dalton Gates" [ref=e254] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/100095131354812/
+                - img "Dalton Gates" [ref=e256]
+            - listitem [ref=e260]:
+              - link "Brooke Turner" [ref=e264] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/100094783700850/
+                - img "Brooke Turner" [ref=e266]
+            - listitem [ref=e270]:
+              - link "Rakshit Choubey" [ref=e274] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/100094732181379/
+                - img "Rakshit Choubey" [ref=e276]
+            - listitem [ref=e280]:
+              - link "Eli Lopez" [ref=e284] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/100094699904735/
+                - img "Eli Lopez" [ref=e286]
+            - listitem [ref=e290]:
+              - link "Na Bi" [ref=e294] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/100094272045495/
+                - img "Na Bi" [ref=e296]
+            - listitem [ref=e300]:
+              - link "Chari Rivas" [ref=e304] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/100094078621379/
+                - img "Chari Rivas" [ref=e306]
+            - listitem [ref=e310]:
+              - link "Alisba Ajmal" [ref=e314] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/100093929130479/
+                - img "Alisba Ajmal" [ref=e316]
+            - listitem [ref=e320]:
+              - link "Josh Martinez" [ref=e324] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/100093837381525/
+                - img "Josh Martinez" [ref=e326]
+            - listitem [ref=e330]:
+              - link "David Sheerin" [ref=e334] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/100093698705853/
+                - img "David Sheerin" [ref=e336]
+            - listitem [ref=e340]:
+              - link "Charlie Hall" [ref=e344] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/100093682835223/
+                - img "Charlie Hall" [ref=e346]
+            - listitem [ref=e351]:
+              - link "Yani Romanov" [ref=e355] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/100093655602510/
+                - img "Yani Romanov" [ref=e357]
+            - listitem [ref=e362]:
+              - link "Mojoyin Adegbite" [ref=e366] [cursor=pointer]:
+                - /url: /groups/2664056243718928/user/100093545526044/
+                - img "Mojoyin Adegbite" [ref=e368]
+            - listitem:
+              - link "See everyone" [ref=e372] [cursor=pointer]:
+                - /url: /groups/williamsburggreenpointhousing/members/
+                - img [ref=e373]
+        - generic [ref=e378]:
+          - button "Invite" [ref=e380] [cursor=pointer]:
+            - generic [ref=e384]: Invite
+          - button "Share group" [ref=e386] [cursor=pointer]:
+            - generic [ref=e390]: Share
+          - button "Joined" [ref=e394] [cursor=pointer]:
+            - generic [ref=e398]: Joined
+          - button "See recommended groups" [ref=e401] [cursor=pointer]
+    - generic [ref=e410]:
+      - generic [ref=e457]:
+        - link "Williamsburg Greenpoint Housing" [ref=e460] [cursor=pointer]:
+          - /url: https://www.facebook.com/groups/williamsburggreenpointhousing/
+          - generic [ref=e461]:
+            - img [ref=e464]
+            - generic [ref=e474]: Williamsburg Greenpoint Housing
+        - button "Invite" [ref=e476] [cursor=pointer]:
+          - generic [ref=e480]: Invite
+        - button "Share group" [ref=e482] [cursor=pointer]:
+          - generic [ref=e486]: Share
+        - button "Joined" [ref=e490] [cursor=pointer]:
+          - generic [ref=e494]: Joined
+      - generic [ref=e497]:
+        - button "Search within this group" [ref=e499] [cursor=pointer]
+        - button "More" [ref=e504] [cursor=pointer]
+    - generic [ref=e511]:
+      - generic [ref=e512]:
+        - generic [ref=e516]:
+          - generic [ref=e517]:
+            - link "Profile" [ref=e521] [cursor=pointer]:
+              - /url: /groups/2664056243718928/user/665233712/
+              - img [ref=e524]
+            - button "Write something..." [ref=e528] [cursor=pointer]:
+              - generic [ref=e530]: Write something...
+          - generic [ref=e532]:
+            - button "Anonymous post" [ref=e533] [cursor=pointer]:
+              - generic [ref=e537]: Anonymous post
+            - button "Feeling/activity" [ref=e538] [cursor=pointer]:
+              - generic [ref=e542]: Feeling/activity
+            - button "Poll" [ref=e543] [cursor=pointer]:
+              - generic [ref=e547]: Poll
+        - generic [ref=e548]:
+          - generic [ref=e554]:
+            - generic [ref=e558]: Featured
+            - button "About featured section" [ref=e560] [cursor=pointer]
+            - button "Expand/Collapse featured section" [ref=e564] [cursor=pointer]
+          - feed [ref=e567]:
+            - button "sort group feed by New posts" [ref=e570] [cursor=pointer]:
+              - generic [ref=e571]: sort group feed by
+              - heading "New posts" [level=2] [ref=e572]:
+                - generic [ref=e573]: New posts
+              - img [ref=e574]
+            - generic [ref=e591]:
+              - blockquote [ref=e593]:
+                - generic [ref=e594]: Facebook
+              - blockquote [ref=e596]:
+                - generic [ref=e597]: Facebook
+              - blockquote [ref=e599]:
+                - generic [ref=e600]: Facebook
+              - blockquote [ref=e602]:
+                - generic [ref=e603]: Facebook
+              - blockquote [ref=e605]:
+                - generic [ref=e606]: Facebook
+              - blockquote [ref=e608]:
+                - generic [ref=e609]: Facebook
+              - blockquote [ref=e611]:
+                - generic [ref=e612]: Facebook
+              - blockquote [ref=e614]:
+                - generic [ref=e615]: Facebook
+              - blockquote [ref=e617]:
+                - generic [ref=e618]: Facebook
+              - blockquote [ref=e620]:
+                - generic [ref=e621]: Facebook
+              - blockquote [ref=e623]:
+                - generic [ref=e624]: Facebook
+              - generic [ref=e627]:
+                - generic:
+                  - blockquote [ref=e629]:
+                    - generic [ref=e630]: Facebook
+                  - blockquote [ref=e632]:
+                    - generic [ref=e633]: Facebook
+                  - blockquote [ref=e635]:
+                    - generic [ref=e636]: Facebook
+                  - blockquote [ref=e638]:
+                    - generic [ref=e639]: Facebook
+                  - blockquote [ref=e641]:
+                    - generic [ref=e642]: Facebook
+                  - blockquote [ref=e644]:
+                    - generic [ref=e645]: Facebook
+                  - blockquote [ref=e647]:
+                    - generic [ref=e648]: Facebook
+                  - blockquote [ref=e650]:
+                    - generic [ref=e651]: Facebook
+                  - blockquote [ref=e653]:
+                    - generic [ref=e654]: Facebook
+                  - blockquote [ref=e656]:
+                    - generic [ref=e657]: Facebook
+                  - blockquote [ref=e659]:
+                    - generic [ref=e660]: Facebook
+                  - blockquote [ref=e662]:
+                    - generic [ref=e663]: Facebook
+                  - blockquote [ref=e665]:
+                    - generic [ref=e666]: Facebook
+                  - blockquote [ref=e668]:
+                    - generic [ref=e669]: Facebook
+                  - blockquote [ref=e671]:
+                    - generic [ref=e672]: Facebook
+                  - blockquote [ref=e674]:
+                    - generic [ref=e675]: Facebook
+                  - blockquote [ref=e677]:
+                    - generic [ref=e678]: Facebook
+                  - blockquote [ref=e680]:
+                    - generic [ref=e681]: Facebook
+                  - blockquote [ref=e683]:
+                    - generic [ref=e684]: Facebook
+                  - blockquote [ref=e686]:
+                    - generic [ref=e687]: Facebook
+                  - blockquote [ref=e689]:
+                    - generic [ref=e690]: Facebook
+                  - blockquote [ref=e692]:
+                    - generic [ref=e693]: Facebook
+                - generic [ref=e695]:
+                  - link [ref=e698] [cursor=pointer]:
+                    - /url: /groups/2664056243718928/user/704930566/?__cft__[0]=AZZzFQNNOY_JiJg8ZuxM3O5UdMKfaSjeSRDYwQv8z7GOTp6erS2Kh_-Xbp2UBE-9wDk9aycUrEPjBk0MMe2JuphlYnCF7QtJXQsxPTp6c_nikZR9MMWBIiRMyNRijI9MXwhcEfJPYV6wf3wCe_9oTHRCPfT8NLuRaSRQBODJnprBFbhf-WiusyW10U51AatLfO36cACEzq5mEoMM7W0fTSX7&__tn__=%3C%2CP-R
+                    - link [ref=e703]:
+                      - /url: /groups/2664056243718928/user/704930566/?__cft__[0]=AZZzFQNNOY_JiJg8ZuxM3O5UdMKfaSjeSRDYwQv8z7GOTp6erS2Kh_-Xbp2UBE-9wDk9aycUrEPjBk0MMe2JuphlYnCF7QtJXQsxPTp6c_nikZR9MMWBIiRMyNRijI9MXwhcEfJPYV6wf3wCe_9oTHRCPfT8NLuRaSRQBODJnprBFbhf-WiusyW10U51AatLfO36cACEzq5mEoMM7W0fTSX7&__tn__=%3C%3C%2CP-R
+                      - img [ref=e705]
+                  - generic [ref=e710]:
+                    - heading "Michaela Kerem" [level=2] [ref=e714]:
+                      - link "Michaela Kerem" [ref=e720] [cursor=pointer]:
+                        - /url: /groups/2664056243718928/user/704930566/?__cft__[0]=AZZzFQNNOY_JiJg8ZuxM3O5UdMKfaSjeSRDYwQv8z7GOTp6erS2Kh_-Xbp2UBE-9wDk9aycUrEPjBk0MMe2JuphlYnCF7QtJXQsxPTp6c_nikZR9MMWBIiRMyNRijI9MXwhcEfJPYV6wf3wCe_9oTHRCPfT8NLuRaSRQBODJnprBFbhf-WiusyW10U51AatLfO36cACEzq5mEoMM7W0fTSX7&__tn__=-UC%2CP-R
+                        - generic [ref=e721]: Michaela Kerem
+                    - generic [ref=e724]:
+                      - link "3 hours ago" [ref=e1921] [cursor=pointer]:
+                        - /url: https://www.facebook.com/groups/williamsburggreenpointhousing/posts/24492404357124136/?__cft__[0]=AZZzFQNNOY_JiJg8ZuxM3O5UdMKfaSjeSRDYwQv8z7GOTp6erS2Kh_-Xbp2UBE-9wDk9aycUrEPjBk0MMe2JuphlYnCF7QtJXQsxPTp6c_nikZR9MMWBIiRMyNRijI9MXwhcEfJPYV6wf3wCe_9oTHRCPfT8NLuRaSRQBODJnprBFbhf-WiusyW10U51AatLfO36cACEzq5mEoMM7W0fTSX7&__tn__=%2CO%2CP-R
+                        - generic "3 hours ago" [ref=e1922]:
+                          - generic [ref=e730]:
+                            - generic [ref=e731]: o
+                            - generic [ref=e732]: d
+                            - generic [ref=e733]: S
+                            - generic [ref=e734]: s
+                            - generic [ref=e735]: r
+                            - generic [ref=e736]: e
+                            - generic [ref=e737]: t
+                            - generic [ref=e738]: "n"
+                            - generic [ref=e739]: p
+                            - generic [ref=e740]: o
+                            - generic [ref=e741]: "4"
+                            - generic [ref=e742]: "0"
+                            - generic [ref=e743]: "1"
+                            - generic [ref=e744]: t
+                            - generic [ref=e745]: a
+                            - generic [ref=e746]: h
+                            - generic [ref=e747]: l
+                            - generic [ref=e748]: f
+                            - generic [ref=e749]: "0"
+                            - generic [ref=e750]: "9"
+                            - generic [ref=e751]: l
+                            - generic [ref=e752]: i
+                            - generic [ref=e753]: i
+                            - generic [ref=e754]: "9"
+                            - generic [ref=e755]: h
+                            - generic [ref=e756]: "2"
+                            - generic [ref=e757]: f
+                            - generic [ref=e758]: c
+                            - generic [ref=e759]: t
+                            - generic [ref=e760]: m
+                            - generic [ref=e761]: "0"
+                            - generic [ref=e762]: c
+                            - generic [ref=e763]: "9"
+                            - generic [ref=e764]: c
+                            - generic [ref=e765]: "1"
+                            - generic [ref=e766]: g
+                            - generic [ref=e767]: "2"
+                            - generic [ref=e768]: "4"
+                            - generic [ref=e769]: u
+                            - generic [ref=e770]: "8"
+                            - generic [ref=e771]: m
+                            - generic [ref=e772]: l
+                            - generic [ref=e773]: h
+                            - generic [ref=e774]: "0"
+                            - generic [ref=e775]: "1"
+                            - generic [ref=e776]: h
+                            - generic [ref=e777]: "9"
+                            - generic [ref=e778]: c
+                            - generic [ref=e779]: "9"
+                            - generic [ref=e780]: t
+                            - generic [ref=e781]: h
+                            - generic [ref=e782]: "7"
+                            - generic [ref=e783]: i
+                            - generic [ref=e784]: "8"
+                            - generic [ref=e785]: "7"
+                            - generic [ref=e786]: "8"
+                            - generic [ref=e787]: u
+                            - generic [ref=e788]: f
+                            - generic [ref=e789]: i
+                            - generic [ref=e790]: m
+                      - generic [ref=e792]: ·
+                      - img "Shared with Private group" [ref=e797]
+                  - button "Actions for this post" [ref=e802] [cursor=pointer]:
+                    - img [ref=e803]
+                - generic [ref=e806]:
+                  - generic [ref=e810]:
+                    - strong [ref=e815]: A few housing options in my Williamsburg 2BR apartment coming up!
+                    - generic [ref=e818]:
+                      - strong [ref=e820]:
+                        - img "1️⃣" [ref=e822]
+                        - text: "Part-time room:"
+                      - text: I have a second bedroom available for someone who wants a consistent base in NYC but isn’t here full time (e.g., ~8-14 nights/per month). You’d have your own furnished room and space to keep belongings. I'm also open to one-off short stays.
+                      - text: About $85/night or ~$1.5–2K/month depending on usage
+                    - generic [ref=e825]:
+                      - strong [ref=e827]:
+                        - img "2️⃣" [ref=e829]
+                        - text: "Entire 2BR available:"
+                      - strong [ref=e831]: April 28–May 1
+                      - text: and
+                      - strong [ref=e833]: May 7–23
+                      - text: (end date can be extended to May 29 if needed)
+                    - generic [ref=e835]: Prime Williamsburg location near the water!
+                    - generic [ref=e837]: DM if interested or if you know someone who might be a fit!
+                  - generic [ref=e842]:
+                    - link "May be an image of living room and indoors" [ref=e844] [cursor=pointer]:
+                      - /url: https://www.facebook.com/photo/?fbid=10173606957570567&set=pcb.24492404357124136&__cft__[0]=AZZzFQNNOY_JiJg8ZuxM3O5UdMKfaSjeSRDYwQv8z7GOTp6erS2Kh_-Xbp2UBE-9wDk9aycUrEPjBk0MMe2JuphlYnCF7QtJXQsxPTp6c_nikZR9MMWBIiRMyNRijI9MXwhcEfJPYV6wf3wCe_9oTHRCPfT8NLuRaSRQBODJnprBFbhf-WiusyW10U51AatLfO36cACEzq5mEoMM7W0fTSX7&__tn__=*b0H-R
+                    - link "May be an image of living room and indoors" [ref=e849] [cursor=pointer]:
+                      - /url: https://www.facebook.com/photo/?fbid=10173606957475567&set=pcb.24492404357124136&__cft__[0]=AZZzFQNNOY_JiJg8ZuxM3O5UdMKfaSjeSRDYwQv8z7GOTp6erS2Kh_-Xbp2UBE-9wDk9aycUrEPjBk0MMe2JuphlYnCF7QtJXQsxPTp6c_nikZR9MMWBIiRMyNRijI9MXwhcEfJPYV6wf3wCe_9oTHRCPfT8NLuRaSRQBODJnprBFbhf-WiusyW10U51AatLfO36cACEzq5mEoMM7W0fTSX7&__tn__=*b1H-R
+                    - link "May be an image of indoors and sliding door" [ref=e854] [cursor=pointer]:
+                      - /url: https://www.facebook.com/photo/?fbid=10173606957705567&set=pcb.24492404357124136&__cft__[0]=AZZzFQNNOY_JiJg8ZuxM3O5UdMKfaSjeSRDYwQv8z7GOTp6erS2Kh_-Xbp2UBE-9wDk9aycUrEPjBk0MMe2JuphlYnCF7QtJXQsxPTp6c_nikZR9MMWBIiRMyNRijI9MXwhcEfJPYV6wf3wCe_9oTHRCPfT8NLuRaSRQBODJnprBFbhf-WiusyW10U51AatLfO36cACEzq5mEoMM7W0fTSX7&__tn__=*b2H-R
+                    - link "May be an image of bedroom" [ref=e859] [cursor=pointer]:
+                      - /url: https://www.facebook.com/photo/?fbid=10173606957280567&set=pcb.24492404357124136&__cft__[0]=AZZzFQNNOY_JiJg8ZuxM3O5UdMKfaSjeSRDYwQv8z7GOTp6erS2Kh_-Xbp2UBE-9wDk9aycUrEPjBk0MMe2JuphlYnCF7QtJXQsxPTp6c_nikZR9MMWBIiRMyNRijI9MXwhcEfJPYV6wf3wCe_9oTHRCPfT8NLuRaSRQBODJnprBFbhf-WiusyW10U51AatLfO36cACEzq5mEoMM7W0fTSX7&__tn__=*b3H-R
+                    - link "May be an image of bedroom, sliding door and indoors" [ref=e864] [cursor=pointer]:
+                      - /url: https://www.facebook.com/photo/?fbid=10173606957460567&set=pcb.24492404357124136&__cft__[0]=AZZzFQNNOY_JiJg8ZuxM3O5UdMKfaSjeSRDYwQv8z7GOTp6erS2Kh_-Xbp2UBE-9wDk9aycUrEPjBk0MMe2JuphlYnCF7QtJXQsxPTp6c_nikZR9MMWBIiRMyNRijI9MXwhcEfJPYV6wf3wCe_9oTHRCPfT8NLuRaSRQBODJnprBFbhf-WiusyW10U51AatLfO36cACEzq5mEoMM7W0fTSX7&__tn__=*b4H-R
+                - generic [ref=e870]:
+                  - generic [ref=e872]:
+                    - generic [ref=e874]:
+                      - generic [ref=e875]:
+                        - toolbar "See who reacted to this" [ref=e876]:
+                          - 'button "Like: 2 people" [ref=e881] [cursor=pointer]'
+                        - 'button "All reactions: 2" [ref=e884] [cursor=pointer]':
+                          - generic [ref=e885]: "All reactions:"
+                          - generic [ref=e887]: "2"
+                          - generic [ref=e889]: "2"
+                      - button "3 comments" [ref=e894] [cursor=pointer]:
+                        - generic [ref=e895]: 3 comments
+                    - generic [ref=e897]:
+                      - generic [ref=e898]:
+                        - button "Like" [ref=e899] [cursor=pointer]:
+                          - generic [ref=e905]: Like
+                        - button "React" [ref=e906] [cursor=pointer]
+                      - button "Leave a comment" [ref=e909] [cursor=pointer]:
+                        - generic [ref=e914]: Comment
+                      - button "Send" [ref=e916] [cursor=pointer]:
+                        - generic [ref=e921]: Send
+                  - button "View more comments" [ref=e925] [cursor=pointer]:
+                    - generic [ref=e927]: View more comments
+                  - article "Comment by Anna Wilson 2 hours ago" [ref=e1923]:
+                    - link [ref=e935] [cursor=pointer]:
+                      - /url: /groups/2664056243718928/user/100002921818209/?__cft__[0]=AZZzFQNNOY_JiJg8ZuxM3O5UdMKfaSjeSRDYwQv8z7GOTp6erS2Kh_-Xbp2UBE-9wDk9aycUrEPjBk0MMe2JuphlYnCF7QtJXQsxPTp6c_nikZR9MMWBIiRMyNRijI9MXwhcEfJPYV6wf3wCe_9oTHRCPfT8NLuRaSRQBODJnprBFbhf-WiusyW10U51AatLfO36cACEzq5mEoMM7W0fTSX7&__tn__=R-R
+                      - img [ref=e937]
+                    - generic [ref=e941]:
+                      - generic [ref=e942]:
+                        - generic [ref=e945]:
+                          - link "Anna Wilson" [ref=e949] [cursor=pointer]:
+                            - /url: /groups/2664056243718928/user/100002921818209/?__cft__[0]=AZZzFQNNOY_JiJg8ZuxM3O5UdMKfaSjeSRDYwQv8z7GOTp6erS2Kh_-Xbp2UBE-9wDk9aycUrEPjBk0MMe2JuphlYnCF7QtJXQsxPTp6c_nikZR9MMWBIiRMyNRijI9MXwhcEfJPYV6wf3wCe_9oTHRCPfT8NLuRaSRQBODJnprBFbhf-WiusyW10U51AatLfO36cACEzq5mEoMM7W0fTSX7&__tn__=R-R
+                            - generic [ref=e951]: Anna Wilson
+                          - generic [ref=e955]: Messaged!!
+                        - button "Hide or report this" [ref=e960] [cursor=pointer]:
+                          - img [ref=e961]
+                      - list [ref=e964]:
+                        - listitem [ref=e965]:
+                          - link "2h" [ref=e1924] [cursor=pointer]:
+                            - /url: https://www.facebook.com/groups/williamsburggreenpointhousing/posts/24492404357124136/?comment_id=24492843787080193&__cft__[0]=AZZzFQNNOY_JiJg8ZuxM3O5UdMKfaSjeSRDYwQv8z7GOTp6erS2Kh_-Xbp2UBE-9wDk9aycUrEPjBk0MMe2JuphlYnCF7QtJXQsxPTp6c_nikZR9MMWBIiRMyNRijI9MXwhcEfJPYV6wf3wCe_9oTHRCPfT8NLuRaSRQBODJnprBFbhf-WiusyW10U51AatLfO36cACEzq5mEoMM7W0fTSX7&__tn__=R-R
+                        - listitem [ref=e969]:
+                          - generic [ref=e972]:
+                            - button "Like" [ref=e974] [cursor=pointer]:
+                              - generic [ref=e975]: Like
+                            - button "React" [ref=e976] [cursor=pointer]
+                        - listitem [ref=e978]:
+                          - button "Reply" [ref=e980] [cursor=pointer]
+                  - article "Comment by Anonymous member 162 2 hours ago" [ref=e1925]:
+                    - button [ref=e989] [cursor=pointer]:
+                      - button [ref=e990]:
+                        - img [ref=e992]
+                    - generic [ref=e996]:
+                      - generic [ref=e997]:
+                        - generic [ref=e1000]:
+                          - link "Anonymous member 162" [disabled] [ref=e1004]:
+                            - generic [ref=e1006]: Anonymous member 162
+                          - generic [ref=e1010]: how long could we part time sublet (how many months) i might be interested in part time from May-July or August?
+                        - button "Hide or report this" [ref=e1015] [cursor=pointer]:
+                          - img [ref=e1016]
+                      - list [ref=e1019]:
+                        - listitem [ref=e1020]:
+                          - link "2h" [ref=e1926] [cursor=pointer]:
+                            - /url: https://www.facebook.com/groups/williamsburggreenpointhousing/posts/24492404357124136/?comment_id=24492795617085010&__cft__[0]=AZZzFQNNOY_JiJg8ZuxM3O5UdMKfaSjeSRDYwQv8z7GOTp6erS2Kh_-Xbp2UBE-9wDk9aycUrEPjBk0MMe2JuphlYnCF7QtJXQsxPTp6c_nikZR9MMWBIiRMyNRijI9MXwhcEfJPYV6wf3wCe_9oTHRCPfT8NLuRaSRQBODJnprBFbhf-WiusyW10U51AatLfO36cACEzq5mEoMM7W0fTSX7&__tn__=R-R
+                        - listitem [ref=e1024]:
+                          - generic [ref=e1027]:
+                            - button "Like" [ref=e1029] [cursor=pointer]:
+                              - generic [ref=e1030]: Like
+                            - button "React" [ref=e1031] [cursor=pointer]
+                        - listitem [ref=e1033]:
+                          - button "Reply" [ref=e1035] [cursor=pointer]
+                  - generic [ref=e1041]:
+                    - button [ref=e1043] [cursor=pointer]:
+                      - img [ref=e1045]
+                    - generic [ref=e1051]:
+                      - generic [ref=e1055]:
+                        - textbox "Comment as Rareș" [ref=e1056]:
+                          - paragraph [ref=e1057]
+                        - generic: Comment as Rareș
+                      - list [ref=e1059]:
+                        - listitem [ref=e1060]:
+                          - button "Comment with an avatar sticker" [ref=e1062] [cursor=pointer]
+                        - listitem [ref=e1064]:
+                          - button "Insert an emoji" [ref=e1066] [cursor=pointer]
+                        - listitem [ref=e1068]:
+                          - button "Attach a photo or video" [ref=e1070] [cursor=pointer]
+                        - listitem [ref=e1072]:
+                          - button "Comment with a GIF" [ref=e1074] [cursor=pointer]
+                        - listitem [ref=e1076]:
+                          - button "Comment with a Sticker" [ref=e1078] [cursor=pointer]
+              - blockquote [ref=e1081]:
+                - generic [ref=e1082]: Facebook
+              - blockquote [ref=e1084]:
+                - generic [ref=e1085]: Facebook
+              - blockquote [ref=e1087]:
+                - generic [ref=e1088]: Facebook
+              - blockquote [ref=e1090]:
+                - generic [ref=e1091]: Facebook
+              - blockquote [ref=e1093]:
+                - generic [ref=e1094]: Facebook
+              - blockquote [ref=e1096]:
+                - generic [ref=e1097]: Facebook
+              - blockquote [ref=e1099]:
+                - generic [ref=e1100]: Facebook
+              - blockquote [ref=e1102]:
+                - generic [ref=e1103]: Facebook
+              - blockquote [ref=e1105]:
+                - generic [ref=e1106]: Facebook
+              - blockquote [ref=e1108]:
+                - generic [ref=e1109]: Facebook
+              - blockquote [ref=e1111]:
+                - generic [ref=e1112]: Facebook
+            - generic [ref=e1122]:
+              - blockquote [ref=e1124]:
+                - generic [ref=e1125]: Facebook
+              - blockquote [ref=e1127]:
+                - generic [ref=e1128]: Facebook
+              - blockquote [ref=e1130]:
+                - generic [ref=e1131]: Facebook
+              - blockquote [ref=e1133]:
+                - generic [ref=e1134]: Facebook
+              - blockquote [ref=e1136]:
+                - generic [ref=e1137]: Facebook
+              - blockquote [ref=e1139]:
+                - generic [ref=e1140]: Facebook
+              - blockquote [ref=e1142]:
+                - generic [ref=e1143]: Facebook
+              - blockquote [ref=e1145]:
+                - generic [ref=e1146]: Facebook
+              - blockquote [ref=e1148]:
+                - generic [ref=e1149]: Facebook
+              - blockquote [ref=e1151]:
+                - generic [ref=e1152]: Facebook
+              - blockquote [ref=e1154]:
+                - generic [ref=e1155]: Facebook
+              - generic [ref=e1158]:
+                - generic:
+                  - blockquote [ref=e1160]:
+                    - generic [ref=e1161]: Facebook
+                  - blockquote [ref=e1163]:
+                    - generic [ref=e1164]: Facebook
+                  - blockquote [ref=e1166]:
+                    - generic [ref=e1167]: Facebook
+                  - blockquote [ref=e1169]:
+                    - generic [ref=e1170]: Facebook
+                  - blockquote [ref=e1172]:
+                    - generic [ref=e1173]: Facebook
+                  - blockquote [ref=e1175]:
+                    - generic [ref=e1176]: Facebook
+                  - blockquote [ref=e1178]:
+                    - generic [ref=e1179]: Facebook
+                  - blockquote [ref=e1181]:
+                    - generic [ref=e1182]: Facebook
+                  - blockquote [ref=e1184]:
+                    - generic [ref=e1185]: Facebook
+                  - blockquote [ref=e1187]:
+                    - generic [ref=e1188]: Facebook
+                  - blockquote [ref=e1190]:
+                    - generic [ref=e1191]: Facebook
+                  - blockquote [ref=e1193]:
+                    - generic [ref=e1194]: Facebook
+                  - blockquote [ref=e1196]:
+                    - generic [ref=e1197]: Facebook
+                  - blockquote [ref=e1199]:
+                    - generic [ref=e1200]: Facebook
+                  - blockquote [ref=e1202]:
+                    - generic [ref=e1203]: Facebook
+                  - blockquote [ref=e1205]:
+                    - generic [ref=e1206]: Facebook
+                  - blockquote [ref=e1208]:
+                    - generic [ref=e1209]: Facebook
+                  - blockquote [ref=e1211]:
+                    - generic [ref=e1212]: Facebook
+                  - blockquote [ref=e1214]:
+                    - generic [ref=e1215]: Facebook
+                  - blockquote [ref=e1217]:
+                    - generic [ref=e1218]: Facebook
+                  - blockquote [ref=e1220]:
+                    - generic [ref=e1221]: Facebook
+                  - blockquote [ref=e1223]:
+                    - generic [ref=e1224]: Facebook
+                - generic [ref=e1226]:
+                  - link [ref=e1229] [cursor=pointer]:
+                    - /url: /groups/2664056243718928/user/100013125948408/?__cft__[0]=AZbhtfKSxmNwpjpR-LkD71KAlqoEhmYZ9f3DrDsfstCNlO511aIDK8at0rXPeOhQFwj_wTd_Vsx7jcRz4xebQdVeS2ThpeeApuXhE3PMyq8Zbw9ZQdIZZPjvOymOk46DD2Z-8ze6N21TMat0hwQ4xWU0VaAEsum0nA6RjFm8B0JVu5wSVXSvOnCSX23bHLCQRXdIXgT-ycgHP1Oa12idHdpy&__tn__=%3C%2CP-R
+                    - link [ref=e1234]:
+                      - /url: /groups/2664056243718928/user/100013125948408/?__cft__[0]=AZbhtfKSxmNwpjpR-LkD71KAlqoEhmYZ9f3DrDsfstCNlO511aIDK8at0rXPeOhQFwj_wTd_Vsx7jcRz4xebQdVeS2ThpeeApuXhE3PMyq8Zbw9ZQdIZZPjvOymOk46DD2Z-8ze6N21TMat0hwQ4xWU0VaAEsum0nA6RjFm8B0JVu5wSVXSvOnCSX23bHLCQRXdIXgT-ycgHP1Oa12idHdpy&__tn__=%3C%3C%2CP-R
+                      - img [ref=e1236]
+                  - generic [ref=e1241]:
+                    - heading "Fareed Khan" [level=2] [ref=e1245]:
+                      - link "Fareed Khan" [ref=e1251] [cursor=pointer]:
+                        - /url: /groups/2664056243718928/user/100013125948408/?__cft__[0]=AZbhtfKSxmNwpjpR-LkD71KAlqoEhmYZ9f3DrDsfstCNlO511aIDK8at0rXPeOhQFwj_wTd_Vsx7jcRz4xebQdVeS2ThpeeApuXhE3PMyq8Zbw9ZQdIZZPjvOymOk46DD2Z-8ze6N21TMat0hwQ4xWU0VaAEsum0nA6RjFm8B0JVu5wSVXSvOnCSX23bHLCQRXdIXgT-ycgHP1Oa12idHdpy&__tn__=-UC%2CP-R
+                        - generic [ref=e1252]: Fareed Khan
+                    - generic [ref=e1255]:
+                      - link "6 hours ago" [ref=e1927] [cursor=pointer]:
+                        - /url: "?__cft__[0]=AZbhtfKSxmNwpjpR-LkD71KAlqoEhmYZ9f3DrDsfstCNlO511aIDK8at0rXPeOhQFwj_wTd_Vsx7jcRz4xebQdVeS2ThpeeApuXhE3PMyq8Zbw9ZQdIZZPjvOymOk46DD2Z-8ze6N21TMat0hwQ4xWU0VaAEsum0nA6RjFm8B0JVu5wSVXSvOnCSX23bHLCQRXdIXgT-ycgHP1Oa12idHdpy&__tn__=%2CO%2CP-R#?ekh"
+                        - generic "6 hours ago" [ref=e1928]:
+                          - generic [ref=e1261]:
+                            - generic [ref=e1262]: o
+                            - generic [ref=e1263]: d
+                            - generic [ref=e1264]: S
+                            - generic [ref=e1265]: s
+                            - generic [ref=e1266]: r
+                            - generic [ref=e1267]: e
+                            - generic [ref=e1268]: t
+                            - generic [ref=e1269]: "n"
+                            - generic [ref=e1270]: p
+                            - generic [ref=e1271]: o
+                            - generic [ref=e1272]: "4"
+                            - generic [ref=e1273]: "0"
+                            - generic [ref=e1274]: "1"
+                            - generic [ref=e1275]: t
+                            - generic [ref=e1276]: a
+                            - generic [ref=e1277]: h
+                            - generic [ref=e1278]: l
+                            - generic [ref=e1279]: f
+                            - generic [ref=e1280]: "0"
+                            - generic [ref=e1281]: "9"
+                            - generic [ref=e1282]: l
+                            - generic [ref=e1283]: i
+                            - generic [ref=e1284]: i
+                            - generic [ref=e1285]: "9"
+                            - generic [ref=e1286]: h
+                            - generic [ref=e1287]: "2"
+                            - generic [ref=e1288]: f
+                            - generic [ref=e1289]: c
+                            - generic [ref=e1290]: t
+                            - generic [ref=e1291]: m
+                            - generic [ref=e1292]: "0"
+                            - generic [ref=e1293]: c
+                            - generic [ref=e1294]: "9"
+                            - generic [ref=e1295]: c
+                            - generic [ref=e1296]: "1"
+                            - generic [ref=e1297]: g
+                            - generic [ref=e1298]: "5"
+                            - generic [ref=e1299]: "4"
+                            - generic [ref=e1300]: u
+                            - generic [ref=e1301]: "8"
+                            - generic [ref=e1302]: m
+                            - generic [ref=e1303]: l
+                            - generic [ref=e1304]: h
+                            - generic [ref=e1305]: "0"
+                            - generic [ref=e1306]: "1"
+                            - generic [ref=e1307]: h
+                            - generic [ref=e1308]: "9"
+                            - generic [ref=e1309]: c
+                            - generic [ref=e1310]: "9"
+                            - generic [ref=e1311]: t
+                            - generic [ref=e1312]: h
+                            - generic [ref=e1313]: "7"
+                            - generic [ref=e1314]: i
+                            - generic [ref=e1315]: "8"
+                            - generic [ref=e1316]: "7"
+                            - generic [ref=e1317]: "8"
+                            - generic [ref=e1318]: u
+                            - generic [ref=e1319]: f
+                            - generic [ref=e1320]: i
+                            - generic [ref=e1321]: m
+                      - generic [ref=e1323]: ·
+                      - img "Shared with Private group" [ref=e1328]
+                  - button "Actions for this post" [ref=e1333] [cursor=pointer]:
+                    - img [ref=e1334]
+                - generic [ref=e1337]:
+                  - generic [ref=e1341]:
+                    - heading "ISO subletter in Williamsburg (April 1-May 17)" [level=3] [ref=e1343]:
+                      - strong [ref=e1346]: ISO subletter in Williamsburg (April 1-May 17)
+                    - generic [ref=e1348]: 2 bed / 1 bath apartment in a 2nd floor walk up just a 6-minute walk to the Lorimer L and 8 minutes to the Marcy J/M. The unit includes an in-unit washer/dryer and dishwasher.
+                    - generic [ref=e1350]: You’ll be living with my roommate and his two very friendly cats. Great setup for someone who works from home or needs an easy commute into Manhattan.
+                    - button "See more" [ref=e1351] [cursor=pointer]
+                  - generic [ref=e1356]:
+                    - link "Video player" [ref=e1358] [cursor=pointer]:
+                      - /url: https://www.facebook.com/100013125948408/videos/pcb.24491142917250280/3104111656447985?__cft__[0]=AZbhtfKSxmNwpjpR-LkD71KAlqoEhmYZ9f3DrDsfstCNlO511aIDK8at0rXPeOhQFwj_wTd_Vsx7jcRz4xebQdVeS2ThpeeApuXhE3PMyq8Zbw9ZQdIZZPjvOymOk46DD2Z-8ze6N21TMat0hwQ4xWU0VaAEsum0nA6RjFm8B0JVu5wSVXSvOnCSX23bHLCQRXdIXgT-ycgHP1Oa12idHdpy&__tn__=*b0H-R
+                      - group "Video player" [ref=e1369]:
+                        - button "Play video" [ref=e1371]
+                        - generic [ref=e1373]:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - button "Play"
+                            - generic: 0:00 / 0:43
+                          - generic:
+                            - generic:
+                              - slider "Change Position"
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - button "Settings"
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - button "Enter fullscreen"
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - slider "Change volume"
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - button "Unmute"
+                    - link "May be an image of indoors and bedroom" [ref=e1375] [cursor=pointer]:
+                      - /url: https://www.facebook.com/photo/?fbid=2411575055956669&set=pcb.24491142917250280&__cft__[0]=AZbhtfKSxmNwpjpR-LkD71KAlqoEhmYZ9f3DrDsfstCNlO511aIDK8at0rXPeOhQFwj_wTd_Vsx7jcRz4xebQdVeS2ThpeeApuXhE3PMyq8Zbw9ZQdIZZPjvOymOk46DD2Z-8ze6N21TMat0hwQ4xWU0VaAEsum0nA6RjFm8B0JVu5wSVXSvOnCSX23bHLCQRXdIXgT-ycgHP1Oa12idHdpy&__tn__=*b1H-R
+                    - link "May be an image of range hood and indoors" [ref=e1380] [cursor=pointer]:
+                      - /url: https://www.facebook.com/photo/?fbid=2411575049290003&set=pcb.24491142917250280&__cft__[0]=AZbhtfKSxmNwpjpR-LkD71KAlqoEhmYZ9f3DrDsfstCNlO511aIDK8at0rXPeOhQFwj_wTd_Vsx7jcRz4xebQdVeS2ThpeeApuXhE3PMyq8Zbw9ZQdIZZPjvOymOk46DD2Z-8ze6N21TMat0hwQ4xWU0VaAEsum0nA6RjFm8B0JVu5wSVXSvOnCSX23bHLCQRXdIXgT-ycgHP1Oa12idHdpy&__tn__=*b2H-R
+                    - link "May be an image of lighting" [ref=e1385] [cursor=pointer]:
+                      - /url: https://www.facebook.com/photo/?fbid=2411575052623336&set=pcb.24491142917250280&__cft__[0]=AZbhtfKSxmNwpjpR-LkD71KAlqoEhmYZ9f3DrDsfstCNlO511aIDK8at0rXPeOhQFwj_wTd_Vsx7jcRz4xebQdVeS2ThpeeApuXhE3PMyq8Zbw9ZQdIZZPjvOymOk46DD2Z-8ze6N21TMat0hwQ4xWU0VaAEsum0nA6RjFm8B0JVu5wSVXSvOnCSX23bHLCQRXdIXgT-ycgHP1Oa12idHdpy&__tn__=*b3H-R
+                - generic [ref=e1391]:
+                  - generic [ref=e1395]:
+                    - generic [ref=e1396]:
+                      - button "Like" [ref=e1397] [cursor=pointer]:
+                        - generic [ref=e1403]: Like
+                      - button "React" [ref=e1404] [cursor=pointer]
+                    - button "Leave a comment" [ref=e1407] [cursor=pointer]:
+                      - generic [ref=e1412]: Comment
+                    - button "Send" [ref=e1414] [cursor=pointer]:
+                      - generic [ref=e1419]: Send
+                  - generic [ref=e1425]:
+                    - button [ref=e1427] [cursor=pointer]:
+                      - img [ref=e1429]
+                    - generic [ref=e1435]:
+                      - generic [ref=e1439]:
+                        - textbox "Answer as Rareș" [ref=e1440]:
+                          - paragraph [ref=e1441]
+                        - generic: Answer as Rareș
+                      - list [ref=e1443]:
+                        - listitem [ref=e1444]:
+                          - button "Comment with an avatar sticker" [ref=e1446] [cursor=pointer]
+                        - listitem [ref=e1448]:
+                          - button "Insert an emoji" [ref=e1450] [cursor=pointer]
+                        - listitem [ref=e1452]:
+                          - button "Attach a photo or video" [ref=e1454] [cursor=pointer]
+                        - listitem [ref=e1456]:
+                          - button "Comment with a GIF" [ref=e1458] [cursor=pointer]
+                        - listitem [ref=e1460]:
+                          - button "Comment with a Sticker" [ref=e1462] [cursor=pointer]
+              - blockquote [ref=e1465]:
+                - generic [ref=e1466]: Facebook
+              - blockquote [ref=e1468]:
+                - generic [ref=e1469]: Facebook
+              - blockquote [ref=e1471]:
+                - generic [ref=e1472]: Facebook
+              - blockquote [ref=e1474]:
+                - generic [ref=e1475]: Facebook
+              - blockquote [ref=e1477]:
+                - generic [ref=e1478]: Facebook
+              - blockquote [ref=e1480]:
+                - generic [ref=e1481]: Facebook
+              - blockquote [ref=e1483]:
+                - generic [ref=e1484]: Facebook
+              - blockquote [ref=e1486]:
+                - generic [ref=e1487]: Facebook
+              - blockquote [ref=e1489]:
+                - generic [ref=e1490]: Facebook
+              - blockquote [ref=e1492]:
+                - generic [ref=e1493]: Facebook
+              - blockquote [ref=e1495]:
+                - generic [ref=e1496]: Facebook
+            - generic [ref=e1506]:
+              - blockquote [ref=e1508]:
+                - generic [ref=e1509]: Facebook
+              - blockquote [ref=e1511]:
+                - generic [ref=e1512]: Facebook
+              - blockquote [ref=e1514]:
+                - generic [ref=e1515]: Facebook
+              - blockquote [ref=e1517]:
+                - generic [ref=e1518]: Facebook
+              - blockquote [ref=e1520]:
+                - generic [ref=e1521]: Facebook
+              - blockquote [ref=e1523]:
+                - generic [ref=e1524]: Facebook
+              - blockquote [ref=e1526]:
+                - generic [ref=e1527]: Facebook
+              - blockquote [ref=e1529]:
+                - generic [ref=e1530]: Facebook
+              - blockquote [ref=e1532]:
+                - generic [ref=e1533]: Facebook
+              - blockquote [ref=e1535]:
+                - generic [ref=e1536]: Facebook
+              - blockquote [ref=e1538]:
+                - generic [ref=e1539]: Facebook
+              - generic [ref=e1542]:
+                - generic:
+                  - blockquote [ref=e1544]:
+                    - generic [ref=e1545]: Facebook
+                  - blockquote [ref=e1547]:
+                    - generic [ref=e1548]: Facebook
+                  - blockquote [ref=e1550]:
+                    - generic [ref=e1551]: Facebook
+                  - blockquote [ref=e1553]:
+                    - generic [ref=e1554]: Facebook
+                  - blockquote [ref=e1556]:
+                    - generic [ref=e1557]: Facebook
+                  - blockquote [ref=e1559]:
+                    - generic [ref=e1560]: Facebook
+                  - blockquote [ref=e1562]:
+                    - generic [ref=e1563]: Facebook
+                  - blockquote [ref=e1565]:
+                    - generic [ref=e1566]: Facebook
+                  - blockquote [ref=e1568]:
+                    - generic [ref=e1569]: Facebook
+                  - blockquote [ref=e1571]:
+                    - generic [ref=e1572]: Facebook
+                  - blockquote [ref=e1574]:
+                    - generic [ref=e1575]: Facebook
+                  - blockquote [ref=e1577]:
+                    - generic [ref=e1578]: Facebook
+                  - blockquote [ref=e1580]:
+                    - generic [ref=e1581]: Facebook
+                  - blockquote [ref=e1583]:
+                    - generic [ref=e1584]: Facebook
+                  - blockquote [ref=e1586]:
+                    - generic [ref=e1587]: Facebook
+                  - blockquote [ref=e1589]:
+                    - generic [ref=e1590]: Facebook
+                  - blockquote [ref=e1592]:
+                    - generic [ref=e1593]: Facebook
+                  - blockquote [ref=e1595]:
+                    - generic [ref=e1596]: Facebook
+                  - blockquote [ref=e1598]:
+                    - generic [ref=e1599]: Facebook
+                  - blockquote [ref=e1601]:
+                    - generic [ref=e1602]: Facebook
+                  - blockquote [ref=e1604]:
+                    - generic [ref=e1605]: Facebook
+                  - blockquote [ref=e1607]:
+                    - generic [ref=e1608]: Facebook
+                - generic [ref=e1610]:
+                  - link [ref=e1613] [cursor=pointer]:
+                    - /url: /groups/2664056243718928/user/100062909150019/?__cft__[0]=AZZE0qy1W_Qam5ZClN_XZwf5vmG34uIUi0TsdZfS9SU_pVCA-IpJtf93ROHrxr3N3ruT6kSl8MH_ALU1l6GVA79xRCrnckPGwiPLf30rvjFdQJv5lPKFAT4ODbsWXi37vYGTB-ThnakOX_FIoTh7HCuO2CT7ZMvdHKBwqAtkaFswz2b_bIe3qlFkhBNm4Q8Ys43u3rOkDa5PQZpIwQs-kQo-&__tn__=%3C%2CP-R
+                    - link [ref=e1618]:
+                      - /url: /groups/2664056243718928/user/100062909150019/?__cft__[0]=AZZE0qy1W_Qam5ZClN_XZwf5vmG34uIUi0TsdZfS9SU_pVCA-IpJtf93ROHrxr3N3ruT6kSl8MH_ALU1l6GVA79xRCrnckPGwiPLf30rvjFdQJv5lPKFAT4ODbsWXi37vYGTB-ThnakOX_FIoTh7HCuO2CT7ZMvdHKBwqAtkaFswz2b_bIe3qlFkhBNm4Q8Ys43u3rOkDa5PQZpIwQs-kQo-&__tn__=%3C%3C%2CP-R
+                      - img [ref=e1620]
+                  - generic [ref=e1625]:
+                    - heading "Duke Winn Follow" [level=2] [ref=e1629]:
+                      - generic [ref=e1630]:
+                        - link "Duke Winn" [ref=e1635] [cursor=pointer]:
+                          - /url: /groups/2664056243718928/user/100062909150019/?__cft__[0]=AZZE0qy1W_Qam5ZClN_XZwf5vmG34uIUi0TsdZfS9SU_pVCA-IpJtf93ROHrxr3N3ruT6kSl8MH_ALU1l6GVA79xRCrnckPGwiPLf30rvjFdQJv5lPKFAT4ODbsWXi37vYGTB-ThnakOX_FIoTh7HCuO2CT7ZMvdHKBwqAtkaFswz2b_bIe3qlFkhBNm4Q8Ys43u3rOkDa5PQZpIwQs-kQo-&__tn__=-UC%2CP-R
+                          - generic [ref=e1636]: Duke Winn
+                        - generic [ref=e1637]:
+                          - generic [ref=e1638]: ·
+                          - button "Follow" [ref=e1641] [cursor=pointer]
+                    - generic [ref=e1644]:
+                      - link "14 hours ago" [ref=e1647] [cursor=pointer]:
+                        - /url: "?__cft__[0]=AZZE0qy1W_Qam5ZClN_XZwf5vmG34uIUi0TsdZfS9SU_pVCA-IpJtf93ROHrxr3N3ruT6kSl8MH_ALU1l6GVA79xRCrnckPGwiPLf30rvjFdQJv5lPKFAT4ODbsWXi37vYGTB-ThnakOX_FIoTh7HCuO2CT7ZMvdHKBwqAtkaFswz2b_bIe3qlFkhBNm4Q8Ys43u3rOkDa5PQZpIwQs-kQo-&__tn__=%2CO%2CP-R#?acc"
+                        - generic "14 hours ago" [ref=e1649]:
+                          - generic [ref=e1650]:
+                            - generic [ref=e1651]: o
+                            - generic [ref=e1652]: d
+                            - generic [ref=e1653]: S
+                            - generic [ref=e1654]: s
+                            - generic [ref=e1655]: r
+                            - generic [ref=e1656]: e
+                            - generic [ref=e1657]: t
+                            - generic [ref=e1658]: "n"
+                            - generic [ref=e1659]: p
+                            - generic [ref=e1660]: o
+                            - generic [ref=e1661]: "4"
+                            - generic [ref=e1662]: "0"
+                            - generic [ref=e1663]: "1"
+                            - generic [ref=e1664]: t
+                            - generic [ref=e1665]: a
+                            - generic [ref=e1666]: h
+                            - generic [ref=e1667]: l
+                            - generic [ref=e1668]: f
+                            - generic [ref=e1669]: "0"
+                            - generic [ref=e1670]: "9"
+                            - generic [ref=e1671]: l
+                            - generic [ref=e1672]: i
+                            - generic [ref=e1673]: i
+                            - generic [ref=e1674]: "9"
+                            - generic [ref=e1675]: h
+                            - generic [ref=e1676]: "4"
+                            - generic [ref=e1677]: f
+                            - generic [ref=e1678]: c
+                            - generic [ref=e1679]: t
+                            - generic [ref=e1680]: m
+                            - generic [ref=e1681]: "0"
+                            - generic [ref=e1682]: c
+                            - generic [ref=e1683]: "9"
+                            - generic [ref=e1684]: c
+                            - generic [ref=e1685]: "1"
+                            - generic [ref=e1686]: g
+                            - generic [ref=e1687]: "1"
+                            - generic [ref=e1688]: "4"
+                            - generic [ref=e1689]: u
+                            - generic [ref=e1690]: "8"
+                            - generic [ref=e1691]: m
+                            - generic [ref=e1692]: l
+                            - generic [ref=e1693]: h
+                            - generic [ref=e1694]: "0"
+                            - generic [ref=e1695]: "1"
+                            - generic [ref=e1696]: h
+                            - generic [ref=e1697]: "9"
+                            - generic [ref=e1698]: c
+                            - generic [ref=e1699]: "9"
+                            - generic [ref=e1700]: t
+                            - generic [ref=e1701]: h
+                            - generic [ref=e1702]: "7"
+                            - generic [ref=e1703]: i
+                            - generic [ref=e1704]: "8"
+                            - generic [ref=e1705]: "7"
+                            - generic [ref=e1706]: "8"
+                            - generic [ref=e1707]: u
+                            - generic [ref=e1708]: f
+                            - generic [ref=e1709]: i
+                            - generic [ref=e1710]: m
+                      - generic [ref=e1712]: ·
+                      - img "Shared with Private group" [ref=e1717]
+                  - button "Actions for this post" [ref=e1722] [cursor=pointer]:
+                    - img [ref=e1723]
+                - generic [ref=e1726]:
+                  - heading "Sublet my extra bedroom in 2b1b apartment in Williamsburg" [level=3] [ref=e1732]:
+                    - strong [ref=e1735]: Sublet my extra bedroom in 2b1b apartment in Williamsburg
+                  - link "May be an image of bedroom and text that says 'Sublet my XTTA bedroom Willliamsburg in 2b1b apartment 10 mins walk from Bedford L train 5 mins walk from Lorimer Metropolitar L/G train 3 mins walk from Marcy avenue station J/M/Z train $1500 $1500/month /month or sublease full DM @dukewinnn apartment $3250 $3250/month for info 原 kitchen dining diningroom room ស living livingroom room'" [ref=e1738] [cursor=pointer]:
+                    - /url: https://www.facebook.com/photo/?fbid=1272382344868725&set=gm.24487930817571490&idorvanity=2664056243718928&__cft__[0]=AZZE0qy1W_Qam5ZClN_XZwf5vmG34uIUi0TsdZfS9SU_pVCA-IpJtf93ROHrxr3N3ruT6kSl8MH_ALU1l6GVA79xRCrnckPGwiPLf30rvjFdQJv5lPKFAT4ODbsWXi37vYGTB-ThnakOX_FIoTh7HCuO2CT7ZMvdHKBwqAtkaFswz2b_bIe3qlFkhBNm4Q8Ys43u3rOkDa5PQZpIwQs-kQo-&__tn__=EH-R
+                    - img "May be an image of bedroom and text that says 'Sublet my XTTA bedroom Willliamsburg in 2b1b apartment 10 mins walk from Bedford L train 5 mins walk from Lorimer Metropolitar L/G train 3 mins walk from Marcy avenue station J/M/Z train $1500 $1500/month /month or sublease full DM @dukewinnn apartment $3250 $3250/month for info 原 kitchen dining diningroom room ស living livingroom room'" [ref=e1743]
+                - generic [ref=e1746]:
+                  - generic [ref=e1748]:
+                    - generic [ref=e1751]:
+                      - toolbar "See who reacted to this" [ref=e1752]:
+                        - 'button "Like: 1 person" [ref=e1757] [cursor=pointer]'
+                      - 'button "All reactions: 1" [ref=e1760] [cursor=pointer]':
+                        - generic [ref=e1761]: "All reactions:"
+                        - generic [ref=e1763]: "1"
+                        - generic [ref=e1765]: "1"
+                    - generic [ref=e1769]:
+                      - generic [ref=e1770]:
+                        - button "Like" [ref=e1771] [cursor=pointer]:
+                          - generic [ref=e1777]: Like
+                        - button "React" [ref=e1778] [cursor=pointer]
+                      - button "Leave a comment" [ref=e1781] [cursor=pointer]:
+                        - generic [ref=e1786]: Comment
+                      - button "Send" [ref=e1788] [cursor=pointer]:
+                        - generic [ref=e1793]: Send
+                  - generic [ref=e1799]:
+                    - button [ref=e1801] [cursor=pointer]:
+                      - img [ref=e1803]
+                    - generic [ref=e1809]:
+                      - generic [ref=e1813]:
+                        - textbox "Comment as Rareș" [ref=e1814]:
+                          - paragraph [ref=e1815]
+                        - generic: Comment as Rareș
+                      - list [ref=e1817]:
+                        - listitem [ref=e1818]:
+                          - button "Comment with an avatar sticker" [ref=e1820] [cursor=pointer]
+                        - listitem [ref=e1822]:
+                          - button "Insert an emoji" [ref=e1824] [cursor=pointer]
+                        - listitem [ref=e1826]:
+                          - button "Attach a photo or video" [ref=e1828] [cursor=pointer]
+                        - listitem [ref=e1830]:
+                          - button "Comment with a GIF" [ref=e1832] [cursor=pointer]
+                        - listitem [ref=e1834]:
+                          - button "Comment with a Sticker" [ref=e1836] [cursor=pointer]
+              - blockquote [ref=e1839]:
+                - generic [ref=e1840]: Facebook
+              - blockquote [ref=e1842]:
+                - generic [ref=e1843]: Facebook
+              - blockquote [ref=e1845]:
+                - generic [ref=e1846]: Facebook
+              - blockquote [ref=e1848]:
+                - generic [ref=e1849]: Facebook
+              - blockquote [ref=e1851]:
+                - generic [ref=e1852]: Facebook
+              - blockquote [ref=e1854]:
+                - generic [ref=e1855]: Facebook
+              - blockquote [ref=e1857]:
+                - generic [ref=e1858]: Facebook
+              - blockquote [ref=e1860]:
+                - generic [ref=e1861]: Facebook
+              - blockquote [ref=e1863]:
+                - generic [ref=e1864]: Facebook
+              - blockquote [ref=e1866]:
+                - generic [ref=e1867]: Facebook
+              - blockquote [ref=e1869]:
+                - generic [ref=e1870]: Facebook
+            - generic [ref=e1890]:
+              - article [ref=e1891]:
+                - status "Loading..." [ref=e1892]
+              - article [ref=e1904]:
+                - status "Loading..." [ref=e1905]
+      - generic [ref=e1930]:
+        - generic [ref=e1936]:
+          - heading "About" [level=2] [ref=e1946]:
+            - generic [ref=e1948]: About
+          - generic [ref=e1949]:
+            - generic [ref=e1959]:
+              - generic [ref=e1961]: please answer membership questions to join! msg admin for assistance.
+              - generic [ref=e1963]:
+                - text: there are too many “g*psy housing” groups, with a bunch of spam posts, co…
+                - button "See more" [ref=e1964] [cursor=pointer]
+            - generic [ref=e1973]:
+              - generic [ref=e1976]: Private
+              - generic [ref=e1978]: Only members can see who's in the group and what they post.
+            - generic [ref=e1987]:
+              - generic [ref=e1990]: Visible
+              - generic [ref=e1992]: Anyone can find this group.
+        - generic [ref=e1997]:
+          - heading "Recent media" [level=2] [ref=e2007]:
+            - generic [ref=e2009]: Recent media
+          - generic [ref=e2010]:
+            - generic [ref=e2012]:
+              - link "May be an image of indoors and sliding door" [ref=e2018] [cursor=pointer]:
+                - /url: /photo/?fbid=10173606957705567&set=g.2664056243718928
+                - img "May be an image of indoors and sliding door" [ref=e2019]
+              - link "May be an image of living room and indoors" [ref=e2025] [cursor=pointer]:
+                - /url: /photo/?fbid=10173606957570567&set=g.2664056243718928
+                - img "May be an image of living room and indoors" [ref=e2026]
+              - link "May be an image of living room and indoors" [ref=e2032] [cursor=pointer]:
+                - /url: /photo/?fbid=10173606957475567&set=g.2664056243718928
+                - img "May be an image of living room and indoors" [ref=e2033]
+              - link "May be an image of bedroom, sliding door and indoors" [ref=e2039] [cursor=pointer]:
+                - /url: /photo/?fbid=10173606957460567&set=g.2664056243718928
+                - img "May be an image of bedroom, sliding door and indoors" [ref=e2040]
+            - link "See all" [ref=e2042] [cursor=pointer]:
+              - /url: /groups/williamsburggreenpointhousing/media/
+              - generic [ref=e2045]: See all
+  - button "New message" [ref=e1919] [cursor=pointer]

@@ -1,0 +1,8 @@
+node_modules/
+data/raw/
+data/collected/
+data/listings/
+data/normalized/
+data/storage/
+data/cache/
+.DS_Store
