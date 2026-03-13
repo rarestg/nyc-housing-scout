@@ -104,6 +104,30 @@ test('normalizeGeminiInput accepts an observation-style input and preserves post
   assert.match(buildGeminiStructuredPrompt(normalized), /https:\/\/example\.com\/posts\/123/u);
 });
 
+test('buildGeminiStructuredPrompt includes guardrails for ambiguous scalars and offered room-fill posts', () => {
+  const normalized = normalizeGeminiInput({
+    id: 'obs_guardrails',
+    runId: 'run_guardrails',
+    payload: {
+      sourceKey: 'nyc-housing-group',
+      groupName: 'NYC Housing Group',
+      postUrl: 'https://example.com/posts/guardrails',
+      bodyText: 'Looking for 2 roommates for a 4/1 move in apartment in Williamsburg. Larger room ~$2000, smaller room ~$1700.',
+    },
+  });
+
+  const prompt = buildGeminiStructuredPrompt(normalized);
+
+  assert.match(prompt, /Prefer null over false certainty/u);
+  assert.match(prompt, /Greenpoint or Williamsburg/u);
+  assert.match(prompt, /before April 1/u);
+  assert.match(prompt, /observation\.capturedAt/u);
+  assert.match(prompt, /3 bed max/u);
+  assert.match(prompt, /roommate_search/u);
+  assert.match(prompt, /room_in_shared or multiple_rooms_in_shared/u);
+  assert.match(prompt, /separately priced rooms/u);
+});
+
 test('resolveGeminiApiKey prefers GEMINI_API_KEY before GOOGLE_API_KEY', () => {
   assert.deepEqual(
     resolveGeminiApiKey({
