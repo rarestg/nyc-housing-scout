@@ -84,6 +84,10 @@ export const GEMINI_STRUCTURED_OUTPUT_SCHEMA = Object.freeze({
             enum: [...LISTING_TYPE_VALUES],
           },
           location: {
+            // Coordinates are intentionally excluded from first-pass Gemini extraction.
+            // If we add them later, do it in a downstream tool-assisted reverse-geocode step
+            // (or staged LLM + tool pipeline) using extracted address / neighborhood /
+            // cross-street evidence rather than asking the model to guess lat/lng.
             type: 'object',
             additionalProperties: false,
             properties: {
@@ -96,9 +100,6 @@ export const GEMINI_STRUCTURED_OUTPUT_SCHEMA = Object.freeze({
               },
               city: STRING_OR_NULL,
               state: STRING_OR_NULL,
-              lat: NUMBER_OR_NULL,
-              lng: NUMBER_OR_NULL,
-              geocodeConfidence: CONFIDENCE_VALUE_OR_NULL,
             },
             required: [
               'rawText',
@@ -107,9 +108,6 @@ export const GEMINI_STRUCTURED_OUTPUT_SCHEMA = Object.freeze({
               'borough',
               'city',
               'state',
-              'lat',
-              'lng',
-              'geocodeConfidence',
             ],
           },
           pricing: {
@@ -355,9 +353,6 @@ function normalizeStructuredListing(input, post, overallAmbiguities) {
     borough: normalizeNullableEnum(input?.location?.borough, BOROUGH_VALUES),
     city: normalizeNullableString(input?.location?.city) || listing.location.city,
     state: normalizeNullableString(input?.location?.state) || listing.location.state,
-    lat: normalizeNullableNumber(input?.location?.lat),
-    lng: normalizeNullableNumber(input?.location?.lng),
-    geocodeConfidence: normalizeNullableConfidence(input?.location?.geocodeConfidence),
   };
   listing.pricing = {
     ...listing.pricing,
@@ -421,7 +416,14 @@ function stripListingSource(listing) {
   return {
     postIntent: listing.postIntent,
     listingType: listing.listingType,
-    location: { ...listing.location },
+    location: {
+      rawText: listing.location.rawText,
+      address: listing.location.address,
+      neighborhood: listing.location.neighborhood,
+      borough: listing.location.borough,
+      city: listing.location.city,
+      state: listing.location.state,
+    },
     pricing: { ...listing.pricing },
     rooms: { ...listing.rooms },
     dates: { ...listing.dates },

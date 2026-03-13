@@ -22,6 +22,9 @@ export function createEmptyListing(overrides = {}) {
       borough: null,
       city: 'New York',
       state: 'NY',
+      // Downstream-only enrichment fields. First-pass extraction should leave these null.
+      // If we add real coordinates later, do it via a reverse-geocode tool / staged
+      // enrichment step once address or neighborhood evidence is strong enough.
       lat: null,
       lng: null,
       geocodeConfidence: null,

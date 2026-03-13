@@ -86,5 +86,7 @@ So the pipeline should support:
 - Unknown is better than fake certainty.
 - Room counts should distinguish total apartment size from rooms actually available.
 - Listing type should be derived from evidence, not just a single keyword.
+- `location.lat` / `location.lng` / `location.geocodeConfidence` are downstream enrichment fields, not first-pass LLM extraction targets.
+- If coordinates are added later, do it via a real geocoder or staged tool-assisted enrichment flow once address / neighborhood evidence is strong enough.
 - The active DOM path now builds listings from canonical collected posts, then copies source metadata into each extracted listing.
 - Queue-derived `listing_records` now come from versioned `processed_payloads`; the row-level `extractorVersion` should preserve the processing provenance tuple used for that mapping.
