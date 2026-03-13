@@ -10,6 +10,8 @@ The primary collection path is now the DOM-based Facebook feed capture via the l
   - `npm run capture:dom -- --source-key nyc-housing-group --limit 20`
 - Crawl down the DOM feed until enough fresh posts are collected:
   - `npm run crawl:dom -- --source-key nyc-housing-group --target 20 --max-scrolls 20`
+- Run the explicit browser-relay ingest controller loop:
+  - `npm run ingest:loop -- --source-key nyc-housing-group --display-name "NYC Housing Group" --group-url https://www.facebook.com/groups/<group>/ --max-cycles 1`
 - Inspect the SQLite-backed storage state without raw SQL:
   - `npm run inspect:storage -- runs --source-key nyc-housing-group --limit 5`
   - `npm run inspect:storage -- observations --run-id <runId> --limit 10`
@@ -134,6 +136,14 @@ The crawl loop keeps separate counts for:
 Seen posts are still collected and persisted in the collected-post artifact, but they are not re-extracted into listings.
 
 Run steps are also checkpointed into SQLite during the crawl so source/run history survives process completion.
+
+`ingest:loop` is a thin controller over the existing browser relay path:
+
+1. browser preflight against the attached tab
+2. deterministic `openclaw browser navigate` reset to the requested group URL
+3. `crawl:dom` execution
+4. fresh-only `validate:queue --freshness fresh` processing
+5. state/log writing plus optional OpenClaw system-event callbacks
 
 ## Storage Inspection Surface
 

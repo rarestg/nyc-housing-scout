@@ -207,7 +207,25 @@ Current write targets:
 - `raw/facebook/<sourceKey>/<runId>/...`
 - `collected/facebook/<sourceKey>/...`
 - `listings/facebook/<sourceKey>/...`
+- `state/ingest-loop/<sourceKey>.json`
+- `state/ingest-loop/<sourceKey>.jsonl`
 - `storage/nyc-housing-scout.sqlite`
+
+### `state/`
+
+Current active path:
+
+- `state/ingest-loop/<sourceKey>.json`
+- `state/ingest-loop/<sourceKey>.jsonl`
+- `state/ingest-loop/<sourceKey>.stop`
+
+How it is used:
+
+- `ingest:loop` writes machine-friendly loop state to the `.json` file.
+- `ingest:loop` appends one JSON object per cycle plus a final stop event to the `.jsonl` file.
+- creating the `.stop` file is one supported clean-stop signal for the loop.
+
+These are local operator/runtime artifacts, not canonical application state. SQLite remains the system of record for crawl observations, queue state, processed payloads, and listings.
 
 Historical leftovers you will still see:
 

@@ -214,6 +214,7 @@ storage.finishRun({
 });
 
 console.log(JSON.stringify({
+  runId: run.id,
   ...summary,
   rawArtifactDir: path.relative(process.cwd(), artifactLayers.rawDir),
   collectedArtifact: collectedArtifact.relativePath,

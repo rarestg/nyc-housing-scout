@@ -115,6 +115,7 @@ See `docs/INDEX.md` for a full map.
 ### Collection
 - `npm run capture:dom -- --limit 5`
 - `npm run crawl:dom -- --target 20 --max-scrolls 10`
+- `npm run ingest:loop -- --source-key <key> --display-name "<name>" --group-url <url> --max-cycles 1`
 
 ## Near-term direction
 

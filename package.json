@@ -13,6 +13,7 @@
     "crawl:latest": "node src/cli/crawl-latest.js",
     "capture:dom": "node src/cli/capture-dom-feed.js",
     "crawl:dom": "node src/cli/crawl-dom-latest.js",
+    "ingest:loop": "node src/cli/ingest-loop.js",
     "inspect:storage": "node src/cli/inspect-storage.js",
     "enqueue:processing": "node src/cli/enqueue-processing.js",
     "inspect:jobs": "node src/cli/inspect-jobs.js",
