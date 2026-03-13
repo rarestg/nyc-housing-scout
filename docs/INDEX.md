@@ -14,6 +14,7 @@ These are the current, maintained references. Start here.
 | [FACEBOOK_CAPTURE_NOTES](FACEBOOK_CAPTURE_NOTES.md) | What to capture from Facebook DOM and what to ignore |
 | [notes/2026-03-13_12-22-00_PM_HANDOFF_AND_OPERATOR_GUIDE](notes/2026-03-13_12-22-00_PM_HANDOFF_AND_OPERATOR_GUIDE.md) | PM/operator bootstrap — current state, heuristics, and next steps |
 | [notes/2026-03-13_13-16-00_BROWSER_RELAY_INGESTION_SOP](notes/2026-03-13_13-16-00_BROWSER_RELAY_INGESTION_SOP.md) | Browser-relay Facebook ingestion SOP — tested operator flow, callbacks, and quirks |
+| [notes/2026-03-13_13-37-00_INGEST_LOOP_SPEC](notes/2026-03-13_13-37-00_INGEST_LOOP_SPEC.md) | Spec for the next `ingest:loop` controller pass using the existing Chrome relay path |
 
 ## Historical Records
 
