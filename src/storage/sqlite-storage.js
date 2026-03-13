@@ -3,6 +3,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { ensureDir } from '../core/file-utils.js';
+import {
+  buildProcessingDedupeKey,
+  DEFAULT_LEASE_MS,
+  DEFAULT_MAX_ATTEMPTS,
+  resolveProcessingProvenance,
+} from '../processing/config.js';
 
 const DEFAULT_MIGRATIONS_DIR = fileURLToPath(new URL('./migrations', import.meta.url));
 
@@ -482,6 +488,431 @@ export class SqliteStorage {
         exportArtifacts,
       };
     });
+  }
+
+  enqueueProcessingJobs(input = {}) {
+    const now = input.enqueuedAt || new Date().toISOString();
+    const provenance = normalizeRequiredProcessingProvenance(input);
+    const limit = normalizeLimit(input.limit, 100);
+    const maxAttempts = normalizePositiveInteger(input.maxAttempts, DEFAULT_MAX_ATTEMPTS, 100);
+
+    return this.withTransaction(() => {
+      const observations = this.selectObservationCandidatesForProcessing({
+        ...input,
+        limit,
+      });
+      const results = [];
+
+      for (const observation of observations) {
+        if (!observation.postUrl) {
+          results.push({
+            action: 'skipped_missing_post_url',
+            observationId: observation.id,
+            sourceId: observation.sourceId,
+            sourceKey: observation.sourceKey,
+          });
+          continue;
+        }
+
+        const existing = this.selectProcessingJobByObservationAndProvenance(observation.id, provenance);
+        if (existing) {
+          results.push({
+            action: 'existing',
+            job: this.selectProcessingJobSummaryById(existing.id),
+          });
+          continue;
+        }
+
+        const job = {
+          id: this.nextId('processingJob', 'job'),
+          sourceId: observation.sourceId,
+          observationId: observation.id,
+          stablePostId: observation.stablePostId ?? null,
+          status: 'pending',
+          processorVersion: provenance.processorVersion,
+          schemaVersion: provenance.schemaVersion,
+          modelName: provenance.modelName,
+          dedupeKey: buildProcessingDedupeKey({
+            observationId: observation.id,
+            ...provenance,
+          }),
+          attemptCount: 0,
+          maxAttempts,
+          availableAt: input.availableAt || now,
+          claimedAt: null,
+          claimedBy: null,
+          leaseExpiresAt: null,
+          completedAt: null,
+          lastError: null,
+          lastErrorAt: null,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        this.db.prepare(`
+          INSERT INTO processing_jobs (
+            id, source_id, observation_id, stable_post_id, status, processor_version, schema_version, model_name,
+            dedupe_key, attempt_count, max_attempts, available_at, claimed_at, claimed_by, lease_expires_at,
+            completed_at, last_error, last_error_at, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          job.id,
+          job.sourceId,
+          job.observationId,
+          job.stablePostId,
+          job.status,
+          job.processorVersion,
+          job.schemaVersion,
+          job.modelName,
+          job.dedupeKey,
+          job.attemptCount,
+          job.maxAttempts,
+          job.availableAt,
+          job.claimedAt,
+          job.claimedBy,
+          job.leaseExpiresAt,
+          job.completedAt,
+          job.lastError,
+          job.lastErrorAt,
+          job.createdAt,
+          job.updatedAt,
+        );
+
+        results.push({
+          action: 'created',
+          job: this.selectProcessingJobSummaryById(job.id),
+        });
+      }
+
+      return {
+        enqueuedAt: now,
+        provenance,
+        counts: summarizeEnqueueResults(results),
+        results,
+      };
+    });
+  }
+
+  claimProcessingJobs(input = {}) {
+    const now = input.claimedAt || new Date().toISOString();
+    const claimedBy = String(input.claimedBy || '').trim();
+    const limit = normalizeLimit(input.limit, 10);
+    const leaseMs = normalizePositiveInteger(input.leaseMs, DEFAULT_LEASE_MS, 24 * 60 * 60 * 1000);
+
+    if (!claimedBy) {
+      throw new Error('storage.claimProcessingJobs requires claimedBy');
+    }
+
+    return this.withTransaction(() => {
+      this.sweepExpiredProcessingClaims(now);
+
+      const clauses = [
+        `j.status IN (${buildPlaceholders(2)})`,
+        'j.available_at <= ?',
+      ];
+      const params = ['pending', 'retryable', now];
+      const observationIds = normalizeStringList(input.observationIds || input.observationId);
+
+      if (input.sourceId) {
+        clauses.push('j.source_id = ?');
+        params.push(input.sourceId);
+      }
+
+      if (input.sourceKey) {
+        clauses.push('s.source_key = ?');
+        params.push(input.sourceKey);
+      }
+
+      if (input.runId) {
+        clauses.push('o.run_id = ?');
+        params.push(input.runId);
+      }
+
+      if (observationIds.length) {
+        clauses.push(`j.observation_id IN (${buildPlaceholders(observationIds.length)})`);
+        params.push(...observationIds);
+      }
+
+      appendOptionalProvenanceFilters(input, clauses, params, 'j');
+
+      const candidates = this.db.prepare(`
+        SELECT j.id
+        FROM processing_jobs j
+        JOIN post_observations o ON o.id = j.observation_id
+        JOIN sources s ON s.id = j.source_id
+        ${buildWhereClause(clauses)}
+        ORDER BY
+          CASE j.status
+            WHEN 'pending' THEN 0
+            WHEN 'retryable' THEN 1
+            ELSE 2
+          END,
+          j.available_at ASC,
+          j.created_at ASC,
+          j.id ASC
+        LIMIT ?
+      `).all(...params, limit);
+
+      const leaseExpiresAt = addMillisecondsToIso(now, leaseMs);
+      const claimedJobs = [];
+
+      for (const candidate of candidates) {
+        this.db.prepare(`
+          UPDATE processing_jobs
+          SET status = ?, attempt_count = attempt_count + 1, claimed_at = ?, claimed_by = ?, lease_expires_at = ?, updated_at = ?
+          WHERE id = ?
+        `).run('processing', now, claimedBy, leaseExpiresAt, now, candidate.id);
+
+        claimedJobs.push(this.selectProcessingJobSummaryById(candidate.id, {
+          includeObservationPayload: Boolean(input.includeObservationPayload),
+        }));
+      }
+
+      return claimedJobs;
+    });
+  }
+
+  completeProcessingJob(input) {
+    const now = input.completedAt || new Date().toISOString();
+    const jobId = String(input.jobId || '').trim();
+
+    if (!jobId) {
+      throw new Error('storage.completeProcessingJob requires jobId');
+    }
+
+    if (!input.payload) {
+      throw new Error('storage.completeProcessingJob requires payload');
+    }
+
+    return this.withTransaction(() => {
+      const job = this.requireProcessingJob(jobId);
+      if (job.status !== 'processing') {
+        throw new Error(`storage.completeProcessingJob requires processing status: ${jobId}`);
+      }
+
+      if (input.claimedBy && job.claimedBy !== input.claimedBy) {
+        throw new Error(`storage.completeProcessingJob claimant mismatch for ${jobId}`);
+      }
+
+      if (this.selectProcessedPayloadByJobId(job.id)) {
+        throw new Error(`processed payload already exists for job ${job.id}`);
+      }
+
+      const observation = this.requireObservation(job.observationId);
+      const postUrl = String(
+        input.postUrl
+          || input.payload?.observation?.postUrl
+          || observation.postUrl
+          || '',
+      ).trim();
+
+      if (!postUrl) {
+        throw new Error(`storage.completeProcessingJob requires postUrl for ${job.id}`);
+      }
+
+      const processedPayload = {
+        id: this.nextId('processedPayload', 'ppd'),
+        jobId: job.id,
+        sourceId: job.sourceId,
+        observationId: job.observationId,
+        stablePostId: job.stablePostId,
+        processorVersion: job.processorVersion,
+        schemaVersion: job.schemaVersion,
+        modelName: job.modelName,
+        postUrl,
+        listingCount: resolveListingCount(input.payload),
+        payload: input.payload,
+        createdAt: now,
+      };
+
+      this.db.prepare(`
+        INSERT INTO processed_payloads (
+          id, job_id, source_id, observation_id, stable_post_id, processor_version, schema_version, model_name,
+          post_url, listing_count, payload_json, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        processedPayload.id,
+        processedPayload.jobId,
+        processedPayload.sourceId,
+        processedPayload.observationId,
+        processedPayload.stablePostId,
+        processedPayload.processorVersion,
+        processedPayload.schemaVersion,
+        processedPayload.modelName,
+        processedPayload.postUrl,
+        processedPayload.listingCount,
+        toJson(processedPayload.payload, {}),
+        processedPayload.createdAt,
+      );
+
+      this.db.prepare(`
+        UPDATE processing_jobs
+        SET status = ?, completed_at = ?, claimed_at = NULL, claimed_by = NULL, lease_expires_at = NULL,
+            last_error = NULL, last_error_at = NULL, updated_at = ?
+        WHERE id = ?
+      `).run('processed', now, now, job.id);
+
+      return this.selectProcessingJobSummaryById(job.id, {
+        includeProcessedPayload: Boolean(input.includeProcessedPayload),
+      });
+    });
+  }
+
+  failProcessingJob(input) {
+    const now = input.failedAt || new Date().toISOString();
+    const jobId = String(input.jobId || '').trim();
+    const errorMessage = summarizeText(input.errorMessage || input.error || '', 400);
+    const retryDelayMs = normalizeNonNegativeInteger(input.retryDelayMs, 0, 24 * 60 * 60 * 1000);
+
+    if (!jobId) {
+      throw new Error('storage.failProcessingJob requires jobId');
+    }
+
+    if (!errorMessage) {
+      throw new Error('storage.failProcessingJob requires errorMessage');
+    }
+
+    return this.withTransaction(() => {
+      const job = this.requireProcessingJob(jobId);
+      if (job.status !== 'processing') {
+        throw new Error(`storage.failProcessingJob requires processing status: ${jobId}`);
+      }
+
+      if (input.claimedBy && job.claimedBy !== input.claimedBy) {
+        throw new Error(`storage.failProcessingJob claimant mismatch for ${jobId}`);
+      }
+
+      const retryable = input.retryable === false
+        ? false
+        : job.attemptCount < job.maxAttempts;
+      const nextStatus = retryable ? 'retryable' : 'failed';
+      const availableAt = retryable ? addMillisecondsToIso(now, retryDelayMs) : job.availableAt;
+
+      this.db.prepare(`
+        UPDATE processing_jobs
+        SET status = ?, available_at = ?, claimed_at = NULL, claimed_by = NULL, lease_expires_at = NULL,
+            last_error = ?, last_error_at = ?, updated_at = ?
+        WHERE id = ?
+      `).run(
+        nextStatus,
+        availableAt,
+        errorMessage,
+        now,
+        now,
+        job.id,
+      );
+
+      return this.selectProcessingJobSummaryById(job.id);
+    });
+  }
+
+  retryProcessingJobs(input = {}) {
+    const now = input.retriedAt || new Date().toISOString();
+    const resetAttempts = input.resetAttempts !== false;
+    const limit = normalizeLimit(input.limit, 50);
+
+    return this.withTransaction(() => {
+      const jobs = this.selectProcessingJobsForRetry({
+        ...input,
+        limit,
+      });
+      const retried = [];
+
+      for (const job of jobs) {
+        this.db.prepare(`
+          UPDATE processing_jobs
+          SET status = ?, attempt_count = ?, available_at = ?, claimed_at = NULL, claimed_by = NULL,
+              lease_expires_at = NULL, completed_at = NULL, last_error = NULL, last_error_at = NULL, updated_at = ?
+          WHERE id = ?
+        `).run(
+          'pending',
+          resetAttempts ? 0 : job.attemptCount,
+          input.availableAt || now,
+          now,
+          job.id,
+        );
+
+        retried.push(this.selectProcessingJobSummaryById(job.id));
+      }
+
+      return retried;
+    });
+  }
+
+  listProcessingJobs(input = {}) {
+    const limit = normalizeLimit(input.limit, 20);
+    const includeObservationPayload = Boolean(input.includeObservationPayload);
+    const includeProcessedPayload = Boolean(input.includeProcessedPayload);
+    const clauses = [];
+    const params = [];
+    const jobIds = normalizeStringList(input.jobIds || input.jobId);
+    const observationIds = normalizeStringList(input.observationIds || input.observationId);
+
+    if (jobIds.length) {
+      clauses.push(`j.id IN (${buildPlaceholders(jobIds.length)})`);
+      params.push(...jobIds);
+    }
+
+    if (observationIds.length) {
+      clauses.push(`j.observation_id IN (${buildPlaceholders(observationIds.length)})`);
+      params.push(...observationIds);
+    }
+
+    if (input.runId) {
+      clauses.push('o.run_id = ?');
+      params.push(input.runId);
+    }
+
+    if (input.sourceId) {
+      clauses.push('j.source_id = ?');
+      params.push(input.sourceId);
+    }
+
+    if (input.sourceKey) {
+      clauses.push('s.source_key = ?');
+      params.push(input.sourceKey);
+    }
+
+    if (input.status) {
+      clauses.push('j.status = ?');
+      params.push(input.status);
+    }
+
+    appendOptionalProvenanceFilters(input, clauses, params, 'j');
+
+    const rows = this.db.prepare(`
+      SELECT
+        j.*,
+        s.platform AS source_platform,
+        s.source_key AS source_key,
+        s.source_type AS source_type,
+        s.display_name AS source_display_name,
+        o.run_id AS observation_run_id,
+        o.freshness AS observation_freshness,
+        o.platform_post_id AS platform_post_id,
+        o.post_url AS post_url,
+        o.author_name AS author_name,
+        o.posted_at_text AS posted_at_text,
+        o.captured_at AS observation_captured_at,
+        o.payload_json AS observation_payload_json,
+        p.id AS processed_payload_id,
+        p.post_url AS processed_post_url,
+        p.listing_count AS processed_listing_count,
+        p.payload_json AS processed_payload_json,
+        p.created_at AS processed_created_at
+      FROM processing_jobs j
+      JOIN post_observations o ON o.id = j.observation_id
+      JOIN sources s ON s.id = j.source_id
+      LEFT JOIN processed_payloads p ON p.job_id = j.id
+      ${buildWhereClause(clauses)}
+      ORDER BY j.created_at DESC, j.id DESC
+      LIMIT ?
+    `).all(...params, limit);
+
+    return rows.map((row) => mapProcessingJobSummary(row, {
+      includeObservationPayload,
+      includeProcessedPayload,
+    }));
   }
 
   listSources(input = {}) {
@@ -970,6 +1401,14 @@ export class SqliteStorage {
     return observation;
   }
 
+  requireProcessingJob(jobId) {
+    const job = this.selectProcessingJobById(jobId);
+    if (!job) {
+      throw new Error(`storage processing job not found: ${jobId}`);
+    }
+    return job;
+  }
+
   configureDatabase() {
     this.db.exec(`
       PRAGMA journal_mode = WAL;
@@ -1166,6 +1605,100 @@ export class SqliteStorage {
     return mapObservation(row);
   }
 
+  selectObservationCandidatesForProcessing(input = {}) {
+    const limit = normalizeLimit(input.limit, 100);
+    const clauses = [];
+    const params = [];
+    const observationIds = normalizeStringList(input.observationIds || input.observationId);
+
+    if (observationIds.length) {
+      clauses.push(`o.id IN (${buildPlaceholders(observationIds.length)})`);
+      params.push(...observationIds);
+    }
+
+    if (input.runId) {
+      clauses.push('o.run_id = ?');
+      params.push(input.runId);
+    }
+
+    if (input.sourceId) {
+      clauses.push('o.source_id = ?');
+      params.push(input.sourceId);
+    }
+
+    if (input.sourceKey) {
+      clauses.push('s.source_key = ?');
+      params.push(input.sourceKey);
+    }
+
+    if (input.freshness) {
+      clauses.push('o.freshness = ?');
+      params.push(input.freshness);
+    }
+
+    const rows = this.db.prepare(`
+      SELECT
+        o.*,
+        s.platform AS source_platform,
+        s.source_type AS source_type,
+        s.display_name AS source_display_name,
+        sp.times_seen AS stable_post_times_seen
+      FROM post_observations o
+      JOIN sources s ON s.id = o.source_id
+      LEFT JOIN stable_posts sp ON sp.id = o.stable_post_id
+      ${buildWhereClause(clauses)}
+      ORDER BY o.captured_at ASC, o.id ASC
+      LIMIT ?
+    `).all(...params, limit);
+
+    return rows.map((row) => mapObservationSummary(row, {
+      includeFullText: true,
+      includeCollections: true,
+      includePayload: true,
+    }));
+  }
+
+  selectProcessingJobById(jobId) {
+    const row = this.db.prepare('SELECT * FROM processing_jobs WHERE id = ?').get(jobId);
+    return mapProcessingJob(row);
+  }
+
+  selectProcessingJobByObservationAndProvenance(observationId, provenance) {
+    const row = this.db.prepare(`
+      SELECT *
+      FROM processing_jobs
+      WHERE observation_id = ? AND processor_version = ? AND schema_version = ? AND model_name = ?
+    `).get(
+      observationId,
+      provenance.processorVersion,
+      provenance.schemaVersion,
+      provenance.modelName,
+    );
+
+    return mapProcessingJob(row);
+  }
+
+  selectProcessingJobSummaryById(jobId, options = {}) {
+    const rows = this.listProcessingJobs({
+      jobId,
+      limit: 1,
+      includeObservationPayload: options.includeObservationPayload,
+      includeProcessedPayload: options.includeProcessedPayload,
+    });
+
+    return rows[0] || null;
+  }
+
+  selectProcessedPayloadByJobId(jobId) {
+    const row = this.db.prepare(`
+      SELECT *
+      FROM processed_payloads
+      WHERE job_id = ?
+    `).get(jobId);
+
+    return mapProcessedPayload(row);
+  }
+
   selectStablePostBySourceAndPlatformPostId(sourceId, platformPostId) {
     const row = this.db.prepare(`
       SELECT *
@@ -1174,6 +1707,83 @@ export class SqliteStorage {
     `).get(sourceId, platformPostId);
 
     return mapStablePost(row);
+  }
+
+  selectProcessingJobsForRetry(input = {}) {
+    const limit = normalizeLimit(input.limit, 50);
+    const clauses = [];
+    const params = [];
+    const jobIds = normalizeStringList(input.jobIds || input.jobId);
+    const statuses = normalizeStringList(input.status || input.statuses);
+
+    if (jobIds.length) {
+      clauses.push(`j.id IN (${buildPlaceholders(jobIds.length)})`);
+      params.push(...jobIds);
+    }
+
+    if (input.sourceId) {
+      clauses.push('j.source_id = ?');
+      params.push(input.sourceId);
+    }
+
+    if (input.sourceKey) {
+      clauses.push('s.source_key = ?');
+      params.push(input.sourceKey);
+    }
+
+    if (input.runId) {
+      clauses.push('o.run_id = ?');
+      params.push(input.runId);
+    }
+
+    if (statuses.length) {
+      clauses.push(`j.status IN (${buildPlaceholders(statuses.length)})`);
+      params.push(...statuses);
+    } else {
+      clauses.push(`j.status IN (${buildPlaceholders(2)})`);
+      params.push('failed', 'retryable');
+    }
+
+    appendOptionalProvenanceFilters(input, clauses, params, 'j');
+
+    const rows = this.db.prepare(`
+      SELECT j.*
+      FROM processing_jobs j
+      JOIN sources s ON s.id = j.source_id
+      JOIN post_observations o ON o.id = j.observation_id
+      ${buildWhereClause(clauses)}
+      ORDER BY j.updated_at ASC, j.id ASC
+      LIMIT ?
+    `).all(...params, limit);
+
+    return rows.map(mapProcessingJob);
+  }
+
+  sweepExpiredProcessingClaims(now) {
+    this.db.prepare(`
+      UPDATE processing_jobs
+      SET status = CASE
+            WHEN attempt_count < max_attempts THEN 'retryable'
+            ELSE 'failed'
+          END,
+          available_at = CASE
+            WHEN attempt_count < max_attempts THEN ?
+            ELSE available_at
+          END,
+          claimed_at = NULL,
+          claimed_by = NULL,
+          lease_expires_at = NULL,
+          last_error = ?,
+          last_error_at = ?,
+          updated_at = ?
+      WHERE status = 'processing' AND lease_expires_at IS NOT NULL AND lease_expires_at <= ?
+    `).run(
+      now,
+      'processing lease expired before completion',
+      now,
+      now,
+      now,
+    );
   }
 
   withTransaction(work) {
@@ -1401,6 +2011,85 @@ function mapStablePost(row) {
   };
 }
 
+function mapProcessingJob(row) {
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    sourceId: row.source_id,
+    observationId: row.observation_id,
+    stablePostId: row.stable_post_id,
+    status: row.status,
+    processorVersion: row.processor_version,
+    schemaVersion: row.schema_version,
+    modelName: row.model_name,
+    dedupeKey: row.dedupe_key,
+    attemptCount: row.attempt_count,
+    maxAttempts: row.max_attempts,
+    availableAt: row.available_at,
+    claimedAt: row.claimed_at,
+    claimedBy: row.claimed_by,
+    leaseExpiresAt: row.lease_expires_at,
+    completedAt: row.completed_at,
+    lastError: row.last_error,
+    lastErrorAt: row.last_error_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapProcessedPayload(row) {
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    jobId: row.job_id,
+    sourceId: row.source_id,
+    observationId: row.observation_id,
+    stablePostId: row.stable_post_id,
+    processorVersion: row.processor_version,
+    schemaVersion: row.schema_version,
+    modelName: row.model_name,
+    postUrl: row.post_url,
+    listingCount: row.listing_count,
+    payload: parseJson(row.payload_json, {}),
+    createdAt: row.created_at,
+  };
+}
+
+function mapProcessingJobSummary(row, options = {}) {
+  if (!row) return null;
+
+  const job = mapProcessingJob(row);
+  const summary = {
+    ...job,
+    sourcePlatform: row.source_platform,
+    sourceKey: row.source_key,
+    sourceType: row.source_type,
+    sourceDisplayName: row.source_display_name,
+    observationRunId: row.observation_run_id,
+    observationFreshness: row.observation_freshness,
+    platformPostId: row.platform_post_id,
+    postUrl: row.post_url,
+    authorName: row.author_name,
+    postedAtText: row.posted_at_text,
+    capturedAt: row.observation_captured_at,
+    processedPayloadId: row.processed_payload_id || null,
+    processedListingCount: row.processed_listing_count ?? null,
+    processedAt: row.processed_created_at || null,
+  };
+
+  if (options.includeObservationPayload) {
+    summary.observationPayload = parseJson(row.observation_payload_json, {});
+  }
+
+  if (options.includeProcessedPayload && row.processed_payload_json) {
+    summary.processedPayload = parseJson(row.processed_payload_json, {});
+  }
+
+  return summary;
+}
+
 function mapListingSummary(row, options = {}) {
   if (!row) return null;
 
@@ -1460,8 +2149,23 @@ function mapArtifactRefSummary(row) {
   };
 }
 
+function summarizeEnqueueResults(results) {
+  return results.reduce((summary, result) => {
+    summary[result.action] = (summary[result.action] || 0) + 1;
+    return summary;
+  }, {
+    created: 0,
+    existing: 0,
+    skipped_missing_post_url: 0,
+  });
+}
+
 function buildWhereClause(clauses) {
   return clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+}
+
+function buildPlaceholders(count) {
+  return new Array(count).fill('?').join(', ');
 }
 
 function normalizeLimit(value, fallback) {
@@ -1471,6 +2175,33 @@ function normalizeLimit(value, fallback) {
   }
 
   return Math.min(parsed, 500);
+}
+
+function normalizePositiveInteger(value, fallback, max = Number.MAX_SAFE_INTEGER) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return Math.min(parsed, max);
+}
+
+function normalizeNonNegativeInteger(value, fallback, max = Number.MAX_SAFE_INTEGER) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    return fallback;
+  }
+
+  return Math.min(parsed, max);
+}
+
+function normalizeStringList(value) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => String(entry || '').trim()).filter(Boolean);
+  }
+
+  const single = String(value || '').trim();
+  return single ? [single] : [];
 }
 
 function summarizeText(value, maxLength = 160) {
@@ -1501,6 +2232,15 @@ function computeDurationSeconds(startedAt, finishedAt) {
   return Math.max(0, Math.round((finished - started) / 1000));
 }
 
+function addMillisecondsToIso(input, milliseconds) {
+  const base = Date.parse(input);
+  if (Number.isNaN(base)) {
+    return new Date(Date.now() + milliseconds).toISOString();
+  }
+
+  return new Date(base + milliseconds).toISOString();
+}
+
 function compareExpectedCount(expected, actual) {
   if (expected === null || expected === undefined) {
     return null;
@@ -1513,6 +2253,46 @@ function appendMismatchIssue(issues, match, message) {
   if (match === false) {
     issues.push(message);
   }
+}
+
+function appendOptionalProvenanceFilters(input, clauses, params, tableAlias) {
+  if (input.processorVersion) {
+    clauses.push(`${tableAlias}.processor_version = ?`);
+    params.push(input.processorVersion);
+  }
+
+  if (input.schemaVersion) {
+    clauses.push(`${tableAlias}.schema_version = ?`);
+    params.push(input.schemaVersion);
+  }
+
+  if (input.modelName) {
+    clauses.push(`${tableAlias}.model_name = ?`);
+    params.push(input.modelName);
+  }
+}
+
+function normalizeRequiredProcessingProvenance(input) {
+  const provenance = resolveProcessingProvenance(input);
+
+  if (!provenance.processorVersion || !provenance.schemaVersion || !provenance.modelName) {
+    throw new Error('processing provenance requires processorVersion, schemaVersion, and modelName');
+  }
+
+  return provenance;
+}
+
+function resolveListingCount(payload) {
+  const explicit = payload?.extracted?.listingCount;
+  if (Number.isInteger(explicit) && explicit >= 0) {
+    return explicit;
+  }
+
+  if (Array.isArray(payload?.extracted?.listings)) {
+    return payload.extracted.listings.length;
+  }
+
+  return 0;
 }
 
 function toJson(value, fallback = null) {

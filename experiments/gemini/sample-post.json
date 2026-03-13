@@ -1,0 +1,31 @@
+{
+  "id": "obs_sample_001",
+  "runId": "run_sample_001",
+  "sourceId": "src_sample_001",
+  "stablePostId": "stp_sample_001",
+  "platformPostId": "123456789012345",
+  "sourceKey": "nyc-housing-group",
+  "groupName": "NYC Housing Group",
+  "postUrl": "https://www.facebook.com/groups/nyc-housing-group/posts/123456789012345/",
+  "authorName": "Sample Poster",
+  "postedAtText": "2h",
+  "capturedAt": "2026-03-13T14:30:00.000Z",
+  "freshness": "fresh",
+  "payload": {
+    "bodyText": "Sunny Bushwick room available April 1 for $1,350/month in a 3 bed 1 bath apartment. Laundry in building, cats okay, no broker fee. DM me if interested.",
+    "comments": [
+      {
+        "authorName": "Sample Poster",
+        "bodyText": "Utilities are split and the current roommates are two women in their late 20s."
+      }
+    ],
+    "media": [],
+    "captureMethod": "dom",
+    "captureRunId": "run_sample_001",
+    "rawArtifactPath": "data/raw/facebook/nyc-housing-group/run_sample_001/sample-post.json",
+    "derivedLocation": {
+      "neighborhood": "Bushwick",
+      "borough": "Brooklyn"
+    }
+  }
+}

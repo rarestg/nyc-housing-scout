@@ -1,0 +1,368 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { GoogleGenAI } from '@google/genai';
+
+export const DEFAULT_GEMINI_MODEL_NAME = 'gemini-3-flash-preview';
+export const DEFAULT_GEMINI_PROCESSOR_VERSION = 'gemini-structured-v1';
+export const DEFAULT_GEMINI_SCHEMA_VERSION = 'gemini-structured-output-v1';
+export const DEFAULT_GEMINI_KEY_CHECK_MODEL_NAME = 'gemini-3.1-flash-lite-preview';
+export const DEFAULT_GEMINI_KEY_CHECK_THINKING_LEVEL = 'minimal';
+export const GEMINI_API_KEY_ENV_VARS = Object.freeze([
+  'GEMINI_API_KEY',
+  'GOOGLE_API_KEY',
+]);
+export const DEFAULT_GEMINI_ENV_FILE_CANDIDATES = Object.freeze([
+  'data/cache/gemini/gemini.env',
+  'data/gemini/gemini.env',
+]);
+
+export function parseEnvFile(source) {
+  const parsed = {};
+  const lines = String(source || '').split(/\r?\n/u);
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) {
+      continue;
+    }
+
+    const normalized = trimmed.startsWith('export ')
+      ? trimmed.slice('export '.length).trim()
+      : trimmed;
+    const separatorIndex = normalized.indexOf('=');
+
+    if (separatorIndex === -1) {
+      continue;
+    }
+
+    const key = normalized.slice(0, separatorIndex).trim();
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/u.test(key)) {
+      continue;
+    }
+
+    let value = normalized.slice(separatorIndex + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"'))
+      || (value.startsWith('\'') && value.endsWith('\''))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    parsed[key] = value;
+  }
+
+  return parsed;
+}
+
+export function loadEnvFile(filePath, targetEnv = process.env) {
+  const resolvedPath = path.resolve(process.cwd(), filePath);
+  const parsed = parseEnvFile(fs.readFileSync(resolvedPath, 'utf8'));
+
+  for (const [key, value] of Object.entries(parsed)) {
+    if (targetEnv[key] === undefined) {
+      targetEnv[key] = value;
+    }
+  }
+
+  return {
+    path: resolvedPath,
+    loadedKeys: Object.keys(parsed),
+  };
+}
+
+export function findGeminiEnvFile(
+  candidates = DEFAULT_GEMINI_ENV_FILE_CANDIDATES,
+  cwd = process.cwd(),
+) {
+  for (const candidate of candidates) {
+    const resolvedPath = path.resolve(cwd, candidate);
+    if (fs.existsSync(resolvedPath)) {
+      return resolvedPath;
+    }
+  }
+
+  return null;
+}
+
+export function resolveGeminiApiKey(env = process.env) {
+  for (const key of GEMINI_API_KEY_ENV_VARS) {
+    const value = String(env[key] || '').trim();
+    if (value) {
+      return {
+        envVar: key,
+        apiKey: value,
+      };
+    }
+  }
+
+  return {
+    envVar: null,
+    apiKey: '',
+  };
+}
+
+export async function runGeminiApiKeyCheck(options) {
+  const apiKey = normalizeString(options.apiKey);
+  const modelName = normalizeString(
+    options.modelName || DEFAULT_GEMINI_KEY_CHECK_MODEL_NAME,
+  );
+  const thinkingLevel = normalizeString(
+    options.thinkingLevel || DEFAULT_GEMINI_KEY_CHECK_THINKING_LEVEL,
+  );
+
+  if (!apiKey) {
+    throw new Error('Gemini API key check requires an API key');
+  }
+
+  if (!modelName) {
+    throw new Error('Gemini API key check requires modelName');
+  }
+
+  if (!thinkingLevel) {
+    throw new Error('Gemini API key check requires thinkingLevel');
+  }
+
+  const client = options.client || new GoogleGenAI({ apiKey });
+  const response = await client.models.generateContent({
+    model: modelName,
+    contents: 'Say hi in one short sentence.',
+    config: {
+      temperature: 0,
+      thinkingConfig: {
+        thinkingLevel,
+      },
+    },
+  });
+
+  return {
+    ok: true,
+    modelName,
+    thinkingLevel,
+    text: normalizeNullableString(response.text),
+    responseId: normalizeNullableString(response.responseId),
+    modelVersion: normalizeNullableString(response.modelVersion),
+    finishReason: normalizeNullableString(response.candidates?.[0]?.finishReason),
+    usageMetadata: response.usageMetadata || null,
+  };
+}
+
+export function normalizeGeminiInput(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    throw new Error('Gemini structured extraction requires a JSON object input');
+  }
+
+  const payload = isPlainObject(input.payload) ? input.payload : {};
+  const comments = normalizeArray(payload.comments ?? input.comments);
+  const media = normalizeArray(payload.media ?? input.media);
+  const captureHints = isPlainObject(payload.captureHints)
+    ? payload.captureHints
+    : isPlainObject(input.captureHints)
+      ? input.captureHints
+      : {};
+  const derivedLocation = isPlainObject(payload.derivedLocation)
+    ? payload.derivedLocation
+    : isPlainObject(input.derivedLocation)
+      ? input.derivedLocation
+      : null;
+
+  const post = {
+    sourceKey: normalizeNullableString(payload.sourceKey ?? input.sourceKey),
+    groupName: normalizeNullableString(payload.groupName ?? input.groupName),
+    postId: normalizeNullableString(payload.postId ?? input.postId ?? input.platformPostId),
+    postUrl: normalizeNullableString(payload.postUrl ?? input.postUrl),
+    authorName: normalizeNullableString(payload.authorName ?? input.authorName),
+    postedAtText: normalizeNullableString(payload.postedAtText ?? input.postedAtText),
+    bodyText: normalizeString(payload.bodyText ?? input.bodyText),
+    comments,
+    media,
+    captureMethod: normalizeNullableString(payload.captureMethod ?? input.captureMethod),
+    captureRunId: normalizeNullableString(payload.captureRunId ?? input.captureRunId ?? input.runId),
+    capturedAt: normalizeNullableString(payload.capturedAt ?? input.capturedAt),
+    rawArtifactPath: normalizeNullableString(payload.rawArtifactPath ?? input.rawArtifactPath),
+    captureHints,
+    derivedLocation,
+  };
+
+  if (!post.postUrl) {
+    throw new Error('Gemini structured extraction requires postUrl in the input');
+  }
+
+  return {
+    observation: {
+      id: normalizeNullableString(input.id),
+      runId: normalizeNullableString(input.runId ?? input.captureRunId ?? post.captureRunId),
+      sourceId: normalizeNullableString(input.sourceId),
+      stablePostId: normalizeNullableString(input.stablePostId),
+      platformPostId: normalizeNullableString(input.platformPostId ?? post.postId),
+      sourceKey: post.sourceKey,
+      groupName: post.groupName,
+      authorName: post.authorName,
+      postedAtText: post.postedAtText,
+      capturedAt: post.capturedAt,
+      freshness: normalizeNullableString(input.freshness),
+      postUrl: post.postUrl,
+    },
+    post,
+  };
+}
+
+export function buildGeminiStructuredPrompt(normalizedInput) {
+  const promptInput = {
+    observation: normalizedInput.observation,
+    post: normalizedInput.post,
+  };
+
+  return [
+    'You extract structured housing data from Facebook posts for a local-first processing pipeline.',
+    'Return only JSON that matches the provided response schema.',
+    'Use only evidence from the input post.',
+    'If a field is unknown, return null, an empty array, or another schema-valid unknown value instead of guessing.',
+    'If the schema includes source or provenance fields, copy postUrl exactly from the input.',
+    'If the post contains multiple housing offerings, return all of them.',
+    '',
+    'Input post JSON:',
+    JSON.stringify(promptInput, null, 2),
+  ].join('\n');
+}
+
+export async function runGeminiStructuredExtraction(options) {
+  const modelName = normalizeString(options.modelName || DEFAULT_GEMINI_MODEL_NAME);
+  const processorVersion = normalizeString(
+    options.processorVersion || DEFAULT_GEMINI_PROCESSOR_VERSION,
+  );
+  const schemaVersion = normalizeString(
+    options.schemaVersion || DEFAULT_GEMINI_SCHEMA_VERSION,
+  );
+  const processedAt = normalizeString(options.processedAt || new Date().toISOString());
+  const temperature = normalizeTemperature(options.temperature);
+  const responseMimeType = 'application/json';
+
+  if (!modelName) {
+    throw new Error('Gemini structured extraction requires modelName');
+  }
+
+  if (!processorVersion) {
+    throw new Error('Gemini structured extraction requires processorVersion');
+  }
+
+  if (!schemaVersion) {
+    throw new Error('Gemini structured extraction requires schemaVersion');
+  }
+
+  if (!options.outputSchema || !isPlainObject(options.outputSchema)) {
+    throw new Error('Gemini structured extraction requires a JSON schema object');
+  }
+
+  const normalizedInput = normalizeGeminiInput(options.inputPost);
+  const prompt = buildGeminiStructuredPrompt(normalizedInput);
+  const apiKey = normalizeString(options.apiKey);
+
+  if (!apiKey) {
+    throw new Error('Gemini structured extraction requires an API key');
+  }
+
+  const client = options.client || new GoogleGenAI({ apiKey });
+  const response = await client.models.generateContent({
+    model: modelName,
+    contents: prompt,
+    config: {
+      responseMimeType,
+      responseJsonSchema: options.outputSchema,
+      temperature,
+    },
+  });
+  const rawResponseText = normalizeString(response.text);
+
+  if (!rawResponseText) {
+    throw new Error('Gemini returned an empty structured response');
+  }
+
+  let structuredData;
+  try {
+    structuredData = JSON.parse(rawResponseText);
+  } catch (error) {
+    throw new Error(
+      `Gemini returned non-JSON structured output: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+
+  return {
+    processorVersion,
+    schemaVersion,
+    modelName,
+    processedAt,
+    observation: normalizedInput.observation,
+    inputPost: normalizedInput.post,
+    extracted: {
+      listingCount: detectListingCount(structuredData),
+      structuredData,
+    },
+    gemini: {
+      responseMimeType,
+      temperature,
+      inputSource: options.inputSource || null,
+      schemaSource: options.schemaSource || null,
+      schema: options.outputSchema,
+      prompt,
+      rawResponseText,
+      responseId: normalizeNullableString(response.responseId),
+      modelVersion: normalizeNullableString(response.modelVersion),
+      finishReason: normalizeNullableString(response.candidates?.[0]?.finishReason),
+      usageMetadata: response.usageMetadata || null,
+    },
+  };
+}
+
+function detectListingCount(value) {
+  if (Array.isArray(value)) {
+    return value.length;
+  }
+
+  if (!value || typeof value !== 'object') {
+    return 0;
+  }
+
+  if (Array.isArray(value.listings)) {
+    return value.listings.length;
+  }
+
+  if (Array.isArray(value.extracted?.listings)) {
+    return value.extracted.listings.length;
+  }
+
+  if (Number.isInteger(value.listingCount) && value.listingCount >= 0) {
+    return value.listingCount;
+  }
+
+  return 0;
+}
+
+function normalizeTemperature(value) {
+  if (value === undefined || value === null || value === '') {
+    return 0;
+  }
+
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    throw new Error(`Gemini structured extraction requires a numeric temperature, received: ${value}`);
+  }
+
+  return numericValue;
+}
+
+function normalizeArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function normalizeString(value) {
+  return String(value || '').trim();
+}
+
+function normalizeNullableString(value) {
+  const normalized = normalizeString(value);
+  return normalized || null;
+}
+
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}

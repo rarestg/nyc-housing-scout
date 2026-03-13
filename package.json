@@ -7,14 +7,22 @@
     "test": "node --test",
     "extract:text": "node src/cli/extract-text.js",
     "extract:html": "node src/cli/extract-html.js",
+    "gemini:extract": "node src/cli/gemini-structured-extract.js",
     "capture:feed": "node src/cli/capture-feed.js",
     "expand:posts": "node src/cli/expand-posts.js",
     "crawl:latest": "node src/cli/crawl-latest.js",
     "capture:dom": "node src/cli/capture-dom-feed.js",
     "crawl:dom": "node src/cli/crawl-dom-latest.js",
-    "inspect:storage": "node src/cli/inspect-storage.js"
+    "inspect:storage": "node src/cli/inspect-storage.js",
+    "enqueue:processing": "node src/cli/enqueue-processing.js",
+    "inspect:jobs": "node src/cli/inspect-jobs.js",
+    "process:jobs": "node src/cli/process-jobs.js",
+    "retry:jobs": "node src/cli/retry-jobs.js"
   },
   "devDependencies": {
     "jsdom": "^26.1.0"
+  },
+  "dependencies": {
+    "@google/genai": "^1.45.0"
   }
 }

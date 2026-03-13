@@ -14,3 +14,4 @@ Dated implementation logs. Each records what changed, what improved, and what's 
 | [STORAGE_INTERFACE_PASS_2026-03-12](STORAGE_INTERFACE_PASS_2026-03-12.md) | Storage | Thin storage interface with domain-shaped operations, JSON placeholder |
 | [SQLITE_STORAGE_PASS_2026-03-12](SQLITE_STORAGE_PASS_2026-03-12.md) | Storage | SQLite behind the storage interface — migrations, source-scoped identity |
 | [OBSERVABILITY_PASS_2026-03-12](OBSERVABILITY_PASS_2026-03-12.md) | Tooling | `inspect:storage` CLI, read helpers for sources/runs/observations/listings |
+| [PROCESSING_PIPELINE_PASS_2026-03-13](PROCESSING_PIPELINE_PASS_2026-03-13.md) | Processing queue | Observation-centric jobs, atomic claims, versioned processed payloads, queue CLIs |

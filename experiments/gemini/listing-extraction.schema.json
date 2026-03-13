@@ -1,0 +1,160 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "postUrl": {
+          "type": "string",
+          "description": "Copy the input postUrl exactly."
+        },
+        "sourceKey": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "groupName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "authorName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "postedAtText": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "capturedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "postUrl",
+        "sourceKey",
+        "groupName",
+        "authorName",
+        "postedAtText",
+        "capturedAt"
+      ]
+    },
+    "listings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "summary": {
+            "type": "string"
+          },
+          "listingType": {
+            "type": "string",
+            "enum": [
+              "entire_apartment",
+              "room_in_shared",
+              "multiple_rooms_in_shared",
+              "sublet",
+              "lease_takeover",
+              "roommate_search",
+              "short_term",
+              "unknown"
+            ]
+          },
+          "locationText": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "neighborhood": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "borough": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "price": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "pricePeriod": {
+            "type": "string",
+            "enum": [
+              "month",
+              "week",
+              "night",
+              "unknown"
+            ]
+          },
+          "availableFrom": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contactMethod": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "amenities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ambiguities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "summary",
+          "listingType",
+          "locationText",
+          "neighborhood",
+          "borough",
+          "price",
+          "pricePeriod",
+          "availableFrom",
+          "contactMethod",
+          "amenities",
+          "ambiguities"
+        ]
+      }
+    },
+    "overallAmbiguities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "source",
+    "listings",
+    "overallAmbiguities"
+  ]
+}

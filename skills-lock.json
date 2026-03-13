@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "skills": {
+    "agents-md": {
+      "source": "rarestg/rarestg-skills",
+      "sourceType": "github",
+      "computedHash": "9357c7c520c98c130edb0dc727655e0a51a3e6d92d05c6f9ba32efe373ddbdcd"
+    },
+    "code-quality": {
+      "source": "rarestg/rarestg-skills",
+      "sourceType": "github",
+      "computedHash": "5b176c44c8cc18581fe77223bd0443df0ba587bfdbf827d34d4cfd22c7788ab4"
+    },
+    "gemini-api-dev": {
+      "source": "google-gemini/gemini-skills",
+      "sourceType": "github",
+      "computedHash": "a1bc395530ba9116a4509e27321eaf7cc81c5f93aa80a4778ad6f915180b4f2c"
+    }
+  }
+}

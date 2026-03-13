@@ -20,5 +20,5 @@ Detailed logs from past implementation work, organized by type. Each folder has 
 | Folder | Contents | When to read |
 |--------|----------|-------------|
 | [reviews/](reviews/) | Architectural assessments (3 docs) | Understanding past design decisions and trade-offs |
-| [passes/](passes/) | Implementation work logs (10 docs) | Debugging a regression or understanding why something was built a certain way |
+| [passes/](passes/) | Implementation work logs (11 docs) | Debugging a regression or understanding why something was built a certain way |
 | [notes/](notes/) | Field notes, strategy ideas, superseded docs (6 docs) | Deep context on specific investigations or early project direction |

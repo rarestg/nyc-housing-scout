@@ -210,7 +210,7 @@ test('sqlite storage tracks sources, run state, observations, listings, and arti
   assert.equal(counts.observations, 3);
   assert.equal(counts.listings, listings.length);
   assert.equal(counts.artifactRefs, 5);
-  assert.equal(counts.migrations, 1);
+  assert.equal(counts.migrations, 2);
   assert.equal(runRow.collected_export_path, 'data/collected/facebook/nyc-housing-group/crawl-2026-03-12T22-00-00-000Z.json');
   assert.equal(runRow.listings_export_path, 'data/listings/facebook/nyc-housing-group/crawl-2026-03-12T22-00-00-000Z.json');
   assert.equal(stablePostRow.times_seen, 2);

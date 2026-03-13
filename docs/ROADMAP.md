@@ -15,6 +15,7 @@ We are transitioning from exploratory scraping into a modular ingestion + proces
 - Storage inspection / validation CLI
 - Collector metadata hardening passes
 - Listing extraction quality passes
+- Processing pipeline skeleton
 - Strategy reviews for crawl policy and scale architecture
 
 ## In Progress / Next
@@ -28,11 +29,11 @@ We are transitioning from exploratory scraping into a modular ingestion + proces
 - [ ] traversal metrics (`firstFreshPosition`, seen ratio, observed-per-fresh)
 
 ### 2. Processing pipeline skeleton
-- [ ] processing jobs table/model
-- [ ] atomic claim semantics
-- [ ] processing status lifecycle
-- [ ] CLI for enqueue / claim / process / inspect jobs
-- [ ] replay / reprocess hooks
+- [x] processing jobs table/model
+- [x] atomic claim semantics
+- [x] processing status lifecycle
+- [x] CLI for enqueue / process / inspect / retry jobs
+- [x] replay / reprocess hooks
 
 ### 3. Structured LLM extraction
 - [ ] define extraction schema

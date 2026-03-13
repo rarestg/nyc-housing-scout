@@ -44,6 +44,7 @@ Right now the project has:
 - DOM-based collection from an attached Chrome tab
 - SQLite-backed storage
 - source/run/observation/listing persistence
+- observation-centric processing queue skeleton
 - storage inspection/validation CLI
 - improved collector metadata extraction
 - improved listing extraction heuristics
@@ -57,6 +58,7 @@ Current bottleneck:
 - `src/cli/` — stage-oriented command entrypoints
 - `src/core/` — shared pipeline logic, normalization, neighborhoods, etc.
 - `src/extractors/` — heuristic housing extraction
+- `src/processing/` — processing provenance defaults and queue worker logic
 - `src/storage/` — storage interface + SQLite implementation
 - `docs/` — architecture, passes, roadmap, and notes
 - `examples/` — fixtures and exploratory scripts
@@ -101,6 +103,12 @@ See `docs/INDEX.md` for a full map.
 - `npm run inspect:storage -- listings --run-id <runId> --limit 10`
 - `npm run inspect:storage -- artifacts --run-id <runId>`
 
+### Processing queue
+- `npm run enqueue:processing -- --run-id <runId>`
+- `npm run inspect:jobs -- --status pending --limit 20`
+- `npm run process:jobs -- --limit 10`
+- `npm run retry:jobs -- --status failed`
+
 ### Collection
 - `npm run capture:dom -- --limit 5`
 - `npm run crawl:dom -- --target 20 --max-scrolls 10`
@@ -110,8 +118,8 @@ See `docs/INDEX.md` for a full map.
 The next major build steps are:
 
 1. harden crawl strategy (incremental vs backfill, top-of-feed reset, overlap anchors)
-2. add a processing job pipeline
-3. add structured LLM extraction as a core stage
+2. add structured LLM extraction as a core stage on top of the new queue
+3. map processed payloads into normalized listing records
 4. shape query surfaces for the frontend
 
 ## Notes
