@@ -9,3 +9,4 @@ data/storage/
 data/cache/
 .DS_Store
 .agents/
+.openclaw/
