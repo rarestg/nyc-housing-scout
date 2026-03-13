@@ -42,6 +42,8 @@ We are transitioning from exploratory scraping into a modular ingestion + proces
 - [x] persist raw processed payloads with provenance
 - [x] map processed payloads into normalized listing records
 - [x] dry-run extraction CLI for N posts/jobs
+- [x] timeout/retry hardening for live Gemini queue processing
+- [ ] review real processed payloads and tune prompt/schema/normalization from observed failures
 
 ### 4. Frontend-oriented query surface
 - [ ] listing query helpers / views

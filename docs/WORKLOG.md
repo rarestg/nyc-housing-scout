@@ -16,3 +16,6 @@ Short running notes for important decisions and progress. Keep terse.
 
 - Added an observation-scoped queue validator that exercises enqueue, process, and processed-payload inspection on real stored crawl data.
 - Made missing `postUrl` explicit as a queue coverage metric rather than an implicit enqueue side effect only.
+- Landed Gemini operational hardening: abortable timeouts, lease-aware sequential processing, and inline timeout/retry/token/latency metrics.
+- Fixed the same-batch re-claim bug so one timed-out job cannot burn multiple attempts within a single `process:jobs` invocation when `retryDelayMs=0`.
+- Added a PM/operator handoff guide so a replacement project lead can bootstrap from the repo instead of tribal context.
