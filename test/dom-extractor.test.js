@@ -99,6 +99,66 @@ test('DOM extractor decodes encoded feedback ids from avatar edit links when no 
   assert.equal(post.postedAtText, '3 days ago');
 });
 
+test('DOM extractor preserves broader href evidence and trimmed card context for missing-postUrl cards', () => {
+  const [post] = runDomHtml(`
+    <article role="article">
+      <div>
+        <div data-ad-rendering-role="profile_name">Grace Ahn</div>
+        <a
+          href="/groups/williamsburggreenpointhousing/?__tn__=%2CO%2CP-R#?bjb"
+          aria-labelledby="time-label"
+        >
+          hidden time
+        </a>
+        <span id="time-label">3 days ago</span>
+      </div>
+      <div data-ad-rendering-role="story_message">
+        ISO new lease or lease takeover for entire apartment.
+      </div>
+    </article>
+  `, 'https://www.facebook.com/groups/williamsburggreenpointhousing/');
+
+  assert.equal(post.postUrl, null);
+  assert.equal(post.postId, null);
+  assert.equal(post.postedAtText, '3 days ago');
+  assert.ok(post.debugMetadata.missingPostUrlContext);
+  assert.equal(post.debugMetadata.missingPostUrlContext.selectedCard.scope, 'selected-card');
+  assert.ok(post.debugMetadata.missingPostUrlContext.selectedCard.html.includes('story_message'));
+  assert.ok(post.debugMetadata.missingPostUrlContext.cardAnchorEvidence.some((entry) =>
+    entry.href.includes('/groups/williamsburggreenpointhousing/')
+    && entry.timeHint === '3 days ago'
+    && entry.normalizedPostUrl === null
+  ));
+});
+
+test('DOM extractor captures ancestor href evidence when the chosen card misses an outer permalink', () => {
+  const noiseAnchors = Array.from({ length: 45 }, (_, index) => (
+    `<a href="/groups/williamsburggreenpointhousing/about/?noise=${index}">noise ${index}</a>`
+  )).join('');
+  const [post] = runDomHtml(`
+    <div class="outer-shell">
+      <div class="outer-header">
+        <a href="/groups/williamsburggreenpointhousing/posts/24412345678901234/">Yesterday</a>
+        ${noiseAnchors}
+      </div>
+      <article role="article">
+        <div data-ad-rendering-role="profile_name">Boundary Miss</div>
+        <div data-ad-rendering-role="story_message">
+          Looking for a 2 bedroom sublet in Greenpoint.
+        </div>
+      </article>
+    </div>
+  `, 'https://www.facebook.com/groups/williamsburggreenpointhousing/');
+
+  assert.equal(post.postUrl, null);
+  assert.ok(post.debugMetadata.missingPostUrlContext);
+  assert.ok(post.debugMetadata.missingPostUrlContext.ancestorAnchorEvidence.some((entry) =>
+    entry.scope === 'ancestor-1'
+    && entry.normalizedPostUrl === 'https://www.facebook.com/groups/williamsburggreenpointhousing/posts/24412345678901234/'
+    && entry.timeHint === 'Yesterday'
+  ));
+});
+
 
 test('DOM extractor rejects listing copy as author text when a real author is present elsewhere in the card', () => {
   const [post] = runDomHtml(`

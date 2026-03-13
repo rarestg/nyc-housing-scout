@@ -1,20 +1,27 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { GoogleGenAI } from '@google/genai';
+import {
+  DEFAULT_GEMINI_ENV_FILE_CANDIDATES,
+  DEFAULT_GEMINI_KEY_CHECK_MODEL_NAME,
+  DEFAULT_GEMINI_KEY_CHECK_THINKING_LEVEL,
+  DEFAULT_GEMINI_MODEL_NAME,
+  DEFAULT_GEMINI_PROCESSOR_VERSION,
+  DEFAULT_GEMINI_SCHEMA_VERSION,
+  DEFAULT_GEMINI_THINKING_LEVEL,
+  GEMINI_API_KEY_ENV_VARS,
+} from './config.js';
 
-export const DEFAULT_GEMINI_MODEL_NAME = 'gemini-3-flash-preview';
-export const DEFAULT_GEMINI_PROCESSOR_VERSION = 'gemini-structured-v1';
-export const DEFAULT_GEMINI_SCHEMA_VERSION = 'gemini-structured-output-v1';
-export const DEFAULT_GEMINI_KEY_CHECK_MODEL_NAME = 'gemini-3.1-flash-lite-preview';
-export const DEFAULT_GEMINI_KEY_CHECK_THINKING_LEVEL = 'minimal';
-export const GEMINI_API_KEY_ENV_VARS = Object.freeze([
-  'GEMINI_API_KEY',
-  'GOOGLE_API_KEY',
-]);
-export const DEFAULT_GEMINI_ENV_FILE_CANDIDATES = Object.freeze([
-  'data/cache/gemini/gemini.env',
-  'data/gemini/gemini.env',
-]);
+export {
+  DEFAULT_GEMINI_ENV_FILE_CANDIDATES,
+  DEFAULT_GEMINI_KEY_CHECK_MODEL_NAME,
+  DEFAULT_GEMINI_KEY_CHECK_THINKING_LEVEL,
+  DEFAULT_GEMINI_MODEL_NAME,
+  DEFAULT_GEMINI_PROCESSOR_VERSION,
+  DEFAULT_GEMINI_SCHEMA_VERSION,
+  DEFAULT_GEMINI_THINKING_LEVEL,
+  GEMINI_API_KEY_ENV_VARS,
+};
 
 export function parseEnvFile(source) {
   const parsed = {};
@@ -235,6 +242,9 @@ export async function runGeminiStructuredExtraction(options) {
   );
   const processedAt = normalizeString(options.processedAt || new Date().toISOString());
   const temperature = normalizeTemperature(options.temperature);
+  const thinkingLevel = normalizeThinkingLevel(
+    options.thinkingLevel || DEFAULT_GEMINI_THINKING_LEVEL,
+  );
   const responseMimeType = 'application/json';
 
   if (!modelName) {
@@ -269,6 +279,10 @@ export async function runGeminiStructuredExtraction(options) {
       responseMimeType,
       responseJsonSchema: options.outputSchema,
       temperature,
+      // Gemini 3 should use thinkingLevel explicitly so extraction never falls back to dynamic thinking.
+      thinkingConfig: {
+        thinkingLevel,
+      },
     },
   });
   const rawResponseText = normalizeString(response.text);
@@ -286,6 +300,17 @@ export async function runGeminiStructuredExtraction(options) {
     );
   }
 
+  const normalizedOutput = typeof options.normalizeStructuredData === 'function'
+    ? options.normalizeStructuredData(structuredData, normalizedInput)
+    : {
+        structuredData,
+        listingCount: detectListingCount(structuredData),
+        listings: undefined,
+      };
+  const listingCount = Number.isInteger(normalizedOutput?.listingCount)
+    ? normalizedOutput.listingCount
+    : detectListingCount(normalizedOutput?.structuredData ?? structuredData);
+
   return {
     processorVersion,
     schemaVersion,
@@ -294,12 +319,20 @@ export async function runGeminiStructuredExtraction(options) {
     observation: normalizedInput.observation,
     inputPost: normalizedInput.post,
     extracted: {
-      listingCount: detectListingCount(structuredData),
-      structuredData,
+      listingCount,
+      structuredData: normalizedOutput?.structuredData ?? structuredData,
+      ...(Array.isArray(normalizedOutput?.listings)
+        ? {
+            listings: normalizedOutput.listings,
+          }
+        : {}),
     },
     gemini: {
       responseMimeType,
       temperature,
+      thinkingConfig: {
+        thinkingLevel,
+      },
       inputSource: options.inputSource || null,
       schemaSource: options.schemaSource || null,
       schema: options.outputSchema,
@@ -348,6 +381,21 @@ function normalizeTemperature(value) {
   }
 
   return numericValue;
+}
+
+function normalizeThinkingLevel(value) {
+  const normalized = normalizeString(value).toLowerCase();
+  if (!normalized) {
+    return DEFAULT_GEMINI_THINKING_LEVEL;
+  }
+
+  if (!['minimal', 'low', 'medium', 'high'].includes(normalized)) {
+    throw new Error(
+      `Gemini structured extraction requires thinkingLevel to be one of minimal, low, medium, or high, received: ${value}`,
+    );
+  }
+
+  return normalized;
 }
 
 function normalizeArray(value) {

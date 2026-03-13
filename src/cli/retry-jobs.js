@@ -66,9 +66,9 @@ function printUsage(exitCode, message) {
   npm run retry:jobs -- --job-id <jobId>
 
 Options:
-  --processor-version <value>  Defaults to heuristic-text-v1
-  --schema-version <value>     Defaults to processed-payload-v1
-  --model-name <value>         Defaults to heuristic:none
+  --processor-version <value>  Defaults to gemini-structured-v1
+  --schema-version <value>     Defaults to gemini-processed-payload-v1
+  --model-name <value>         Defaults to gemini-3-flash-preview
   --keep-attempts              Requeue without resetting attempt counters.
   --data-dir <path>            Override the default ./data directory.`);
 

@@ -13,6 +13,12 @@ import {
   runGeminiApiKeyCheck,
   runGeminiStructuredExtraction,
 } from '../src/processing/gemini/structured-output-experiment.js';
+import {
+  GEMINI_CANONICAL_SCHEMA_SOURCE,
+  GEMINI_STRUCTURED_OUTPUT_SCHEMA,
+  normalizeGeminiStructuredData,
+} from '../src/processing/gemini/canonical-schema.js';
+import { processObservationWithGemini, resolveGeminiRuntime } from '../src/processing/gemini/processor.js';
 
 test('parseEnvFile reads simple key/value lines', () => {
   const parsed = parseEnvFile(`
@@ -166,7 +172,7 @@ test('runGeminiStructuredExtraction returns a processing-style envelope', async 
             overallAmbiguities: [],
           }),
           responseId: 'resp_123',
-          modelVersion: 'gemini-3-flash-preview-001',
+          modelVersion: 'gemini-3-flash-preview',
           usageMetadata: {
             promptTokenCount: 10,
             candidatesTokenCount: 12,
@@ -216,10 +222,249 @@ test('runGeminiStructuredExtraction returns a processing-style envelope', async 
   assert.equal(capturedRequest.model, 'gemini-3-flash-preview');
   assert.equal(capturedRequest.config.responseMimeType, 'application/json');
   assert.deepEqual(capturedRequest.config.responseJsonSchema, schema);
+  assert.equal(capturedRequest.config.thinkingConfig.thinkingLevel, 'minimal');
   assert.equal(result.observation.postUrl, 'https://example.com/posts/123');
   assert.equal(result.extracted.listingCount, 1);
   assert.equal(result.extracted.structuredData.listings[0].summary, 'Bushwick room for $1200');
   assert.equal(result.gemini.responseId, 'resp_123');
   assert.equal(result.gemini.finishReason, 'STOP');
+  assert.equal(result.gemini.thinkingConfig.thinkingLevel, 'minimal');
   assert.match(result.gemini.prompt, /Bushwick room for \$1200/u);
+});
+
+test('normalizeGeminiStructuredData maps canonical structured output into normalized listings', () => {
+  const normalizedInput = normalizeGeminiInput({
+    id: 'obs_123',
+    runId: 'run_123',
+    payload: {
+      sourceKey: 'nyc-housing-group',
+      groupName: 'NYC Housing Group',
+      postId: 'post_123',
+      postUrl: 'https://example.com/posts/123',
+      authorName: 'Poster',
+      postedAtText: '1h',
+      capturedAt: '2026-03-13T15:00:00.000Z',
+      bodyText: 'Private room in Bushwick for $1200/month',
+    },
+  });
+
+  const normalized = normalizeGeminiStructuredData({
+    source: {
+      postUrl: 'https://example.com/posts/123',
+    },
+    listings: [
+      {
+        postIntent: 'offering',
+        listingType: 'room_in_shared',
+        location: {
+          rawText: 'Bushwick',
+          address: null,
+          neighborhood: 'Bushwick',
+          borough: 'Brooklyn',
+          city: 'New York',
+          state: 'NY',
+          lat: null,
+          lng: null,
+          geocodeConfidence: null,
+        },
+        pricing: {
+          amount: 1200,
+          currency: 'USD',
+          period: 'month',
+          deposit: null,
+          brokerFee: null,
+          utilitiesIncluded: true,
+        },
+        rooms: {
+          roomsAvailable: 1,
+          totalBedrooms: 3,
+          bathrooms: 1,
+          occupancyNotes: 'Two roommates already living here',
+        },
+        dates: {
+          availableFrom: '2026-04-01',
+          availableTo: null,
+          leaseTermText: '12 month lease',
+        },
+        features: {
+          petsAllowed: true,
+          laundry: 'in_building',
+          furnished: false,
+          privateBath: false,
+          outdoorSpace: null,
+          doorman: false,
+          elevator: false,
+        },
+        contact: {
+          contactMethod: 'dm',
+          contactValue: null,
+        },
+        notes: {
+          summary: 'Private room in Bushwick for $1200/month',
+          rawSignals: ['private room', 'Bushwick', '$1200'],
+          ambiguities: ['Deposit amount not mentioned'],
+        },
+        confidence: {
+          overall: 0.82,
+          fields: {
+            postIntent: 0.95,
+            listingType: 0.9,
+            location: 0.9,
+            borough: 0.95,
+            price: 0.92,
+            rooms: 0.7,
+            dates: 0.76,
+          },
+        },
+      },
+    ],
+    overallAmbiguities: ['No exact street address'],
+  }, normalizedInput);
+
+  assert.equal(normalized.listingCount, 1);
+  assert.equal(normalized.structuredData.source.postUrl, 'https://example.com/posts/123');
+  assert.equal(normalized.listings[0].source.postUrl, 'https://example.com/posts/123');
+  assert.equal(normalized.listings[0].pricing.amount, 1200);
+  assert.deepEqual(normalized.listings[0].notes.ambiguities, [
+    'Deposit amount not mentioned',
+    'No exact street address',
+  ]);
+});
+
+test('processObservationWithGemini reuses the harness, keeps Gemini 3 thinking minimal by default, and returns normalized listings', async () => {
+  let capturedRequest = null;
+  const fakeClient = {
+    models: {
+      async generateContent(request) {
+        capturedRequest = request;
+
+        return {
+          text: JSON.stringify({
+            source: {
+              postUrl: 'https://example.com/posts/123',
+            },
+            listings: [
+              {
+                postIntent: 'offering',
+                listingType: 'room_in_shared',
+                location: {
+                  rawText: 'Bushwick',
+                  address: null,
+                  neighborhood: 'Bushwick',
+                  borough: 'Brooklyn',
+                  city: 'New York',
+                  state: 'NY',
+                  lat: null,
+                  lng: null,
+                  geocodeConfidence: null,
+                },
+                pricing: {
+                  amount: 1200,
+                  currency: 'USD',
+                  period: 'month',
+                  deposit: null,
+                  brokerFee: null,
+                  utilitiesIncluded: null,
+                },
+                rooms: {
+                  roomsAvailable: 1,
+                  totalBedrooms: 3,
+                  bathrooms: 1,
+                  occupancyNotes: null,
+                },
+                dates: {
+                  availableFrom: null,
+                  availableTo: null,
+                  leaseTermText: null,
+                },
+                features: {
+                  petsAllowed: null,
+                  laundry: null,
+                  furnished: null,
+                  privateBath: null,
+                  outdoorSpace: null,
+                  doorman: null,
+                  elevator: null,
+                },
+                contact: {
+                  contactMethod: 'dm',
+                  contactValue: null,
+                },
+                notes: {
+                  summary: 'Private room in Bushwick for $1200/month',
+                  rawSignals: ['private room', 'Bushwick', '$1200'],
+                  ambiguities: [],
+                },
+                confidence: {
+                  overall: 0.8,
+                  fields: {
+                    postIntent: 0.9,
+                    listingType: 0.9,
+                    location: 0.9,
+                    borough: 0.9,
+                    price: 0.9,
+                    rooms: 0.7,
+                    dates: 0.3,
+                  },
+                },
+              },
+            ],
+            overallAmbiguities: [],
+          }),
+          responseId: 'resp_456',
+          modelVersion: 'gemini-3-flash-preview',
+          usageMetadata: {
+            promptTokenCount: 8,
+            candidatesTokenCount: 9,
+            totalTokenCount: 17,
+          },
+          candidates: [
+            {
+              finishReason: 'STOP',
+            },
+          ],
+        };
+      },
+    },
+  };
+
+  const result = await processObservationWithGemini({
+    id: 'obs_123',
+    runId: 'run_123',
+    payload: {
+      sourceKey: 'nyc-housing-group',
+      groupName: 'NYC Housing Group',
+      postId: 'post_123',
+      postUrl: 'https://example.com/posts/123',
+      authorName: 'Poster',
+      capturedAt: '2026-03-13T15:00:00.000Z',
+      bodyText: 'Private room in Bushwick for $1200/month',
+    },
+  }, {
+    apiKey: 'test-key',
+    client: fakeClient,
+  });
+
+  assert.deepEqual(result.gemini.schemaSource, GEMINI_CANONICAL_SCHEMA_SOURCE);
+  assert.deepEqual(result.gemini.schema, GEMINI_STRUCTURED_OUTPUT_SCHEMA);
+  assert.equal(capturedRequest.config.thinkingConfig.thinkingLevel, 'minimal');
+  assert.equal(result.gemini.thinkingConfig.thinkingLevel, 'minimal');
+  assert.equal(result.extracted.listingCount, 1);
+  assert.equal(result.extracted.listings[0].source.postUrl, 'https://example.com/posts/123');
+  assert.equal(result.extracted.structuredData.listings[0].notes.summary, 'Private room in Bushwick for $1200/month');
+});
+
+test('resolveGeminiRuntime loads an env file when the process env is empty', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gemini-runtime-'));
+  const envPath = path.join(tempDir, 'gemini.env');
+
+  fs.writeFileSync(envPath, 'GEMINI_API_KEY=runtime-key\n', 'utf8');
+
+  const result = resolveGeminiRuntime({
+    envFile: envPath,
+    targetEnv: {},
+  });
+
+  assert.equal(result.apiKey, 'runtime-key');
+  assert.equal(result.envFile, envPath);
 });

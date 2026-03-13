@@ -87,3 +87,4 @@ So the pipeline should support:
 - Room counts should distinguish total apartment size from rooms actually available.
 - Listing type should be derived from evidence, not just a single keyword.
 - The active DOM path now builds listings from canonical collected posts, then copies source metadata into each extracted listing.
+- Queue-derived `listing_records` now come from versioned `processed_payloads`; the row-level `extractorVersion` should preserve the processing provenance tuple used for that mapping.

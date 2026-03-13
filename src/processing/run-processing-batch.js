@@ -1,6 +1,9 @@
+import { isGeminiProcessingProvenance, resolveProcessingProvenance } from './config.js';
 import { processObservationWithHeuristics } from './heuristic-processor.js';
+import { processObservationWithGemini } from './gemini/processor.js';
 
-export function runProcessingBatch(storage, input = {}) {
+export async function runProcessingBatch(storage, input = {}) {
+  const provenance = resolveProcessingProvenance(input);
   const claimed = storage.claimProcessingJobs({
     runId: input.runId,
     sourceKey: input.sourceKey,
@@ -10,19 +13,15 @@ export function runProcessingBatch(storage, input = {}) {
     leaseMs: input.leaseMs,
     claimedBy: input.claimedBy,
     includeObservationPayload: true,
-    processorVersion: input.processorVersion,
-    schemaVersion: input.schemaVersion,
-    modelName: input.modelName,
+    ...provenance,
   });
-
   const results = [];
 
   for (const job of claimed) {
     try {
-      const payload = processObservationWithHeuristics(toObservationInput(job), {
-        processorVersion: input.processorVersion,
-        schemaVersion: input.schemaVersion,
-        modelName: input.modelName,
+      const payload = await processObservation(toObservationInput(job), {
+        ...input,
+        ...provenance,
       });
       const completed = storage.completeProcessingJob({
         jobId: job.id,
@@ -61,6 +60,14 @@ export function runProcessingBatch(storage, input = {}) {
     retryableCount: results.filter((result) => result.status === 'retryable').length,
     failedCount: results.filter((result) => result.status === 'failed').length,
   };
+}
+
+async function processObservation(observation, options) {
+  if (isGeminiProcessingProvenance(options)) {
+    return processObservationWithGemini(observation, options);
+  }
+
+  return processObservationWithHeuristics(observation, options);
 }
 
 function toObservationInput(job) {

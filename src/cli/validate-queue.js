@@ -1,4 +1,5 @@
 import { runProcessingBatch } from '../processing/run-processing-batch.js';
+import { DEFAULT_GEMINI_THINKING_LEVEL } from '../processing/gemini/config.js';
 import { createStorage } from '../storage/storage.js';
 import {
   compactObject,
@@ -26,6 +27,9 @@ const dataDir = readDataDir(args);
 const provenance = readProcessingProvenanceFlags(args);
 const queueDefaults = readQueueDefaults(args);
 const retryDelayMs = readFlag(args, '--retry-delay-ms', '0');
+const envFile = readFlag(args, '--env-file', undefined);
+const temperature = readFlag(args, '--temperature', undefined);
+const thinkingLevel = readFlag(args, '--thinking-level', DEFAULT_GEMINI_THINKING_LEVEL);
 const sampleLimit = readNonNegativeIntegerFlag(args, '--sample-limit', 2, 10);
 const workerId = readFlag(
   args,
@@ -35,6 +39,15 @@ const workerId = readFlag(
 const storage = createStorage({ dataDir });
 
 try {
+  await main();
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+} finally {
+  storage.close?.();
+}
+
+async function main() {
   const scopeFilters = compactObject({
     runId: readFlag(args, '--run-id', undefined),
     sourceKey: readFlag(args, '--source-key', undefined),
@@ -74,12 +87,15 @@ try {
     500,
   );
   const processing = processLimit > 0
-    ? runProcessingBatch(storage, {
+    ? await runProcessingBatch(storage, {
         ...scopeFilters,
         limit: processLimit,
         leaseMs: queueDefaults.leaseMs,
         claimedBy: workerId,
         retryDelayMs,
+        envFile,
+        temperature,
+        thinkingLevel,
         ...provenance,
       })
     : emptyProcessingResult();
@@ -112,6 +128,9 @@ try {
     processing: {
       workerId,
       requestedLimit: processLimit,
+      envFile,
+      temperature,
+      thinkingLevel,
       claimedCount: processing.claimedCount,
       processedCount: processing.processedCount,
       retryableCount: processing.retryableCount,
@@ -124,8 +143,6 @@ try {
       processedPayloads: processedPayloadSamples,
     },
   });
-} finally {
-  storage.close?.();
 }
 
 function selectRepresentativeProcessedPayloads(storage, input) {
@@ -211,9 +228,12 @@ Options:
   --enqueue-limit <n>         Override how many scoped observations are considered for enqueue.
   --process-limit <n>         Override how many pending/retryable jobs are processed in this run.
   --sample-limit <n>          Representative excluded/processed samples to include. Defaults to 2.
-  --processor-version <value> Defaults to heuristic-text-v1
-  --schema-version <value>    Defaults to processed-payload-v1
-  --model-name <value>        Defaults to heuristic:none
+  --processor-version <value> Defaults to gemini-structured-v1
+  --schema-version <value>    Defaults to gemini-processed-payload-v1
+  --model-name <value>        Defaults to gemini-3-flash-preview
+  --env-file <path>           Optional env file with GEMINI_API_KEY or GOOGLE_API_KEY.
+  --temperature <n>           Gemini temperature override. Defaults to 0.
+  --thinking-level <value>    Gemini 3 thinking level override: minimal|low|medium|high. Defaults to minimal.
   --max-attempts <n>          Defaults to 3
   --lease-ms <n>              Defaults to 300000
   --retry-delay-ms <n>        Defaults to 0

@@ -25,8 +25,10 @@ Start here, in order:
 4. `docs/ROADMAP.md` — what is next
 5. `docs/PIPELINE.md` — operational commands and storage/crawl semantics
 6. `docs/LISTING_SCHEMA.md` — normalized listing contract
+7. `data/README.md` — local artifact layout, active vs legacy data paths, and how disk artifacts relate to SQLite
+8. `docs/FACEBOOK_CAPTURE_NOTES.md` — Facebook DOM capture priorities, noise patterns, and collector assumptions
 
-For recent implementation context, read the latest relevant file in `docs/passes/`.
+For recent implementation context, use `docs/passes/README.md` to find and then read the latest relevant file in `docs/passes/`.
 For older tradeoffs and investigations, use `docs/reviews/` and `docs/notes/`.
 
 ## Non-Negotiable Invariants
@@ -43,7 +45,8 @@ For older tradeoffs and investigations, use `docs/reviews/` and `docs/notes/`.
 
 - Any new doc, note, pass log, or scratch writeup should use a New York timestamp prefix in `YYYY-MM-DD_HH-MM-SS_*` form when the filename is not otherwise fixed by convention.
 - If you dispatch a worker/coding agent, start it with fresh context rather than inheriting the full conversation when that option exists. Write a self-contained task brief with the exact scope, constraints, references, write ownership, and success criteria.
-- If you dispatch a worker/coding agent and have the option to wait for completion, give it at least 30 minutes before treating it as stalled.
+- If you dispatch a worker/coding agent, give it at least 30 minutes before treating it as stalled.
+- Do not interrupt, close, cancel, or otherwise kill a dispatched worker/coding agent before that 30 minute mark just because you no longer need it. If you would not let it run, do not dispatch it in the first place.
 - When the schema or storage shape needs to change, change it directly and update the current docs. Do not add compatibility shims for stale local state unless explicitly asked.
 
 ## Validation / Definition Of Done
@@ -55,6 +58,7 @@ For older tradeoffs and investigations, use `docs/reviews/` and `docs/notes/`.
 
 ## Navigation
 
+- `data/README.md` — what lives under `data/`, where it comes from, and which paths are legacy
 - `docs/passes/` — recent implementation changes
 - `docs/reviews/` — architectural assessments and tradeoffs
 - `docs/notes/` — exploratory or superseded context

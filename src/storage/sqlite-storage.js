@@ -309,51 +309,16 @@ export class SqliteStorage {
       for (const record of records) {
         const observation = this.requireObservation(record.observationId);
         const listings = Array.isArray(record.listings) ? record.listings : [];
-
-        listings.forEach((listing, ordinal) => {
-          const entry = {
-            id: this.nextId('listing', 'lst'),
+        created.push(
+          ...this.insertListingRecords({
             runId: run.id,
             sourceId: input.sourceId,
             observationId: observation.id,
-            ordinal,
-            listingType: listing?.listingType || 'unknown',
-            postIntent: listing?.postIntent || null,
-            borough: listing?.location?.borough || null,
-            neighborhood: listing?.location?.neighborhood || null,
-            priceAmount: listing?.pricing?.amount ?? null,
-            pricePeriod: listing?.pricing?.period || null,
-            confidenceOverall: listing?.confidence?.overall ?? 0,
+            listings,
             extractorVersion: input.extractorVersion || null,
-            payload: listing,
             createdAt: now,
-          };
-
-          this.db.prepare(`
-            INSERT INTO listing_records (
-              id, run_id, source_id, observation_id, ordinal, listing_type, post_intent, borough, neighborhood,
-              price_amount, price_period, confidence_overall, extractor_version, payload_json, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(
-            entry.id,
-            entry.runId,
-            entry.sourceId,
-            entry.observationId,
-            entry.ordinal,
-            entry.listingType,
-            entry.postIntent,
-            entry.borough,
-            entry.neighborhood,
-            entry.priceAmount,
-            entry.pricePeriod,
-            entry.confidenceOverall,
-            entry.extractorVersion,
-            toJson(entry.payload, {}),
-            entry.createdAt,
-          );
-
-          created.push(entry);
-        });
+          }),
+        );
       }
 
       this.touchRun(run.id, now);
@@ -750,6 +715,15 @@ export class SqliteStorage {
         processedPayload.createdAt,
       );
 
+      this.insertListingRecords({
+        runId: observation.runId,
+        sourceId: job.sourceId,
+        observationId: observation.id,
+        listings: resolveProcessedListings(input.payload),
+        extractorVersion: formatProcessingExtractorVersion(job),
+        createdAt: now,
+      });
+
       this.db.prepare(`
         UPDATE processing_jobs
         SET status = ?, completed_at = ?, claimed_at = NULL, claimed_by = NULL, lease_expires_at = NULL,
@@ -761,6 +735,58 @@ export class SqliteStorage {
         includeProcessedPayload: Boolean(input.includeProcessedPayload),
       });
     });
+  }
+
+  insertListingRecords(input) {
+    const listings = Array.isArray(input.listings) ? input.listings : [];
+    const created = [];
+
+    listings.forEach((listing, ordinal) => {
+      const entry = {
+        id: this.nextId('listing', 'lst'),
+        runId: input.runId,
+        sourceId: input.sourceId,
+        observationId: input.observationId,
+        ordinal,
+        listingType: listing?.listingType || 'unknown',
+        postIntent: listing?.postIntent || null,
+        borough: listing?.location?.borough || null,
+        neighborhood: listing?.location?.neighborhood || null,
+        priceAmount: listing?.pricing?.amount ?? null,
+        pricePeriod: listing?.pricing?.period || null,
+        confidenceOverall: listing?.confidence?.overall ?? 0,
+        extractorVersion: input.extractorVersion || null,
+        payload: listing,
+        createdAt: input.createdAt || new Date().toISOString(),
+      };
+
+      this.db.prepare(`
+        INSERT INTO listing_records (
+          id, run_id, source_id, observation_id, ordinal, listing_type, post_intent, borough, neighborhood,
+          price_amount, price_period, confidence_overall, extractor_version, payload_json, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        entry.id,
+        entry.runId,
+        entry.sourceId,
+        entry.observationId,
+        entry.ordinal,
+        entry.listingType,
+        entry.postIntent,
+        entry.borough,
+        entry.neighborhood,
+        entry.priceAmount,
+        entry.pricePeriod,
+        entry.confidenceOverall,
+        entry.extractorVersion,
+        toJson(entry.payload, {}),
+        entry.createdAt,
+      );
+
+      created.push(entry);
+    });
+
+    return created;
   }
 
   failProcessingJob(input) {
@@ -2394,6 +2420,20 @@ function resolveListingCount(payload) {
   }
 
   return 0;
+}
+
+function resolveProcessedListings(payload) {
+  return Array.isArray(payload?.extracted?.listings)
+    ? payload.extracted.listings
+    : [];
+}
+
+function formatProcessingExtractorVersion(input) {
+  return [
+    input.processorVersion,
+    input.schemaVersion,
+    input.modelName,
+  ].join('|');
 }
 
 function buildObservationScopeFilters(input, observationAlias = 'o', sourceAlias = 's') {

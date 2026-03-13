@@ -32,6 +32,21 @@ export const DOM_EXTRACTOR_RUNTIME = () => {
       .trim();
   }
 
+  function trimDebugText(value, limit = 240) {
+    const normalized = normalizeSpace(value);
+    if (!normalized) return null;
+    return normalized.slice(0, limit) || null;
+  }
+
+  function trimDebugHtml(value, limit = 900) {
+    const html = String(value || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!html) return null;
+    return html.slice(0, limit) || null;
+  }
+
   function splitMetadataParts(value) {
     return String(value || '')
       .replace(/\u00A0/g, ' ')
@@ -195,14 +210,18 @@ export const DOM_EXTRACTOR_RUNTIME = () => {
     return uniqueElements(roots.filter((node) => node && node !== bodyEl));
   }
 
-  function buildDebugHeaderSnapshot(card, bodyEl, headerRoots) {
-    const roots = headerRoots && headerRoots.length ? headerRoots : buildHeaderSearchRoots(card, bodyEl);
-    return roots.slice(0, 4).map((node, index) => ({
+  function buildDebugNodeSnapshot(nodes, limit = 4, htmlLimit = 700) {
+    return uniqueElements(nodes).slice(0, limit).map((node, index) => ({
       index,
       tagName: String(node?.tagName || '').toUpperCase() || null,
-      text: readNodeText(node).slice(0, 240) || null,
-      html: String(node?.outerHTML || '').replace(/\s+/g, ' ').trim().slice(0, 700) || null,
+      text: trimDebugText(readNodeText(node), 240),
+      html: trimDebugHtml(node?.outerHTML, htmlLimit),
     }));
+  }
+
+  function buildDebugHeaderSnapshot(card, bodyEl, headerRoots) {
+    const roots = headerRoots && headerRoots.length ? headerRoots : buildHeaderSearchRoots(card, bodyEl);
+    return buildDebugNodeSnapshot(roots, 4, 700);
   }
 
   function looksHumanName(value) {
@@ -509,6 +528,100 @@ export const DOM_EXTRACTOR_RUNTIME = () => {
     };
   }
 
+  function buildAnchorDebugEvidence(nodes, scope, options = {}) {
+    const limit = options.limit ?? 8;
+    const excludeSubtree = options.excludeSubtree || null;
+    const anchors = collectNodesFromRoots(nodes, 'a[href]')
+      .filter((node) => !excludeSubtree || !excludeSubtree.contains(node));
+    const seen = new Set();
+    const evidence = [];
+
+    for (const [index, node] of anchors.entries()) {
+      const href = node.href || (node.getAttribute && node.getAttribute('href')) || null;
+      if (!href) continue;
+
+      const labelledbyText = readLabelledByText(node);
+      const timeHint = extractTimeText(readNodeText(node))
+        || extractTimeText(labelledbyText)
+        || extractTimeText(node.getAttribute && node.getAttribute('aria-label'))
+        || extractTimeText(node.getAttribute && node.getAttribute('title'))
+        || null;
+      const entry = {
+        scope,
+        index,
+        tagName: String(node.tagName || '').toUpperCase() || null,
+        href,
+        normalizedPostUrl: normalizePostUrl(href),
+        extractedPostId: extractPostIdFromUrl(href),
+        timeHint,
+        text: trimDebugText(readNodeText(node), 160),
+        labelledbyText: trimDebugText(labelledbyText, 160),
+        ariaLabel: trimDebugText(node.getAttribute && node.getAttribute('aria-label'), 160),
+        title: trimDebugText(node.getAttribute && node.getAttribute('title'), 160),
+      };
+      const key = [
+        entry.scope,
+        entry.href,
+        entry.normalizedPostUrl,
+        entry.extractedPostId,
+        entry.timeHint,
+        entry.text,
+      ].join('|');
+
+      if (seen.has(key)) continue;
+      seen.add(key);
+      evidence.push(entry);
+      if (evidence.length >= limit) break;
+    }
+
+    return evidence;
+  }
+
+  function summarizeDebugScope(node, scope, options = {}) {
+    return {
+      scope,
+      tagName: String(node?.tagName || '').toUpperCase() || null,
+      isArticleCard: isArticleCard(node),
+      storyBodyCount: node?.querySelectorAll?.(BODY_SELECTOR).length || 0,
+      authorNodeCount: node?.querySelectorAll?.(AUTHOR_SELECTOR).length || 0,
+      anchorCount: node?.querySelectorAll?.('a[href]').length || 0,
+      text: trimDebugText(readNodeText(node), options.textLimit ?? 220),
+      html: trimDebugHtml(node?.outerHTML, options.htmlLimit ?? 900),
+    };
+  }
+
+  function buildMissingPostUrlDebug(card, bodyEl, headerRoots) {
+    const topSliceRoots = buildCardTopSliceRoots(card, bodyEl);
+    const ancestorNodes = [];
+    let current = card?.parentElement || null;
+
+    while (current && ancestorNodes.length < 3) {
+      ancestorNodes.push(current);
+      current = current.parentElement;
+    }
+
+    return {
+      searchRootCounts: {
+        header: headerRoots.length,
+        topSlice: topSliceRoots.length,
+      },
+      selectedCard: summarizeDebugScope(card, 'selected-card', {
+        textLimit: 320,
+        htmlLimit: 1600,
+      }),
+      topSliceSnapshot: buildDebugNodeSnapshot(topSliceRoots, 4, 700),
+      cardAnchorEvidence: buildAnchorDebugEvidence([card], 'selected-card', { limit: 10 }),
+      ancestorSummaries: ancestorNodes.map((node, index) => summarizeDebugScope(node, `ancestor-${index + 1}`, {
+        textLimit: 220,
+        htmlLimit: 1000,
+      })),
+      ancestorAnchorEvidence: ancestorNodes.flatMap((node, index) => buildAnchorDebugEvidence([node], `ancestor-${index + 1}`, {
+        limit: 4,
+        excludeSubtree: card,
+      })).slice(0, 12),
+    };
+  }
+
   function scoreCard(node, bodyEl, depth) {
     if (!node || !node.querySelectorAll) return Number.NEGATIVE_INFINITY;
 
@@ -575,6 +688,17 @@ export const DOM_EXTRACTOR_RUNTIME = () => {
     const postId = extractPostIdFromUrl(postUrl) || (mediaMatch && mediaMatch[1]) || null;
     const seeMoreButton = Array.from(card.querySelectorAll('div[role="button"], button')).find((btn) => /See more/i.test(readNodeText(btn)));
 
+    const debugMetadata = {
+      authorCandidates: authorResult.debug,
+      timeCandidates: timeResult.debug,
+      permalinkCandidates: permalinkResult.debug,
+      headerSnapshot: buildDebugHeaderSnapshot(card, bodyEl, headerRoots),
+    };
+
+    if (!postUrl) {
+      debugMetadata.missingPostUrlContext = buildMissingPostUrlDebug(card, bodyEl, headerRoots);
+    }
+
     return {
       index,
       postId,
@@ -585,12 +709,7 @@ export const DOM_EXTRACTOR_RUNTIME = () => {
       mediaLinks: Array.from(new Set(mediaLinks)).slice(0, 12),
       hasSeeMore: Boolean(seeMoreButton),
       seeMoreText: seeMoreButton ? readNodeText(seeMoreButton) : null,
-      debugMetadata: {
-        authorCandidates: authorResult.debug,
-        timeCandidates: timeResult.debug,
-        permalinkCandidates: permalinkResult.debug,
-        headerSnapshot: buildDebugHeaderSnapshot(card, bodyEl, headerRoots),
-      },
+      debugMetadata,
     };
   }).filter((record) => record.bodyText);
 };

@@ -11,12 +11,17 @@ import {
   DEFAULT_GEMINI_MODEL_NAME,
   DEFAULT_GEMINI_PROCESSOR_VERSION,
   DEFAULT_GEMINI_SCHEMA_VERSION,
+  DEFAULT_GEMINI_THINKING_LEVEL,
   findGeminiEnvFile,
   loadEnvFile,
   resolveGeminiApiKey,
   runGeminiApiKeyCheck,
   runGeminiStructuredExtraction,
 } from '../processing/gemini/structured-output-experiment.js';
+import {
+  GEMINI_CANONICAL_SCHEMA_SOURCE,
+  GEMINI_STRUCTURED_OUTPUT_SCHEMA,
+} from '../processing/gemini/canonical-schema.js';
 
 const args = process.argv.slice(2);
 
@@ -39,10 +44,6 @@ async function main() {
     const outputPath = readFlag(args, '--output', readFlag(args, '--out', undefined));
     resolveGeminiEnv(envFile);
 
-    if (!shouldCheckApiKey && !schemaPath) {
-      printUsage(1, 'Missing required --schema <path> argument.');
-    }
-
     if (!shouldCheckApiKey && !inputPath && process.stdin.isTTY) {
       printUsage(1, 'Provide --input <path> or pipe JSON to stdin.');
     }
@@ -64,8 +65,12 @@ async function main() {
     }
 
     const input = await readInputJson(inputPath);
-    const resolvedSchemaPath = path.resolve(process.cwd(), schemaPath);
-    const outputSchema = readJsonFile(resolvedSchemaPath);
+    const resolvedSchemaPath = schemaPath
+      ? path.resolve(process.cwd(), schemaPath)
+      : null;
+    const outputSchema = resolvedSchemaPath
+      ? readJsonFile(resolvedSchemaPath)
+      : GEMINI_STRUCTURED_OUTPUT_SCHEMA;
     const result = await runGeminiStructuredExtraction({
       apiKey,
       inputPost: input.value,
@@ -74,11 +79,14 @@ async function main() {
       processorVersion: readFlag(args, '--processor-version', DEFAULT_GEMINI_PROCESSOR_VERSION),
       schemaVersion: readFlag(args, '--schema-version', DEFAULT_GEMINI_SCHEMA_VERSION),
       temperature: readFlag(args, '--temperature', '0'),
+      thinkingLevel: readFlag(args, '--thinking-level', DEFAULT_GEMINI_THINKING_LEVEL),
       inputSource: input.source,
-      schemaSource: {
-        kind: 'file',
-        path: resolvedSchemaPath,
-      },
+      schemaSource: resolvedSchemaPath
+        ? {
+            kind: 'file',
+            path: resolvedSchemaPath,
+          }
+        : GEMINI_CANONICAL_SCHEMA_SOURCE,
     });
     const serialized = `${JSON.stringify(result, null, 2)}\n`;
 
@@ -233,22 +241,22 @@ function printUsage(exitCode, message) {
   }
 
   console.error(`Usage:
-  npm run gemini:extract -- --schema <path> --input <path> [--output <path>]
-  cat post.json | npm run gemini:extract -- --schema <path>
+  npm run gemini:extract -- --input <path> [--output <path>]
+  cat post.json | npm run gemini:extract
   npm run gemini:extract -- --check-api-key
 
 Options:
-  --schema <path>            Required JSON schema file for Gemini structured output.
+  --schema <path>            Optional JSON schema file. Defaults to the canonical repo schema.
   --input <path|->           JSON post or observation input. Omit or use - to read stdin.
   --output <path>            Optional file path for the full response envelope JSON.
   --env-file <path>          Optional env file with GEMINI_API_KEY or GOOGLE_API_KEY.
   --model <value>            Defaults to gemini-3-flash-preview.
   --processor-version <v>    Defaults to gemini-structured-v1.
-  --schema-version <v>       Defaults to gemini-structured-output-v1.
+  --schema-version <v>       Defaults to gemini-processed-payload-v1.
   --temperature <n>          Defaults to 0.
+  --thinking-level <value>   One of minimal|low|medium|high. Defaults to minimal for Gemini extraction and key checks.
   --check-api-key            Run a lightweight live key check instead of extraction.
   --check-model <value>      Defaults to gemini-3.1-flash-lite-preview for key checks.
-  --thinking-level <value>   Defaults to minimal for key checks.
 
 Notes:
   If --env-file is omitted, the CLI auto-checks data/cache/gemini/gemini.env, then data/gemini/gemini.env.

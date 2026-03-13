@@ -37,11 +37,11 @@ We are transitioning from exploratory scraping into a modular ingestion + proces
 - [x] replay / reprocess hooks
 
 ### 3. Structured LLM extraction
-- [ ] define extraction schema
-- [ ] Gemini structured output integration
-- [ ] persist raw processed payloads with provenance
-- [ ] map processed payloads into normalized listing records
-- [ ] dry-run extraction CLI for N posts/jobs
+- [x] define extraction schema
+- [x] Gemini structured output integration
+- [x] persist raw processed payloads with provenance
+- [x] map processed payloads into normalized listing records
+- [x] dry-run extraction CLI for N posts/jobs
 
 ### 4. Frontend-oriented query surface
 - [ ] listing query helpers / views

@@ -8,7 +8,14 @@ import test from 'node:test';
 import { createCollectedPost } from '../src/core/collected-post.js';
 import { DEFAULT_MODEL_NAME, DEFAULT_PROCESSOR_VERSION, DEFAULT_SCHEMA_VERSION } from '../src/processing/config.js';
 import { processObservationWithHeuristics } from '../src/processing/heuristic-processor.js';
+import { runProcessingBatch } from '../src/processing/run-processing-batch.js';
 import { createStorage } from '../src/storage/storage.js';
+
+const HEURISTIC_PROVENANCE = Object.freeze({
+  processorVersion: 'heuristic-text-v1',
+  schemaVersion: 'processed-payload-v1',
+  modelName: 'heuristic:none',
+});
 
 test('processing jobs are idempotent per observation and provenance, with claim/complete/fail/retry lifecycle', () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nyc-housing-scout-processing-'));
@@ -17,9 +24,7 @@ test('processing jobs are idempotent per observation and provenance, with claim/
 
   const enqueueResult = storage.enqueueProcessingJobs({
     runId: run.id,
-    processorVersion: DEFAULT_PROCESSOR_VERSION,
-    schemaVersion: DEFAULT_SCHEMA_VERSION,
-    modelName: DEFAULT_MODEL_NAME,
+    ...HEURISTIC_PROVENANCE,
   });
 
   assert.equal(enqueueResult.counts.created, 2);
@@ -28,9 +33,7 @@ test('processing jobs are idempotent per observation and provenance, with claim/
 
   const enqueueAgain = storage.enqueueProcessingJobs({
     runId: run.id,
-    processorVersion: DEFAULT_PROCESSOR_VERSION,
-    schemaVersion: DEFAULT_SCHEMA_VERSION,
-    modelName: DEFAULT_MODEL_NAME,
+    ...HEURISTIC_PROVENANCE,
   });
 
   assert.equal(enqueueAgain.counts.created, 0);
@@ -41,9 +44,7 @@ test('processing jobs are idempotent per observation and provenance, with claim/
     claimedBy: 'worker-1',
     limit: 2,
     includeObservationPayload: true,
-    processorVersion: DEFAULT_PROCESSOR_VERSION,
-    schemaVersion: DEFAULT_SCHEMA_VERSION,
-    modelName: DEFAULT_MODEL_NAME,
+    ...HEURISTIC_PROVENANCE,
   });
 
   assert.equal(claimed.length, 2);
@@ -54,9 +55,7 @@ test('processing jobs are idempotent per observation and provenance, with claim/
     jobId: claimed[0].id,
     claimedBy: 'worker-1',
     payload: processObservationWithHeuristics(toObservationInput(claimed[0]), {
-      processorVersion: DEFAULT_PROCESSOR_VERSION,
-      schemaVersion: DEFAULT_SCHEMA_VERSION,
-      modelName: DEFAULT_MODEL_NAME,
+      ...HEURISTIC_PROVENANCE,
     }),
     includeProcessedPayload: true,
   });
@@ -78,9 +77,7 @@ test('processing jobs are idempotent per observation and provenance, with claim/
 
   const retried = storage.retryProcessingJobs({
     jobId: claimed[1].id,
-    processorVersion: DEFAULT_PROCESSOR_VERSION,
-    schemaVersion: DEFAULT_SCHEMA_VERSION,
-    modelName: DEFAULT_MODEL_NAME,
+    ...HEURISTIC_PROVENANCE,
   });
 
   assert.equal(retried.length, 1);
@@ -92,9 +89,7 @@ test('processing jobs are idempotent per observation and provenance, with claim/
     claimedBy: 'worker-2',
     limit: 1,
     includeObservationPayload: true,
-    processorVersion: DEFAULT_PROCESSOR_VERSION,
-    schemaVersion: DEFAULT_SCHEMA_VERSION,
-    modelName: DEFAULT_MODEL_NAME,
+    ...HEURISTIC_PROVENANCE,
   });
 
   assert.equal(reclaimed.length, 1);
@@ -104,17 +99,13 @@ test('processing jobs are idempotent per observation and provenance, with claim/
     jobId: reclaimed[0].id,
     claimedBy: 'worker-2',
     payload: processObservationWithHeuristics(toObservationInput(reclaimed[0]), {
-      processorVersion: DEFAULT_PROCESSOR_VERSION,
-      schemaVersion: DEFAULT_SCHEMA_VERSION,
-      modelName: DEFAULT_MODEL_NAME,
+      ...HEURISTIC_PROVENANCE,
     }),
   });
 
   const jobs = storage.listProcessingJobs({
     runId: run.id,
-    processorVersion: DEFAULT_PROCESSOR_VERSION,
-    schemaVersion: DEFAULT_SCHEMA_VERSION,
-    modelName: DEFAULT_MODEL_NAME,
+    ...HEURISTIC_PROVENANCE,
     includeProcessedPayload: true,
     limit: 10,
   });
@@ -129,11 +120,164 @@ test('processing jobs are idempotent per observation and provenance, with claim/
   const counts = {
     jobs: db.prepare('SELECT COUNT(*) AS count FROM processing_jobs').get().count,
     payloads: db.prepare('SELECT COUNT(*) AS count FROM processed_payloads').get().count,
+    listings: db.prepare('SELECT COUNT(*) AS count FROM listing_records').get().count,
   };
   db.close();
 
   assert.equal(counts.jobs, 2);
   assert.equal(counts.payloads, 2);
+  assert.equal(counts.listings, 2);
+});
+
+test('runProcessingBatch processes Gemini jobs and maps them into listing records', async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nyc-housing-scout-processing-gemini-'));
+  const fixture = seedProcessingFixture(dataDir);
+  const { storage, run } = fixture;
+
+  const enqueueResult = storage.enqueueProcessingJobs({
+    runId: run.id,
+    processorVersion: DEFAULT_PROCESSOR_VERSION,
+    schemaVersion: DEFAULT_SCHEMA_VERSION,
+    modelName: DEFAULT_MODEL_NAME,
+  });
+
+  assert.equal(enqueueResult.counts.created, 2);
+
+  const fakeClient = {
+    models: {
+      async generateContent(request) {
+        const postUrlMatch = String(request.contents).match(/https:\/\/www\.facebook\.com\/groups\/test\/posts\/post-\d+\//u);
+        const postUrl = postUrlMatch?.[0] || 'https://www.facebook.com/groups/test/posts/post-001/';
+        const amount = postUrl.endsWith('post-001/') ? 1650 : 2200;
+        const neighborhood = postUrl.endsWith('post-001/') ? 'Williamsburg' : 'Greenpoint';
+        const listingType = postUrl.endsWith('post-001/') ? 'room_in_shared' : 'sublet';
+
+        return {
+          text: JSON.stringify({
+            source: {
+              postUrl,
+            },
+            listings: [
+              {
+                postIntent: 'offering',
+                listingType,
+                location: {
+                  rawText: neighborhood,
+                  address: null,
+                  neighborhood,
+                  borough: 'Brooklyn',
+                  city: 'New York',
+                  state: 'NY',
+                  lat: null,
+                  lng: null,
+                  geocodeConfidence: null,
+                },
+                pricing: {
+                  amount,
+                  currency: 'USD',
+                  period: 'month',
+                  deposit: null,
+                  brokerFee: null,
+                  utilitiesIncluded: null,
+                },
+                rooms: {
+                  roomsAvailable: 1,
+                  totalBedrooms: listingType === 'sublet' ? 1 : 3,
+                  bathrooms: 1,
+                  occupancyNotes: null,
+                },
+                dates: {
+                  availableFrom: null,
+                  availableTo: null,
+                  leaseTermText: null,
+                },
+                features: {
+                  petsAllowed: null,
+                  laundry: null,
+                  furnished: listingType === 'sublet',
+                  privateBath: null,
+                  outdoorSpace: null,
+                  doorman: null,
+                  elevator: null,
+                },
+                contact: {
+                  contactMethod: 'dm',
+                  contactValue: null,
+                },
+                notes: {
+                  summary: `${neighborhood} listing for ${amount}`,
+                  rawSignals: [neighborhood, String(amount)],
+                  ambiguities: [],
+                },
+                confidence: {
+                  overall: 0.84,
+                  fields: {
+                    postIntent: 0.9,
+                    listingType: 0.88,
+                    location: 0.9,
+                    borough: 0.95,
+                    price: 0.92,
+                    rooms: 0.72,
+                    dates: 0.3,
+                  },
+                },
+              },
+            ],
+            overallAmbiguities: [],
+          }),
+          responseId: `resp_${amount}`,
+          modelVersion: 'gemini-3-flash-preview',
+          usageMetadata: {
+            promptTokenCount: 10,
+            candidatesTokenCount: 12,
+            totalTokenCount: 22,
+          },
+          candidates: [
+            {
+              finishReason: 'STOP',
+            },
+          ],
+        };
+      },
+    },
+  };
+
+  const result = await runProcessingBatch(storage, {
+    runId: run.id,
+    limit: 2,
+    claimedBy: 'gemini-worker',
+    apiKey: 'test-key',
+    client: fakeClient,
+    processorVersion: DEFAULT_PROCESSOR_VERSION,
+    schemaVersion: DEFAULT_SCHEMA_VERSION,
+    modelName: DEFAULT_MODEL_NAME,
+  });
+
+  assert.equal(result.claimedCount, 2);
+  assert.equal(result.processedCount, 2);
+
+  const jobs = storage.listProcessingJobs({
+    runId: run.id,
+    processorVersion: DEFAULT_PROCESSOR_VERSION,
+    schemaVersion: DEFAULT_SCHEMA_VERSION,
+    modelName: DEFAULT_MODEL_NAME,
+    includeProcessedPayload: true,
+    limit: 10,
+  });
+  const listings = storage.listListings({
+    runId: run.id,
+    includePayload: true,
+    limit: 10,
+  });
+
+  storage.close();
+
+  assert.equal(jobs.length, 2);
+  assert.equal(jobs.every((job) => job.status === 'processed'), true);
+  assert.equal(jobs[0].processedPayload.extracted.structuredData.source.postUrl, jobs[0].postUrl);
+  assert.equal(jobs.every((job) => job.processedPayload.extracted.listings.length === 1), true);
+  assert.equal(listings.length, 2);
+  assert.equal(listings.every((listing) => listing.extractorVersion === `${DEFAULT_PROCESSOR_VERSION}|${DEFAULT_SCHEMA_VERSION}|${DEFAULT_MODEL_NAME}`), true);
 });
 
 test('processing CLIs enqueue, process, inspect, and retry jobs', () => {
@@ -146,6 +290,12 @@ test('processing CLIs enqueue, process, inspect, and retry jobs', () => {
     dataDir,
     '--run-id',
     fixture.run.id,
+    '--processor-version',
+    HEURISTIC_PROVENANCE.processorVersion,
+    '--schema-version',
+    HEURISTIC_PROVENANCE.schemaVersion,
+    '--model-name',
+    HEURISTIC_PROVENANCE.modelName,
   ]);
   assert.equal(enqueueResult.command, 'enqueue:processing');
   assert.equal(enqueueResult.counts.created, 2);
@@ -158,6 +308,12 @@ test('processing CLIs enqueue, process, inspect, and retry jobs', () => {
     fixture.run.id,
     '--limit',
     '2',
+    '--processor-version',
+    HEURISTIC_PROVENANCE.processorVersion,
+    '--schema-version',
+    HEURISTIC_PROVENANCE.schemaVersion,
+    '--model-name',
+    HEURISTIC_PROVENANCE.modelName,
   ]);
   assert.equal(processResult.command, 'process:jobs');
   assert.equal(processResult.claimedCount, 2);
@@ -172,6 +328,12 @@ test('processing CLIs enqueue, process, inspect, and retry jobs', () => {
     'processed',
     '--limit',
     '10',
+    '--processor-version',
+    HEURISTIC_PROVENANCE.processorVersion,
+    '--schema-version',
+    HEURISTIC_PROVENANCE.schemaVersion,
+    '--model-name',
+    HEURISTIC_PROVENANCE.modelName,
   ]);
   assert.equal(inspectResult.command, 'inspect:jobs');
   assert.equal(inspectResult.count, 2);
@@ -181,8 +343,8 @@ test('processing CLIs enqueue, process, inspect, and retry jobs', () => {
   const requeueScope = storage.enqueueProcessingJobs({
     observationId: fixture.firstObservationId,
     processorVersion: 'heuristic-text-v2',
-    schemaVersion: DEFAULT_SCHEMA_VERSION,
-    modelName: DEFAULT_MODEL_NAME,
+    schemaVersion: HEURISTIC_PROVENANCE.schemaVersion,
+    modelName: HEURISTIC_PROVENANCE.modelName,
   });
   const targetJobId = requeueScope.results.find((entry) => entry.action === 'created').job.id;
   const [claimed] = storage.claimProcessingJobs({
@@ -190,8 +352,8 @@ test('processing CLIs enqueue, process, inspect, and retry jobs', () => {
     claimedBy: 'retry-worker',
     limit: 1,
     processorVersion: 'heuristic-text-v2',
-    schemaVersion: DEFAULT_SCHEMA_VERSION,
-    modelName: DEFAULT_MODEL_NAME,
+    schemaVersion: HEURISTIC_PROVENANCE.schemaVersion,
+    modelName: HEURISTIC_PROVENANCE.modelName,
   });
   storage.failProcessingJob({
     jobId: claimed.id,
@@ -208,6 +370,10 @@ test('processing CLIs enqueue, process, inspect, and retry jobs', () => {
     targetJobId,
     '--processor-version',
     'heuristic-text-v2',
+    '--schema-version',
+    HEURISTIC_PROVENANCE.schemaVersion,
+    '--model-name',
+    HEURISTIC_PROVENANCE.modelName,
   ]);
   assert.equal(retryResult.command, 'retry:jobs');
   assert.equal(retryResult.count, 1);
@@ -227,6 +393,12 @@ test('validate queue CLI reports coverage, exclusions, and representative proces
     fixture.run.id,
     '--sample-limit',
     '2',
+    '--processor-version',
+    HEURISTIC_PROVENANCE.processorVersion,
+    '--schema-version',
+    HEURISTIC_PROVENANCE.schemaVersion,
+    '--model-name',
+    HEURISTIC_PROVENANCE.modelName,
   ]);
 
   assert.equal(firstRun.command, 'validate:queue');
@@ -258,6 +430,12 @@ test('validate queue CLI reports coverage, exclusions, and representative proces
     fixture.run.id,
     '--sample-limit',
     '2',
+    '--processor-version',
+    HEURISTIC_PROVENANCE.processorVersion,
+    '--schema-version',
+    HEURISTIC_PROVENANCE.schemaVersion,
+    '--model-name',
+    HEURISTIC_PROVENANCE.modelName,
   ]);
 
   assert.equal(secondRun.enqueue.counts.created, 0);

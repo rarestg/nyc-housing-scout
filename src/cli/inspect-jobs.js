@@ -72,9 +72,9 @@ function printUsage(exitCode, message) {
   npm run inspect:jobs -- --job-id <jobId> [--full]
 
 Options:
-  --processor-version <value>  Defaults to heuristic-text-v1
-  --schema-version <value>     Defaults to processed-payload-v1
-  --model-name <value>         Defaults to heuristic:none
+  --processor-version <value>  Defaults to gemini-structured-v1
+  --schema-version <value>     Defaults to gemini-processed-payload-v1
+  --model-name <value>         Defaults to gemini-3-flash-preview
   --full                       Include observation and processed payload JSON.
   --data-dir <path>            Override the default ./data directory.`);
 

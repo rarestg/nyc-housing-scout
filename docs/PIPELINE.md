@@ -34,16 +34,19 @@ Primary commands:
   - `npm run inspect:jobs -- --status pending --limit 20`
 - claim and process a batch locally:
   - `npm run process:jobs -- --limit 10`
+  - optional explicit Gemini env file: `npm run process:jobs -- --limit 10 --env-file data/cache/gemini/gemini.env`
 - requeue failed/retryable work:
   - `npm run retry:jobs -- --status failed`
 
-Current pass-A semantics:
+Current pass-B semantics:
 
 - the unit of work is one collected observation
 - jobs dedupe on `(observation_id, processor_version, schema_version, model_name)`
 - `postUrl` is required for queue eligibility
-- `process:jobs` currently runs the heuristic text extractor and stores versioned `processed_payloads`
-- Gemini and mapping `processed_payloads -> listing_records` are intentionally deferred to Pass B
+- `process:jobs` now runs the Gemini harness by default with the canonical structured schema
+- queued Gemini structured extraction now requests `thinkingLevel: minimal` by default so Gemini 3 does not fall back to dynamic/high thinking; actual usage metadata is still stored in each `processed_payloads` row
+- Gemini output is persisted in `processed_payloads` under the current provenance tuple
+- normalized `listing_records` are derived and inserted atomically when the job is completed
 - `validate:queue` reports scope coverage directly from `post_observations`, including:
   - total observations in scope
   - eligible observations
@@ -51,11 +54,13 @@ Current pass-A semantics:
   - jobs created vs already existing
   - processed vs retryable/failed outcomes for the run
   - representative excluded observations and processed payload samples
+  - the same Gemini-backed claim/process/store path used by `process:jobs`
 
 Repeatable validation flow:
 
 - first run on a new crawl scope should usually create and process eligible jobs
 - rerunning the same validation scope should report `existing` jobs and zero newly claimed work unless pending/retryable rows remain
+- `validate:queue` is the preferred regression surface for real stored observations because it exercises enqueue, Gemini processing, payload persistence, and listing mapping together
 
 ## Artifact Layers
 
@@ -102,7 +107,9 @@ Listing extraction in the DOM flow operates on `CollectedPost` objects so listin
 5. normalize each raw record into a canonical collected post
 6. persist collected-post observations and source-scoped seen-post state through the storage interface
 7. optionally enqueue observations into the processing queue
-8. persist run checkpoints and per-run export artifacts separately
+8. process queued observations into Gemini-backed `processed_payloads`
+9. map processed payloads into normalized `listing_records`
+10. persist run checkpoints and per-run export artifacts separately
 
 The active DOM capture commands still perform inline listing extraction as a transitional path.
 The queue is now the intended processing boundary going forward.
@@ -176,3 +183,4 @@ Claim semantics are atomic:
 - stronger mapping of post body -> permalink when Facebook hides direct `/posts/...` URLs
 - cleaner modeling of wanted posts vs offered listings
 - broader fixture coverage for real raw DOM captures
+- request-level timeout / cancellation handling around long-running Gemini calls

@@ -45,6 +45,7 @@ Right now the project has:
 - SQLite-backed storage
 - source/run/observation/listing persistence
 - observation-centric processing queue skeleton
+- Gemini-backed `process:jobs` with canonical structured payloads
 - storage inspection/validation CLI
 - improved collector metadata extraction
 - improved listing extraction heuristics
@@ -119,9 +120,9 @@ See `docs/INDEX.md` for a full map.
 The next major build steps are:
 
 1. harden crawl strategy (incremental vs backfill, top-of-feed reset, overlap anchors)
-2. add structured LLM extraction as a core stage on top of the new queue
-3. map processed payloads into normalized listing records
-4. shape query surfaces for the frontend
+2. shape query surfaces for the frontend
+3. tighten Gemini timeout / retry behavior for slow model calls
+4. move the DOM path fully to enqueue-first processing
 
 ## Notes
 

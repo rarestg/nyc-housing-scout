@@ -68,9 +68,9 @@ function printUsage(exitCode, message) {
   npm run enqueue:processing -- --observation-id <obsId>
 
 Options:
-  --processor-version <value>  Defaults to heuristic-text-v1
-  --schema-version <value>     Defaults to processed-payload-v1
-  --model-name <value>         Defaults to heuristic:none
+  --processor-version <value>  Defaults to gemini-structured-v1
+  --schema-version <value>     Defaults to gemini-processed-payload-v1
+  --model-name <value>         Defaults to gemini-3-flash-preview
   --max-attempts <n>           Defaults to 3
   --data-dir <path>            Override the default ./data directory.`);
 
