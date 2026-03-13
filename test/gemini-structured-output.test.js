@@ -6,6 +6,7 @@ import test from 'node:test';
 import {
   buildGeminiStructuredPrompt,
   findGeminiEnvFile,
+  GeminiRequestTimeoutError,
   loadEnvFile,
   normalizeGeminiInput,
   parseEnvFile,
@@ -18,7 +19,11 @@ import {
   GEMINI_STRUCTURED_OUTPUT_SCHEMA,
   normalizeGeminiStructuredData,
 } from '../src/processing/gemini/canonical-schema.js';
-import { processObservationWithGemini, resolveGeminiRuntime } from '../src/processing/gemini/processor.js';
+import {
+  processObservationWithGemini,
+  resolveGeminiRequestTimeoutMs,
+  resolveGeminiRuntime,
+} from '../src/processing/gemini/processor.js';
 
 test('parseEnvFile reads simple key/value lines', () => {
   const parsed = parseEnvFile(`
@@ -229,7 +234,61 @@ test('runGeminiStructuredExtraction returns a processing-style envelope', async 
   assert.equal(result.gemini.responseId, 'resp_123');
   assert.equal(result.gemini.finishReason, 'STOP');
   assert.equal(result.gemini.thinkingConfig.thinkingLevel, 'minimal');
+  assert.equal(result.gemini.requestTimeoutMs, 180000);
   assert.match(result.gemini.prompt, /Bushwick room for \$1200/u);
+});
+
+test('runGeminiStructuredExtraction aborts timed out requests explicitly', async () => {
+  let capturedRequest = null;
+  const fakeClient = {
+    models: {
+      async generateContent(request) {
+        capturedRequest = request;
+
+        await new Promise((resolve, reject) => {
+          request.config.abortSignal.addEventListener('abort', () => {
+            reject(request.config.abortSignal.reason || new Error('aborted'));
+          }, { once: true });
+        });
+      },
+    },
+  };
+
+  await assert.rejects(
+    () => runGeminiStructuredExtraction({
+      apiKey: 'test-key',
+      client: fakeClient,
+      requestTimeoutMs: 75,
+      inputPost: {
+        id: 'obs_timeout',
+        payload: {
+          sourceKey: 'nyc-housing-group',
+          groupName: 'NYC Housing Group',
+          postUrl: 'https://example.com/posts/timeout',
+          bodyText: 'This request should time out.',
+        },
+      },
+      outputSchema: GEMINI_STRUCTURED_OUTPUT_SCHEMA,
+      normalizeStructuredData: normalizeGeminiStructuredData,
+    }),
+    (error) => {
+      assert.equal(error instanceof GeminiRequestTimeoutError, true);
+      assert.equal(error.timeoutMs, 75);
+      return true;
+    },
+  );
+
+  assert.equal(capturedRequest.config.httpOptions.timeout, 75);
+});
+
+test('resolveGeminiRequestTimeoutMs clamps the request timeout below the lease', () => {
+  assert.equal(
+    resolveGeminiRequestTimeoutMs({
+      requestTimeoutMs: 400000,
+      leaseMs: 300000,
+    }),
+    285000,
+  );
 });
 
 test('normalizeGeminiStructuredData maps canonical structured output into normalized listings', () => {

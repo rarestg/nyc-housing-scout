@@ -45,8 +45,16 @@ Current pass-B semantics:
 - `postUrl` is required for queue eligibility
 - `process:jobs` now runs the Gemini harness by default with the canonical structured schema
 - queued Gemini structured extraction now requests `thinkingLevel: minimal` by default so Gemini 3 does not fall back to dynamic/high thinking; actual usage metadata is still stored in each `processed_payloads` row
+- queued Gemini structured extraction now uses an explicit abortable request timeout (default `180000ms`, clamped below `--lease-ms`) so stalled calls fail before lease expiry
 - Gemini output is persisted in `processed_payloads` under the current provenance tuple
 - normalized `listing_records` are derived and inserted atomically when the job is completed
+- `process:jobs` and `validate:queue` now emit lightweight batch metrics directly in their JSON output:
+  - `claimToCompleteMs`
+  - per-job `latencyMs`
+  - `timeoutCount`
+  - `retryCount`
+  - aggregated Gemini `tokenUsage`
+  - batch outcomes split into `processed`, `retryable`, and `failed`
 - `validate:queue` reports scope coverage directly from `post_observations`, including:
   - total observations in scope
   - eligible observations
@@ -175,7 +183,8 @@ Claim semantics are atomic:
 
 - `claimProcessingJobs(...)` runs inside `BEGIN IMMEDIATE`
 - expired leases are first swept to `retryable` or `failed`
-- eligible jobs are then moved to `processing` with `claimed_by`, `claimed_at`, and `lease_expires_at`
+- `process:jobs` and `validate:queue` now claim one job at a time for sequential Gemini batches, so one stuck call only holds one lease
+- each claimed job is moved to `processing` with `claimed_by`, `claimed_at`, and `lease_expires_at`
 
 ## Remaining Work
 
@@ -183,4 +192,3 @@ Claim semantics are atomic:
 - stronger mapping of post body -> permalink when Facebook hides direct `/posts/...` URLs
 - cleaner modeling of wanted posts vs offered listings
 - broader fixture coverage for real raw DOM captures
-- request-level timeout / cancellation handling around long-running Gemini calls

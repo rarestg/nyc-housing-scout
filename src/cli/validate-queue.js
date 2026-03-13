@@ -91,6 +91,7 @@ async function main() {
         ...scopeFilters,
         limit: processLimit,
         leaseMs: queueDefaults.leaseMs,
+        requestTimeoutMs: queueDefaults.requestTimeoutMs,
         claimedBy: workerId,
         retryDelayMs,
         envFile,
@@ -131,10 +132,12 @@ async function main() {
       envFile,
       temperature,
       thinkingLevel,
+      requestTimeoutMs: queueDefaults.requestTimeoutMs,
       claimedCount: processing.claimedCount,
       processedCount: processing.processedCount,
       retryableCount: processing.retryableCount,
       failedCount: processing.failedCount,
+      metrics: processing.metrics,
       ...(full ? { results: processing.results } : {}),
     },
     after,
@@ -191,6 +194,26 @@ function emptyProcessingResult() {
     processedCount: 0,
     retryableCount: 0,
     failedCount: 0,
+    metrics: {
+      batchStartedAt: null,
+      batchCompletedAt: null,
+      claimToCompleteMs: 0,
+      claimedSequentially: true,
+      jobLatencyMs: {
+        count: 0,
+        min: 0,
+        max: 0,
+        avg: 0,
+      },
+      timeoutCount: 0,
+      retryCount: 0,
+      tokenUsage: {},
+      outcomes: {
+        processed: 0,
+        retryable: 0,
+        failed: 0,
+      },
+    },
   };
 }
 
@@ -236,6 +259,7 @@ Options:
   --thinking-level <value>    Gemini 3 thinking level override: minimal|low|medium|high. Defaults to minimal.
   --max-attempts <n>          Defaults to 3
   --lease-ms <n>              Defaults to 300000
+  --request-timeout-ms <n>    Abort a Gemini request before the lease expires. Defaults to 180000, clamped below lease-ms.
   --retry-delay-ms <n>        Defaults to 0
   --worker-id <value>         Override the generated validator worker id.
   --full                      Include full enqueue/process result arrays.

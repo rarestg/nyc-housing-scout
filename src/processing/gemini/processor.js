@@ -1,10 +1,13 @@
 import {
   DEFAULT_GEMINI_ENV_FILE_CANDIDATES,
+  DEFAULT_GEMINI_LEASE_GUARD_MS,
   DEFAULT_GEMINI_MODEL_NAME,
   DEFAULT_GEMINI_PROCESSOR_VERSION,
+  DEFAULT_GEMINI_REQUEST_TIMEOUT_MS,
   DEFAULT_GEMINI_SCHEMA_VERSION,
   DEFAULT_GEMINI_TEMPERATURE,
   DEFAULT_GEMINI_THINKING_LEVEL,
+  MIN_GEMINI_REQUEST_TIMEOUT_MS,
 } from './config.js';
 import {
   GEMINI_CANONICAL_SCHEMA_SOURCE,
@@ -20,6 +23,7 @@ import {
 
 export async function processObservationWithGemini(observation, options = {}) {
   const runtime = resolveGeminiRuntime(options);
+  const requestTimeoutMs = resolveGeminiRequestTimeoutMs(options);
 
   return runGeminiStructuredExtraction({
     apiKey: runtime.apiKey,
@@ -38,6 +42,8 @@ export async function processObservationWithGemini(observation, options = {}) {
     outputSchema: options.outputSchema || GEMINI_STRUCTURED_OUTPUT_SCHEMA,
     schemaSource: options.schemaSource || GEMINI_CANONICAL_SCHEMA_SOURCE,
     normalizeStructuredData: options.normalizeStructuredData || normalizeGeminiStructuredData,
+    abortSignal: options.abortSignal,
+    requestTimeoutMs,
   });
 }
 
@@ -87,4 +93,41 @@ function resolveGeminiEnvFile(explicitEnvFile, cwd = process.cwd()) {
   }
 
   return findGeminiEnvFile(DEFAULT_GEMINI_ENV_FILE_CANDIDATES, cwd);
+}
+
+export function resolveGeminiRequestTimeoutMs(options = {}) {
+  const requestedTimeoutMs = normalizePositiveInteger(
+    options.requestTimeoutMs,
+    DEFAULT_GEMINI_REQUEST_TIMEOUT_MS,
+    24 * 60 * 60 * 1000,
+  );
+  const leaseMs = normalizePositiveInteger(options.leaseMs, null, 24 * 60 * 60 * 1000);
+
+  if (!leaseMs) {
+    return requestedTimeoutMs;
+  }
+
+  const guardMs = Math.min(
+    DEFAULT_GEMINI_LEASE_GUARD_MS,
+    Math.max(MIN_GEMINI_REQUEST_TIMEOUT_MS, Math.floor(leaseMs / 10)),
+  );
+  const maxAllowedTimeoutMs = Math.max(
+    MIN_GEMINI_REQUEST_TIMEOUT_MS,
+    leaseMs - guardMs,
+  );
+
+  return Math.min(requestedTimeoutMs, maxAllowedTimeoutMs);
+}
+
+function normalizePositiveInteger(value, fallback, max) {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return Math.min(parsed, max);
 }

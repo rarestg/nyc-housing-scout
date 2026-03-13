@@ -280,6 +280,245 @@ test('runProcessingBatch processes Gemini jobs and maps them into listing record
   assert.equal(listings.every((listing) => listing.extractorVersion === `${DEFAULT_PROCESSOR_VERSION}|${DEFAULT_SCHEMA_VERSION}|${DEFAULT_MODEL_NAME}`), true);
 });
 
+test('runProcessingBatch claims sequentially, times out stuck Gemini calls, and records batch metrics', async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nyc-housing-scout-processing-timeout-'));
+  const fixture = seedProcessingFixture(dataDir);
+  const { storage, run } = fixture;
+
+  storage.enqueueProcessingJobs({
+    runId: run.id,
+    processorVersion: DEFAULT_PROCESSOR_VERSION,
+    schemaVersion: DEFAULT_SCHEMA_VERSION,
+    modelName: DEFAULT_MODEL_NAME,
+  });
+
+  const originalClaimProcessingJobs = storage.claimProcessingJobs.bind(storage);
+  const claimLimits = [];
+  storage.claimProcessingJobs = (input = {}) => {
+    claimLimits.push(Number(input.limit));
+    return originalClaimProcessingJobs(input);
+  };
+
+  let callCount = 0;
+  const fakeClient = {
+    models: {
+      async generateContent(request) {
+        callCount += 1;
+
+        if (callCount === 1) {
+          await new Promise((resolve, reject) => {
+            request.config.abortSignal.addEventListener('abort', () => {
+              reject(request.config.abortSignal.reason || new Error('aborted'));
+            }, { once: true });
+          });
+        }
+
+        return {
+          text: JSON.stringify({
+            source: {
+              postUrl: 'https://www.facebook.com/groups/test/posts/post-002/',
+            },
+            listings: [
+              {
+                postIntent: 'offering',
+                listingType: 'sublet',
+                location: {
+                  rawText: 'Greenpoint',
+                  address: null,
+                  neighborhood: 'Greenpoint',
+                  borough: 'Brooklyn',
+                  city: 'New York',
+                  state: 'NY',
+                  lat: null,
+                  lng: null,
+                  geocodeConfidence: null,
+                },
+                pricing: {
+                  amount: 2200,
+                  currency: 'USD',
+                  period: 'month',
+                  deposit: null,
+                  brokerFee: null,
+                  utilitiesIncluded: null,
+                },
+                rooms: {
+                  roomsAvailable: 1,
+                  totalBedrooms: 1,
+                  bathrooms: 1,
+                  occupancyNotes: null,
+                },
+                dates: {
+                  availableFrom: null,
+                  availableTo: null,
+                  leaseTermText: null,
+                },
+                features: {
+                  petsAllowed: null,
+                  laundry: null,
+                  furnished: true,
+                  privateBath: null,
+                  outdoorSpace: null,
+                  doorman: null,
+                  elevator: null,
+                },
+                contact: {
+                  contactMethod: 'dm',
+                  contactValue: null,
+                },
+                notes: {
+                  summary: 'Greenpoint sublet for 2200',
+                  rawSignals: ['Greenpoint', '2200'],
+                  ambiguities: [],
+                },
+                confidence: {
+                  overall: 0.82,
+                  fields: {
+                    postIntent: 0.9,
+                    listingType: 0.88,
+                    location: 0.9,
+                    borough: 0.95,
+                    price: 0.9,
+                    rooms: 0.75,
+                    dates: 0.2,
+                  },
+                },
+              },
+            ],
+            overallAmbiguities: [],
+          }),
+          responseId: 'resp_2200',
+          modelVersion: 'gemini-3-flash-preview',
+          usageMetadata: {
+            promptTokenCount: 10,
+            candidatesTokenCount: 12,
+            totalTokenCount: 22,
+          },
+          candidates: [
+            {
+              finishReason: 'STOP',
+            },
+          ],
+        };
+      },
+    },
+  };
+
+  const result = await runProcessingBatch(storage, {
+    runId: run.id,
+    limit: 2,
+    leaseMs: 200,
+    requestTimeoutMs: 180,
+    claimedBy: 'gemini-timeout-worker',
+    retryDelayMs: 0,
+    apiKey: 'test-key',
+    client: fakeClient,
+    processorVersion: DEFAULT_PROCESSOR_VERSION,
+    schemaVersion: DEFAULT_SCHEMA_VERSION,
+    modelName: DEFAULT_MODEL_NAME,
+  });
+
+  const jobs = storage.listProcessingJobs({
+    runId: run.id,
+    processorVersion: DEFAULT_PROCESSOR_VERSION,
+    schemaVersion: DEFAULT_SCHEMA_VERSION,
+    modelName: DEFAULT_MODEL_NAME,
+    includeProcessedPayload: true,
+    limit: 10,
+  });
+
+  storage.close();
+
+  assert.deepEqual(claimLimits, [1, 1]);
+  assert.equal(result.claimedCount, 2);
+  assert.equal(result.processedCount, 1);
+  assert.equal(result.retryableCount, 1);
+  assert.equal(result.failedCount, 0);
+  assert.equal(result.metrics.claimedSequentially, true);
+  assert.equal(result.metrics.timeoutCount, 1);
+  assert.equal(result.metrics.retryCount, 0);
+  assert.equal(result.metrics.tokenUsage.totalTokenCount, 22);
+  assert.equal(result.metrics.outcomes.processed, 1);
+  assert.equal(result.metrics.outcomes.retryable, 1);
+  assert.equal(result.metrics.outcomes.failed, 0);
+  assert.equal(result.results[0].timedOut, true);
+  assert.equal(result.results[1].status, 'processed');
+  assert.equal(result.results[1].tokenUsage.totalTokenCount, 22);
+
+  const retryableJob = jobs.find((job) => job.status === 'retryable');
+  const processedJob = jobs.find((job) => job.status === 'processed');
+  assert.ok(retryableJob);
+  assert.ok(processedJob);
+  assert.equal(processedJob.processedPayload.processing.retryCount, 0);
+  assert.equal(processedJob.processedPayload.gemini.requestTimeoutMs, 150);
+});
+
+test('runProcessingBatch does not reclaim the same retryable job within one invocation', async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nyc-housing-scout-processing-same-batch-'));
+  const fixture = seedProcessingFixture(dataDir);
+  const { storage, firstObservationId } = fixture;
+
+  const enqueueResult = storage.enqueueProcessingJobs({
+    observationId: firstObservationId,
+    processorVersion: DEFAULT_PROCESSOR_VERSION,
+    schemaVersion: DEFAULT_SCHEMA_VERSION,
+    modelName: DEFAULT_MODEL_NAME,
+  });
+
+  assert.equal(enqueueResult.counts.created, 1);
+
+  let callCount = 0;
+  const fakeClient = {
+    models: {
+      async generateContent(request) {
+        callCount += 1;
+
+        await new Promise((resolve, reject) => {
+          request.config.abortSignal.addEventListener('abort', () => {
+            reject(request.config.abortSignal.reason || new Error('aborted'));
+          }, { once: true });
+        });
+      },
+    },
+  };
+
+  const result = await runProcessingBatch(storage, {
+    observationId: firstObservationId,
+    limit: 3,
+    requestTimeoutMs: 50,
+    claimedBy: 'gemini-same-batch-worker',
+    retryDelayMs: 0,
+    apiKey: 'test-key',
+    client: fakeClient,
+    processorVersion: DEFAULT_PROCESSOR_VERSION,
+    schemaVersion: DEFAULT_SCHEMA_VERSION,
+    modelName: DEFAULT_MODEL_NAME,
+  });
+
+  const [job] = storage.listProcessingJobs({
+    observationId: firstObservationId,
+    processorVersion: DEFAULT_PROCESSOR_VERSION,
+    schemaVersion: DEFAULT_SCHEMA_VERSION,
+    modelName: DEFAULT_MODEL_NAME,
+    limit: 1,
+  });
+
+  storage.close();
+
+  assert.equal(callCount, 1);
+  assert.equal(result.claimedCount, 1);
+  assert.equal(result.processedCount, 0);
+  assert.equal(result.retryableCount, 1);
+  assert.equal(result.failedCount, 0);
+  assert.equal(result.results.length, 1);
+  assert.equal(result.results[0].status, 'retryable');
+  assert.equal(result.results[0].timedOut, true);
+  assert.equal(result.metrics.timeoutCount, 1);
+  assert.equal(result.metrics.outcomes.retryable, 1);
+  assert.equal(job.status, 'retryable');
+  assert.equal(job.attemptCount, 1);
+  assert.equal(job.lastError, 'Gemini request timed out after 50ms');
+});
+
 test('processing CLIs enqueue, process, inspect, and retry jobs', () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nyc-housing-scout-processing-cli-'));
   const fixture = seedProcessingFixture(dataDir);

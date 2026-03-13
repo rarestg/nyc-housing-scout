@@ -41,6 +41,7 @@ async function main() {
       freshness: readFlag(args, '--freshness', undefined),
       limit: readFlag(args, '--limit', '10'),
       leaseMs: queueDefaults.leaseMs,
+      requestTimeoutMs: queueDefaults.requestTimeoutMs,
       claimedBy: workerId,
       retryDelayMs,
       envFile,
@@ -62,6 +63,7 @@ async function main() {
         schemaVersion: provenance.schemaVersion,
         modelName: provenance.modelName,
         leaseMs: queueDefaults.leaseMs,
+        requestTimeoutMs: queueDefaults.requestTimeoutMs,
         retryDelayMs,
         envFile,
         temperature,
@@ -71,6 +73,7 @@ async function main() {
       processedCount: result.processedCount,
       retryableCount: result.retryableCount,
       failedCount: result.failedCount,
+      metrics: result.metrics,
       results: result.results,
     });
   } catch (error) {
@@ -103,6 +106,7 @@ Options:
   --temperature <n>            Gemini temperature override. Defaults to 0.
   --thinking-level <value>     Gemini 3 thinking level override: minimal|low|medium|high. Defaults to minimal.
   --lease-ms <n>               Claim lease in milliseconds. Defaults to 300000.
+  --request-timeout-ms <n>     Abort a Gemini request before the lease expires. Defaults to 180000, clamped below lease-ms.
   --retry-delay-ms <n>         Delay before retryable jobs become claimable. Defaults to 0.
   --worker-id <value>          Override the generated local worker id.
   --data-dir <path>            Override the default ./data directory.`);

@@ -7,9 +7,11 @@ import {
   DEFAULT_GEMINI_KEY_CHECK_THINKING_LEVEL,
   DEFAULT_GEMINI_MODEL_NAME,
   DEFAULT_GEMINI_PROCESSOR_VERSION,
+  DEFAULT_GEMINI_REQUEST_TIMEOUT_MS,
   DEFAULT_GEMINI_SCHEMA_VERSION,
   DEFAULT_GEMINI_THINKING_LEVEL,
   GEMINI_API_KEY_ENV_VARS,
+  MIN_GEMINI_REQUEST_TIMEOUT_MS,
 } from './config.js';
 
 export {
@@ -18,10 +20,31 @@ export {
   DEFAULT_GEMINI_KEY_CHECK_THINKING_LEVEL,
   DEFAULT_GEMINI_MODEL_NAME,
   DEFAULT_GEMINI_PROCESSOR_VERSION,
+  DEFAULT_GEMINI_REQUEST_TIMEOUT_MS,
   DEFAULT_GEMINI_SCHEMA_VERSION,
   DEFAULT_GEMINI_THINKING_LEVEL,
   GEMINI_API_KEY_ENV_VARS,
+  MIN_GEMINI_REQUEST_TIMEOUT_MS,
 };
+
+export class GeminiRequestTimeoutError extends Error {
+  constructor(timeoutMs, cause) {
+    super(`Gemini request timed out after ${timeoutMs}ms`);
+    this.name = 'GeminiRequestTimeoutError';
+    this.code = 'GEMINI_REQUEST_TIMEOUT';
+    this.timeoutMs = timeoutMs;
+    this.cause = cause;
+  }
+}
+
+export class GeminiRequestCancelledError extends Error {
+  constructor(cause) {
+    super('Gemini request was cancelled');
+    this.name = 'GeminiRequestCancelledError';
+    this.code = 'GEMINI_REQUEST_CANCELLED';
+    this.cause = cause;
+  }
+}
 
 export function parseEnvFile(source) {
   const parsed = {};
@@ -245,6 +268,7 @@ export async function runGeminiStructuredExtraction(options) {
   const thinkingLevel = normalizeThinkingLevel(
     options.thinkingLevel || DEFAULT_GEMINI_THINKING_LEVEL,
   );
+  const requestTimeoutMs = normalizeRequestTimeoutMs(options.requestTimeoutMs);
   const responseMimeType = 'application/json';
 
   if (!modelName) {
@@ -272,19 +296,44 @@ export async function runGeminiStructuredExtraction(options) {
   }
 
   const client = options.client || new GoogleGenAI({ apiKey });
-  const response = await client.models.generateContent({
-    model: modelName,
-    contents: prompt,
-    config: {
-      responseMimeType,
-      responseJsonSchema: options.outputSchema,
-      temperature,
-      // Gemini 3 should use thinkingLevel explicitly so extraction never falls back to dynamic thinking.
-      thinkingConfig: {
-        thinkingLevel,
-      },
-    },
+  const requestAbort = createRequestAbortController({
+    timeoutMs: requestTimeoutMs,
+    abortSignal: options.abortSignal,
   });
+  let response;
+
+  try {
+    response = await client.models.generateContent({
+      model: modelName,
+      contents: prompt,
+      config: {
+        responseMimeType,
+        responseJsonSchema: options.outputSchema,
+        temperature,
+        httpOptions: {
+          ...normalizeHttpOptions(options.httpOptions),
+          timeout: requestTimeoutMs,
+        },
+        abortSignal: requestAbort.signal,
+        // Gemini 3 should use thinkingLevel explicitly so extraction never falls back to dynamic thinking.
+        thinkingConfig: {
+          thinkingLevel,
+        },
+      },
+    });
+  } catch (error) {
+    if (requestAbort.didTimeout()) {
+      throw new GeminiRequestTimeoutError(requestTimeoutMs, error);
+    }
+
+    if (requestAbort.didCancel()) {
+      throw new GeminiRequestCancelledError(error);
+    }
+
+    throw error;
+  } finally {
+    requestAbort.cleanup();
+  }
   const rawResponseText = normalizeString(response.text);
 
   if (!rawResponseText) {
@@ -330,6 +379,7 @@ export async function runGeminiStructuredExtraction(options) {
     gemini: {
       responseMimeType,
       temperature,
+      requestTimeoutMs,
       thinkingConfig: {
         thinkingLevel,
       },
@@ -398,6 +448,21 @@ function normalizeThinkingLevel(value) {
   return normalized;
 }
 
+function normalizeRequestTimeoutMs(value) {
+  if (value === undefined || value === null || value === '') {
+    return DEFAULT_GEMINI_REQUEST_TIMEOUT_MS;
+  }
+
+  const numericValue = Number(value);
+  if (!Number.isInteger(numericValue) || numericValue < MIN_GEMINI_REQUEST_TIMEOUT_MS) {
+    throw new Error(
+      `Gemini structured extraction requires requestTimeoutMs to be an integer >= ${MIN_GEMINI_REQUEST_TIMEOUT_MS}, received: ${value}`,
+    );
+  }
+
+  return numericValue;
+}
+
 function normalizeArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -413,4 +478,52 @@ function normalizeNullableString(value) {
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function normalizeHttpOptions(value) {
+  return isPlainObject(value) ? value : {};
+}
+
+function createRequestAbortController(options = {}) {
+  const controller = new AbortController();
+  const parentSignal = options.abortSignal;
+  const timeoutMs = options.timeoutMs;
+  let timedOut = false;
+  let cancelled = false;
+  let timeoutHandle = null;
+
+  const abortFromParent = () => {
+    cancelled = true;
+    controller.abort(parentSignal?.reason || new Error('Gemini request was cancelled'));
+  };
+
+  if (parentSignal instanceof AbortSignal) {
+    if (parentSignal.aborted) {
+      abortFromParent();
+    } else {
+      parentSignal.addEventListener('abort', abortFromParent, { once: true });
+    }
+  }
+
+  if (timeoutMs > 0) {
+    timeoutHandle = setTimeout(() => {
+      timedOut = true;
+      controller.abort(new Error(`Gemini request timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  }
+
+  return {
+    signal: controller.signal,
+    didTimeout: () => timedOut,
+    didCancel: () => cancelled,
+    cleanup() {
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
+
+      if (parentSignal instanceof AbortSignal && !parentSignal.aborted) {
+        parentSignal.removeEventListener('abort', abortFromParent);
+      }
+    },
+  };
 }

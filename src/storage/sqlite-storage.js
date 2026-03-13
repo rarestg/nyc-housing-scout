@@ -577,6 +577,7 @@ export class SqliteStorage {
       ];
       const params = ['pending', 'retryable', now];
       const observationIds = normalizeStringList(input.observationIds || input.observationId);
+      const excludeJobIds = normalizeStringList(input.excludeJobIds || input.excludeJobId);
 
       if (input.sourceId) {
         clauses.push('j.source_id = ?');
@@ -601,6 +602,11 @@ export class SqliteStorage {
       if (observationIds.length) {
         clauses.push(`j.observation_id IN (${buildPlaceholders(observationIds.length)})`);
         params.push(...observationIds);
+      }
+
+      if (excludeJobIds.length) {
+        clauses.push(`j.id NOT IN (${buildPlaceholders(excludeJobIds.length)})`);
+        params.push(...excludeJobIds);
       }
 
       appendOptionalProvenanceFilters(input, clauses, params, 'j');

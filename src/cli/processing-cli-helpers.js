@@ -36,6 +36,7 @@ export function readQueueDefaults(argv) {
   return {
     maxAttempts: readFlag(argv, '--max-attempts', String(DEFAULT_MAX_ATTEMPTS)),
     leaseMs: readFlag(argv, '--lease-ms', String(DEFAULT_LEASE_MS)),
+    requestTimeoutMs: readFlag(argv, '--request-timeout-ms', undefined),
   };
 }
 
