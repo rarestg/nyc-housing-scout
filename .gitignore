@@ -6,3 +6,4 @@ data/normalized/
 data/storage/
 data/cache/
 .DS_Store
+.agents/
