@@ -1,6 +1,6 @@
 # nyc-housing-scout
 
-Local-first pipeline for collecting Facebook housing posts, storing them durably, extracting structured listing data, and preparing that data for a frontend.
+Local-first pipeline for collecting Facebook housing posts, storing them durably, extracting structured listing data, and exposing that state through lightweight local inspection surfaces.
 
 ## What it does
 
@@ -10,6 +10,7 @@ Local-first pipeline for collecting Facebook housing posts, storing them durably
 - persist canonical post state and crawl history in SQLite
 - store raw artifacts on disk for replay/debugging
 - extract structured housing listings from messy free-form posts
+- inspect runs, observations, jobs, listings, and provenance in a local operator UI
 - support a future frontend for filtering by things like price, location, bedrooms, listing type, and availability
 
 ## Architecture at a glance
@@ -61,6 +62,7 @@ Current bottleneck:
 - `src/extractors/` — heuristic housing extraction
 - `src/processing/` — processing provenance defaults and queue worker logic
 - `src/storage/` — storage interface + SQLite implementation
+- `src/ui/` — local inspection server and static operator UI
 - `docs/` — architecture, passes, roadmap, and notes
 - `examples/` — fixtures and exploratory scripts
 - `data/raw/` — raw scrape artifacts (gitignored)
@@ -92,6 +94,22 @@ Current bottleneck:
 
 See `docs/INDEX.md` for a full map.
 
+## When You Revisit Cloudflare
+
+When it is time to build the hosted/public version, start here:
+
+- `docs/reviews/README.md` — index of architectural reviews
+- `docs/reviews/2026-03-16_00-40-29_CLOUDFLARE_DEPLOYMENT_READINESS_REVIEW.md` — the deployment-readiness assessment and recommended target architecture
+
+Read that Cloudflare review in this order:
+
+1. `Executive Verdict` — the short answer on what can move to Cloudflare and what should stay local
+2. `Current Readiness` and `Why The Current Cloudflare Lift-And-Shift Fails` — what in the repo is portable vs laptop-bound
+3. `D1 Vs Postgres / Supabase` — database decision and why D1 is the recommended first target
+4. `Ideal Cloudflare End State` and `Suggested Implementation Phases` — the concrete build plan to follow
+
+Keep `docs/PIPELINE.md` open while reading it. The Cloudflare review assumes the current local-first split remains true: Facebook scraping, raw artifacts, and the canonical SQLite write-side stay on the laptop until we intentionally replace that architecture.
+
 ## Commands
 
 ### Tests
@@ -104,6 +122,11 @@ See `docs/INDEX.md` for a full map.
 - `npm run inspect:storage -- observations --run-id <runId> --limit 10`
 - `npm run inspect:storage -- listings --run-id <runId> --limit 10`
 - `npm run inspect:storage -- artifacts --run-id <runId>`
+
+### Inspect in browser
+- `npm run inspect:ui`
+- open `http://127.0.0.1:4310`
+- browse runs, observations, jobs, listings, run steps, artifacts, and full JSON payloads without dropping to raw SQL or CLI output
 
 ### Processing queue
 - `npm run enqueue:processing -- --run-id <runId>`
@@ -122,7 +145,7 @@ See `docs/INDEX.md` for a full map.
 The next major build steps are:
 
 1. harden crawl strategy (incremental vs backfill, top-of-feed reset, overlap anchors)
-2. shape query surfaces for the frontend
+2. tighten the operator inspection UI and shape query surfaces for a future hosted frontend
 3. tighten Gemini timeout / retry behavior for slow model calls
 4. move the DOM path fully to enqueue-first processing
 
