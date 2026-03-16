@@ -1,0 +1,196 @@
+for (;;);
+{
+  "data": {
+    "node_v2": {
+      "__typename": "Story",
+      "__isFeedUnit": "Story",
+      "id": "UzpfSTEzNjE1MjQ5NzY6Vks6MjQ0MDU2Mzc2ODkxMzQxMzc=",
+      "feedback": {
+        "associated_group": {
+          "context_actor_hovercard": "GROUP",
+          "id": "2664056243718928"
+        },
+        "id": "ZmVlZGJhY2s6MjQ0MDU2Mzc2ODkxMzQxMzc=",
+        "owning_profile": {
+          "__typename": "User",
+          "name": "Alison Jolimet Fages",
+          "short_name": "Alison",
+          "id": "1361524976",
+          "url": "https://www.facebook.com/alison.jolimet",
+          "profile_url": "https://www.facebook.com/alison.jolimet"
+        }
+      },
+      "attachments": [],
+      "cache_id": "1833965030750785098",
+      "post_id": "24405637689134137",
+      "actors": [
+        {
+          "__typename": "User",
+          "id": "1361524976",
+          "name": "Alison Jolimet Fages",
+          "url": "https://www.facebook.com/alison.jolimet"
+        }
+      ],
+      "message": {
+        "__typename": "TextWithEntities",
+        "text": "Hello! Looking for a +2 bedrooms, big living room with a lot of light, max 6.5k in Williamsburg (preferably close to Graham Av) - lease should start in May/June \n\nThanks!"
+      },
+      "wwwURL": "https://www.facebook.com/groups/williamsburggreenpointhousing/permalink/24405637689134137/",
+      "target_group": {
+        "id": "2664056243718928"
+      },
+      "comet_sections": {
+        "content": {
+          "story": {
+            "id": "UzpfSTEzNjE1MjQ5NzY6Vks6MjQ0MDU2Mzc2ODkxMzQxMzc=",
+            "feedback": {
+              "id": "ZmVlZGJhY2s6MjQ0MDU2Mzc2ODkxMzQxMzc="
+            },
+            "post_id": "24405637689134137",
+            "wwwURL": "https://www.facebook.com/groups/williamsburggreenpointhousing/permalink/24405637689134137/",
+            "comet_sections": {
+              "message": {
+                "story": {
+                  "is_text_only_story": true,
+                  "message": {
+                    "text": "Hello! Looking for a +2 bedrooms, big living room with a lot of light, max 6.5k in Williamsburg (preferably close to Graham Av) - lease should start in May/June \n\nThanks!"
+                  },
+                  "message_truncation_line_limit": 5,
+                  "attachments": []
+                }
+              },
+              "message_container": {
+                "story": {
+                  "message": {
+                    "text": "Hello! Looking for a +2 bedrooms, big living room with a lot of light, max 6.5k in Williamsburg (preferably close to Graham Av) - lease should start in May/June \n\nThanks!"
+                  },
+                  "attachments": []
+                }
+              }
+            }
+          }
+        },
+        "context_layout": {
+          "story": {
+            "comet_sections": {
+              "actor_photo": {
+                "story": {
+                  "actors": [
+                    {
+                      "__typename": "User",
+                      "id": "1361524976",
+                      "name": "Alison Jolimet Fages",
+                      "url": "https://www.facebook.com/alison.jolimet"
+                    }
+                  ],
+                  "to": {
+                    "__typename": "Group",
+                    "id": "2664056243718928",
+                    "name": "Williamsburg Greenpoint Housing",
+                    "url": "https://www.facebook.com/groups/williamsburggreenpointhousing/"
+                  }
+                }
+              },
+              "metadata": [
+                {
+                  "story": {
+                    "actors": [
+                      {
+                        "__typename": "User",
+                        "id": "1361524976",
+                        "name": "Alison Jolimet Fages",
+                        "url": "https://www.facebook.com/alison.jolimet"
+                      }
+                    ],
+                    "to": {
+                      "__typename": "Group",
+                      "id": "2664056243718928",
+                      "name": "Williamsburg Greenpoint Housing",
+                      "url": "https://www.facebook.com/groups/williamsburggreenpointhousing/"
+                    }
+                  }
+                },
+                {
+                  "override_url": "https://www.facebook.com/groups/2664056243718928/?multi_permalinks=24405637689134137&hoisted_section_header_type=recently_seen",
+                  "story": {
+                    "creation_time": 1772484099,
+                    "url": "https://www.facebook.com/groups/williamsburggreenpointhousing/posts/24405637689134137/"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "feedback": {
+          "story": {
+            "story_ufi_container": {
+              "story": {
+                "post_id": "24405637689134137",
+                "feedback_context": {
+                  "feedback_target_with_context": {
+                    "comment_list_renderer": {
+                      "feedback": {
+                        "can_viewer_comment": true,
+                        "url": "https://www.facebook.com/groups/williamsburggreenpointhousing/permalink/24405637689134137/",
+                        "comment_rendering_instance": {
+                          "comments": {
+                            "total_count": 0
+                          }
+                        },
+                        "viewer_actor": {
+                          "__typename": "User",
+                          "id": "665233712"
+                        },
+                        "plugins": [
+                          {
+                            "post_id": "24405637689134137"
+                          }
+                        ]
+                      }
+                    },
+                    "comet_ufi_summary_and_actions_renderer": {
+                      "feedback": {
+                        "reaction_count": {
+                          "count": 0
+                        },
+                        "share_count": {
+                          "count": 0
+                        },
+                        "if_viewer_cannot_see_seen_by_member_list": {
+                          "seen_by": {
+                            "count": 0
+                          }
+                        },
+                        "adaptive_ufi_action_renderers": [
+                          {},
+                          {},
+                          {
+                            "story": {
+                              "post_id": "24405637689134137"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+{
+  "label": "CometSinglePostDialogContentQuery$defer$loggedOutCards_node_v2",
+  "path": [
+    "node_v2"
+  ],
+  "data": {
+    "profile_logged_out_permalink_cards": []
+  },
+  "extensions": {
+    "is_final": true
+  }
+}

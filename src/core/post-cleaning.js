@@ -16,7 +16,7 @@ export function normalizeAuthorName(author, bodyText) {
   const bodyStart = String(bodyText || '').trim().slice(0, 120);
   if (bodyStart && (value === bodyStart || bodyStart.startsWith(value))) return null;
   if (/^(About|Featured|Recent media|Discussion)$/i.test(value)) return null;
-  if (/\$|apartment|sublet|room available|looking for|iso|bed\/|bath|penthouse/i.test(value)) return null;
+  if (/\$|\b(?:apartment|sublet|iso|penthouse|bath)\b|room available|looking for|\bbed\//i.test(value)) return null;
   if (/^\+\d+$/.test(value)) return null;
   if (/^\d+:\d\d\s*\/\s*\d+:\d\d$/.test(value)) return null;
   if (/\.[a-z]{2,}$/i.test(value)) return null;

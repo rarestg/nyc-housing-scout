@@ -1,0 +1,5 @@
+"id":"UzpfSTEwMDAwNjI2NzA0MDk4MzpWSzoyNDM4NzU1MzczNDI3NTg2Ng==","feedback":{"associated_group":{"context_actor_hovercard":"GROUP","id":"2664056243718928"},"id":"ZmVlZGJhY2s6MjQzODc1NTM3MzQyNzU4NjY=","owning_profile":{"__typename":"User","name":"Jiadai He","short_name":"Jiadai","id":"100006267040983"}},"post_id":"24387553734275866"
+---
+"wwwURL":"https://www.facebook.com/groups/williamsburggreenpointhousing/permalink/24387553734275866/","target_group":{"id":"2664056243718928"}
+---
+"to":{"__typename":"Group","__isActor":"Group","id":"2664056243718928","__isEntity":"Group","url":"https://www.facebook.com/groups/williamsburggreenpointhousing/","name":"Williamsburg Greenpoint Housing"}

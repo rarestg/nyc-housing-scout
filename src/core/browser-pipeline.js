@@ -18,9 +18,19 @@ export function evaluateJson(fn, profileName) {
   return JSON.parse(stripCliBanner(raw));
 }
 
+export function buildEvaluateCall(runtime, ...args) {
+  const source = typeof runtime === 'function' ? runtime.toString() : String(runtime || '');
+  const serializedArgs = args.map((arg) => JSON.stringify(arg)).join(', ');
+  return `() => (${source})(${serializedArgs})`;
+}
+
 export function loadSeenIds(file) {
   if (!fs.existsSync(file)) return new Set();
   return new Set(JSON.parse(fs.readFileSync(file, 'utf8')));
+}
+
+export function hasFlag(argv, name) {
+  return argv.includes(name);
 }
 
 export function readFlag(argv, name, fallback) {
