@@ -1,0 +1,33 @@
+Worker 3: Address Resolution And Resolved Fields
+================================================
+
+Dispatch only after Worker 2 is stable.
+
+Mission
+-------
+Implement NYC-constrained address resolution on top of persisted evidence fragments and write generic resolved-field rows for location/address-related fields.
+
+Requirements
+------------
+- use explicit ambiguity/confidence storage
+- keep resolution explainable through supporting fragment refs
+- prefer unknown/ambiguous over false certainty
+
+Constraints
+-----------
+- do not add manual overrides yet
+- do not add correction UI
+- keep resolution independently runnable
+
+Own these files
+---------------
+- address resolution stage files
+- `src/storage/sqlite-storage.js`
+- relevant CLIs
+- tests
+- minimal docs/pass log
+
+Coordination
+------------
+Update only:
+- `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/handoffs/worker_3_status.txt`

@@ -107,6 +107,102 @@ try {
       }));
       break;
 
+    case 'evidence':
+      printCollection(command, {
+        limit: readFlag(commandArgs, '--limit', '20'),
+        runId: readFlag(commandArgs, '--run-id', undefined),
+        sourceKey: readFlag(commandArgs, '--source-key', undefined),
+        observationId: readFlag(commandArgs, '--observation-id', undefined),
+        fieldPath: readFlag(commandArgs, '--field-path', undefined),
+        fragmentKind: readFlag(commandArgs, '--fragment-kind', undefined),
+        sourceSurface: readFlag(commandArgs, '--source-surface', undefined),
+        producerKind: readFlag(commandArgs, '--producer-kind', undefined),
+        producerVersion: readFlag(commandArgs, '--producer-version', undefined),
+      }, storage.listEvidenceFragments({
+        limit: readFlag(commandArgs, '--limit', '20'),
+        runId: readFlag(commandArgs, '--run-id', undefined),
+        sourceKey: readFlag(commandArgs, '--source-key', undefined),
+        observationId: readFlag(commandArgs, '--observation-id', undefined),
+        fieldPath: readFlag(commandArgs, '--field-path', undefined),
+        fragmentKind: readFlag(commandArgs, '--fragment-kind', undefined),
+        sourceSurface: readFlag(commandArgs, '--source-surface', undefined),
+        producerKind: readFlag(commandArgs, '--producer-kind', undefined),
+        producerVersion: readFlag(commandArgs, '--producer-version', undefined),
+      }));
+      break;
+
+    case 'resolved':
+      printCollection(command, {
+        limit: readFlag(commandArgs, '--limit', '20'),
+        runId: readFlag(commandArgs, '--run-id', undefined),
+        sourceKey: readFlag(commandArgs, '--source-key', undefined),
+        observationId: readFlag(commandArgs, '--observation-id', undefined),
+        targetKind: readFlag(commandArgs, '--target-kind', undefined),
+        targetId: readFlag(commandArgs, '--target-id', undefined),
+        fieldPath: readFlag(commandArgs, '--field-path', undefined),
+        status: readFlag(commandArgs, '--status', undefined),
+        resolutionKind: readFlag(commandArgs, '--resolution-kind', undefined),
+        resolverVersion: readFlag(commandArgs, '--resolver-version', undefined),
+      }, storage.listResolvedFields({
+        limit: readFlag(commandArgs, '--limit', '20'),
+        runId: readFlag(commandArgs, '--run-id', undefined),
+        sourceKey: readFlag(commandArgs, '--source-key', undefined),
+        observationId: readFlag(commandArgs, '--observation-id', undefined),
+        targetKind: readFlag(commandArgs, '--target-kind', undefined),
+        targetId: readFlag(commandArgs, '--target-id', undefined),
+        fieldPath: readFlag(commandArgs, '--field-path', undefined),
+        status: readFlag(commandArgs, '--status', undefined),
+        resolutionKind: readFlag(commandArgs, '--resolution-kind', undefined),
+        resolverVersion: readFlag(commandArgs, '--resolver-version', undefined),
+      }));
+      break;
+
+    case 'manual':
+    case 'manual-overrides':
+      printCollection(command, {
+        limit: readFlag(commandArgs, '--limit', '20'),
+        runId: readFlag(commandArgs, '--run-id', undefined),
+        sourceKey: readFlag(commandArgs, '--source-key', undefined),
+        observationId: readFlag(commandArgs, '--observation-id', undefined),
+        targetKind: readFlag(commandArgs, '--target-kind', undefined),
+        targetId: readFlag(commandArgs, '--target-id', undefined),
+        fieldPath: readFlag(commandArgs, '--field-path', undefined),
+        status: readFlag(commandArgs, '--status', undefined),
+      }, storage.listManualOverrides({
+        limit: readFlag(commandArgs, '--limit', '20'),
+        runId: readFlag(commandArgs, '--run-id', undefined),
+        sourceKey: readFlag(commandArgs, '--source-key', undefined),
+        observationId: readFlag(commandArgs, '--observation-id', undefined),
+        targetKind: readFlag(commandArgs, '--target-kind', undefined),
+        targetId: readFlag(commandArgs, '--target-id', undefined),
+        fieldPath: readFlag(commandArgs, '--field-path', undefined),
+        status: readFlag(commandArgs, '--status', undefined),
+      }));
+      break;
+
+    case 'audit':
+    case 'audit-events':
+      printCollection(command, {
+        limit: readFlag(commandArgs, '--limit', '20'),
+        runId: readFlag(commandArgs, '--run-id', undefined),
+        sourceKey: readFlag(commandArgs, '--source-key', undefined),
+        observationId: readFlag(commandArgs, '--observation-id', undefined),
+        targetKind: readFlag(commandArgs, '--target-kind', undefined),
+        targetId: readFlag(commandArgs, '--target-id', undefined),
+        eventKind: readFlag(commandArgs, '--event-kind', undefined),
+        actorKind: readFlag(commandArgs, '--actor-kind', undefined),
+      }, storage.listAuditEvents({
+        limit: readFlag(commandArgs, '--limit', '20'),
+        runId: readFlag(commandArgs, '--run-id', undefined),
+        sourceKey: readFlag(commandArgs, '--source-key', undefined),
+        observationId: readFlag(commandArgs, '--observation-id', undefined),
+        targetKind: readFlag(commandArgs, '--target-kind', undefined),
+        targetId: readFlag(commandArgs, '--target-id', undefined),
+        eventKind: readFlag(commandArgs, '--event-kind', undefined),
+        actorKind: readFlag(commandArgs, '--actor-kind', undefined),
+      }));
+      break;
+
     case 'validate-run': {
       const runId = requireFlag(commandArgs, '--run-id');
       printJson({
@@ -150,6 +246,10 @@ function printUsage(exitCode, message) {
   npm run inspect:storage -- observations [--run-id <runId>] [--source-key key] [--freshness fresh] [--limit 20] [--full]
   npm run inspect:storage -- listings [--run-id <runId>] [--source-key key] [--listing-type room_share] [--limit 20] [--full]
   npm run inspect:storage -- artifacts [--run-id <runId>] [--observation-id <obsId>] [--artifact-kind raw_post_payload] [--limit 20]
+  npm run inspect:storage -- evidence [--run-id <runId>] [--observation-id <obsId>] [--field-path path] [--source-surface body_text] [--limit 20]
+  npm run inspect:storage -- resolved [--run-id <runId>] [--target-kind listing_record] [--field-path location.address] [--status accepted] [--limit 20]
+  npm run inspect:storage -- manual [--target-kind listing_record] [--target-id <listingId>] [--field-path location.address] [--status active] [--limit 20]
+  npm run inspect:storage -- audit [--target-kind listing_record] [--target-id <listingId>] [--event-kind manual_override_set] [--limit 20]
   npm run inspect:storage -- validate-run --run-id <runId>
 
 Options:

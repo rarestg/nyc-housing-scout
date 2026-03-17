@@ -1,5 +1,9 @@
 import { cleanPostBodyText, enrichPostLocation, normalizeAuthorName } from './post-cleaning.js';
 import { sanitizeFilename } from './file-utils.js';
+import {
+  extractFacebookPostIdFromUrl,
+  normalizeFacebookPostUrl,
+} from './facebook-post-identity.js';
 
 export function createCollectedPost(rawPost, options = {}) {
   const bodyText = cleanPostBodyText(rawPost.bodyText || '');
@@ -278,68 +282,6 @@ function buildFallbackDedupeKey(post) {
 function normalizeNullableString(value) {
   const normalized = String(value || '').trim();
   return normalized || null;
-}
-
-export function normalizeFacebookPostUrl(url, { postId, groupId } = {}) {
-  const raw = normalizeNullableString(url);
-  if (!raw) return null;
-
-  try {
-    const parsed = new URL(raw, 'https://www.facebook.com');
-    const normalizedOrigin = `https://${parsed.hostname.replace(/^m\./i, 'www.')}`;
-    const normalizedPostId = normalizeNullableString(postId)
-      || normalizeNullableString(parsed.searchParams.get('story_fbid'))
-      || normalizeNullableString(parsed.searchParams.get('multi_permalinks'));
-    const normalizedGroupId = normalizeNullableString(parsed.searchParams.get('id'))
-      || normalizeNullableString(groupId);
-    const pathname = parsed.pathname || '';
-    const groupsMatch = pathname.match(/^\/groups\/([^/]+)\/(?:posts|permalink)\/(\d{8,})\/?$/i);
-
-    if (groupsMatch) {
-      return `${normalizedOrigin}/groups/${normalizedGroupId || groupsMatch[1]}/posts/${groupsMatch[2]}/`;
-    }
-
-    if (/^\/(?:story|permalink)\.php$/i.test(pathname) && normalizedPostId && normalizedGroupId) {
-      return `${normalizedOrigin}/groups/${normalizedGroupId}/posts/${normalizedPostId}/`;
-    }
-
-    if (/^\/groups\/([^/]+)\/$/i.test(pathname)) {
-      const groupRef = pathname.match(/^\/groups\/([^/]+)\/$/i)?.[1] || normalizedGroupId;
-      const multiPermalinks = normalizeNullableString(parsed.searchParams.get('multi_permalinks'));
-      if (groupRef && multiPermalinks) {
-        return `${normalizedOrigin}/groups/${groupRef}/posts/${multiPermalinks}/`;
-      }
-    }
-
-    const normalizedPath = pathname.endsWith('/') ? pathname : `${pathname}/`;
-    return `${normalizedOrigin}${normalizedPath}`;
-  } catch {
-    return raw;
-  }
-}
-
-export function extractFacebookPostIdFromUrl(url) {
-  const raw = normalizeNullableString(url);
-  if (!raw) return null;
-
-  try {
-    const parsed = new URL(raw, 'https://www.facebook.com');
-    const pathname = parsed.pathname || '';
-    const groupsMatch = pathname.match(/^\/groups\/[^/]+\/(?:posts|permalink)\/(\d{8,})\/?$/i);
-    if (groupsMatch?.[1]) {
-      return groupsMatch[1];
-    }
-
-    return normalizeNullableString(parsed.searchParams.get('story_fbid'))
-      || normalizeNullableString(parsed.searchParams.get('multi_permalinks'))
-      || null;
-  } catch {
-    const groupsMatch = raw.match(/\/groups\/[^/]+\/(?:posts|permalink)\/(\d{8,})\/?/i);
-    if (groupsMatch?.[1]) {
-      return groupsMatch[1];
-    }
-    return null;
-  }
 }
 
 function scoreCollectedPostRichness(post) {

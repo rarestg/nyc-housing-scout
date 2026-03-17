@@ -1,0 +1,135 @@
+Priority Order
+==============
+
+P0: Make the listings table the obvious dominant workspace
+---------------------------------------------------------
+Why first:
+- this is the core browsing job
+- the current shell, header, summary strip, and filters still steal too much width and height from the table
+
+Includes:
+- slimmer shell chrome
+- compact or mostly-collapsed navigation rail
+- compressed route header
+- lighter summary strip
+- compact filter bar with expandable advanced filters
+- active-filter chips or a compact active-filter summary
+- more space allocated to the listings grid and detail drawer
+
+Preferred implementation stance:
+- keep the current left-rail concept
+- compress it into an icon rail or very compact rail
+- do not spend this sprint replacing it with a new top-nav architecture
+
+P1: Fix the row-selection and detail-drawer model
+-------------------------------------------------
+Why second:
+- this is the main interaction loop
+- the current page-level "Hide details" control is the wrong mental model
+
+Includes:
+- row selection opens and updates detail
+- close control lives inside the drawer header
+- stronger selected-row state
+- explicit table-to-detail linkage
+- drawer width and layout adjusted for real content
+- author, source, and posted time surfaced near the top of detail
+- advanced evidence/debug links demoted below primary review actions
+- route-to-route deep links should keep the target table and the open drawer in sync
+- action links that move between Listings, Posts, Review, and Debug should feel like buttons or pills, not bare underlined inline text
+
+P2: Increase scanability and density in Listings
+------------------------------------------------
+Why third:
+- the app is supposed to beat endless Facebook scrolling
+- if rows are too tall and columns wrap too much, the product fails at that job
+
+Includes:
+- reduce primary columns
+- merge secondary data into tighter stacked cells
+- clamp text aggressively
+- compact density by default
+- optional comfortable/compact mode only if it is cheap and clean
+
+P3: Simplify language and clarify missing/uncertain states
+----------------------------------------------------------
+Why fourth:
+- language and state clarity affect trust
+- terms like `Operator shell` and `Raw artifact` are internal-facing
+- "location unclear" is honest but not yet actionable enough
+
+Includes:
+- user-centered labels
+- clearer "why missing" wording when available
+- simpler action names like "View Facebook post"
+- clearer extracted vs unresolved vs validated state language
+
+Guardrail:
+- if the backend cannot yet distinguish missing vs unresolved vs not-analyzed, the UI should avoid fake specificity
+
+P4: Align Posts and Review with the improved Listings interaction model
+----------------------------------------------------------------------
+Why fifth:
+- Listings is primary, but the workflow depends on moving into evidence and review smoothly
+- Posts and Review should not feel like separate mini apps
+
+Includes:
+- consistent filter chrome
+- consistent drawer behavior
+- consistent row density
+- review-first language for correction and triage
+- keep Debug clearly secondary
+
+P5: Add linked-media evidence enrichment
+----------------------------------------
+Why after UI Sprint 2:
+- this materially improves extraction quality
+- but it is backend-heavy and should not block faster browsing improvements
+
+Includes:
+- capture metadata from supported linked media
+- start with safe high-signal sources like YouTube title/description
+- attach evidence to provenance
+- feed recovered evidence back into listings display, filters, and review prioritization once validated
+
+P6: Add evidence aggregation and NYC-constrained address resolution
+------------------------------------------------------------------
+Why next:
+- location is one of the highest-value fields
+- resolution should happen only after evidence collection is more complete
+
+Includes:
+- evidence fragment aggregation
+- address-candidate extraction
+- NYC-constrained geocoding / candidate matching
+- confidence and provenance for resolved fields
+- optional tightly-scoped LLM assistance only for ambiguous candidate parsing before deterministic validation
+
+P7: Add manual address correction, then broader overrides
+---------------------------------------------------------
+Why later:
+- manual edits need durable precedence, auditability, and safe validation
+- this is a correction workflow, not just a UI form
+
+Includes:
+- validated address lookup UI
+- override storage model
+- layered values: extracted / resolved / manual
+- revert and audit trail
+- manual values win for display and filtering unless explicitly reverted
+- correction tools live in Review or Resolve flows, not only in Debug
+
+P8: Saved searches and alert scaffolding
+----------------------------------------
+Why still important, but not before the above:
+- the long-term product value is "tell me when something relevant appears"
+- saved filters are the bridge to notifications
+
+This should follow once:
+- the listings workspace is fast to use
+- key listing fields are more trustworthy
+- query semantics are stable enough to persist
+
+Backend note: duplicate handling
+--------------------------------
+Plan stable-post collapse and near-duplicate clustering later. The UI should eventually consume duplicate-cluster hints, but this should not block the current priorities.

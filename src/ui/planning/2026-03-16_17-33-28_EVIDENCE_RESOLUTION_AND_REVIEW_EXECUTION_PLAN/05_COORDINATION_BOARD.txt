@@ -1,0 +1,42 @@
+Coordination Board
+==================
+
+Status
+------
+- Worker 1: completed
+- Worker 2: completed
+- Worker 3: completed
+- Worker 4: completed
+- Worker 5: completed
+- Worker 6: ready to dispatch
+
+Current recommendation
+----------------------
+Dispatch Worker 6 now.
+
+What is now stable before Worker 6
+----------------------------------
+- migration name and table shapes
+- precedence rules
+- storage helper names
+- evidence fragment producer/version contract
+- enrichment stage and CLI behavior
+- resolved-field status contract:
+  - `accepted`
+  - `candidate`
+  - `ambiguous`
+  - `unresolved`
+- effective-value read helpers and dashboard/API surfaces that preserve non-winning resolved rows for review
+- Review detail actions contract:
+  - `actions.manualOverride` from `GET /api/dashboard/review/:reviewId`
+  - `POST /api/dashboard/review/manual-overrides`
+  - `POST /api/dashboard/review/manual-overrides/clear`
+
+Program closeout
+----------------
+This bundle is complete when:
+
+- effective-value read models exist
+- overrides are durable and audited
+- Review can show and act on layered values honestly
+- Debug remains forensic

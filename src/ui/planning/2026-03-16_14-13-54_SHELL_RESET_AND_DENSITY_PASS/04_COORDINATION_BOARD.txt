@@ -1,0 +1,37 @@
+Coordination Board
+==================
+
+Status
+------
+- Worker 1: ready to dispatch
+- Worker 2: hold until Worker 1 is reviewed
+
+Current recommendation
+----------------------
+Dispatch Worker 1 now.
+
+Pass 1 focus
+------------
+- top nav replaces left rail
+- shell flattening
+- radius-token cleanup
+- filter action layout fix
+- detail header reset
+- table typography/density cleanup
+- preserve current detail/query-state behavior while the shell changes
+- ship clear active/focus states as part of Pass 1, not only polish
+
+Pass 2 trigger
+--------------
+Run Worker 2 only if Worker 1 leaves meaningful cleanup in:
+
+- responsive behavior
+- focus/keyboard polish
+- cross-route visual consistency
+- residual CSS simplification
+
+Do not treat Pass 2 as automatic.
+
+Program closeout
+----------------
+- If Worker 1 lands cleanly and the live UI review passes, mark Worker 2 skipped and treat this bundle as complete.

@@ -1,0 +1,134 @@
+Worker 3 Task: Listings Workspace
+=================================
+
+Mission
+-------
+Build the main `Listings` experience. This is the product centerpiece. The user should be able to open the app and immediately browse the newest listings across all groups in a way that is materially better than scrolling Facebook.
+
+Read first
+----------
+1. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/README.txt`
+2. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/01_REVIEW_SYNTHESIS.txt`
+3. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/02_REDESIGN_SPEC.txt`
+4. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/03_PHASED_IMPLEMENTATION_PLAN.txt`
+5. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/04_SHARED_CONTRACTS_AND_BOUNDARIES.txt`
+6. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_1_status.txt`
+7. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_2_status.txt`
+8. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_3_status.txt`
+
+Dependency note
+---------------
+Stage A is complete. Use the concrete shell and API seams that now exist:
+
+- the app shell already exists under `src/ui/dashboard/app/`
+- the listings API now exists at:
+  - `GET /api/dashboard/listings`
+  - `GET /api/dashboard/listings/:listingId`
+- list endpoints now return the paginated dashboard envelope:
+  - `items`
+  - `count`
+  - `pagination`
+  - `sort`
+  - `filters`
+
+Ownership
+---------
+You own:
+
+- `src/ui/dashboard/routes/listings/`
+- listing detail-pane components tied to the listings route
+- minimal import wiring in `src/ui/dashboard/app/DashboardApp.jsx` needed to replace the listings placeholder
+
+You do not own:
+
+- shared shell/routing
+- storage queries/API contracts
+- posts/review/debug routes
+- `src/ui/inspection-server.js` except for a clearly coordinated import seam fix if absolutely required
+
+Core deliverables
+-----------------
+1. `Listings` as the default/home route.
+2. A dense newest-first listings table.
+3. Strong server-backed filters and sorting.
+4. Pagination or equivalent server-backed browsing.
+5. A right-side detail pane that prioritizes:
+   - normalized listing information
+   - original post preview
+   - provenance/debug links
+   - raw JSON only at the end
+6. Small summary modules above the table if useful, but no decorative card sprawl.
+7. Replace `src/ui/dashboard/app/placeholders/ListingsRoutePlaceholder.jsx` with route-owned modules and wire the real route into `DashboardApp.jsx`.
+
+Requirements
+------------
+- Optimize for scanability.
+- Optimize for the actual listing, not the run.
+- Show source group context, but do not let source activity dominate.
+- Use humanized time.
+- Avoid giant badge stacks.
+- Avoid the old “x / y / z” metric style.
+- If multiple extractor variants exist for one observation, keep the table clean and expose the comparison in detail.
+- Reuse the shared shell primitives instead of rebuilding them:
+  - `useDashboardShellSlots(...)`
+  - `DataTable`
+  - `RouteScaffold`
+  - `FilterBar`, `FilterField`, `FilterInput`, `FilterSelect`, `FilterToggle`
+  - `useUrlQueryState`
+- Consume the new paginated API envelope instead of assuming the legacy inspector `{ count, items }` shape.
+
+Filters to prioritize
+---------------------
+- free-text search
+- source group
+- freshness
+- listing type
+- borough
+- neighborhood
+- price range
+- beds
+- baths
+- posted time window
+- confidence / ambiguity toggles if supported by the API
+
+Concrete Stage A seams
+----------------------
+- existing placeholder to replace:
+  - `src/ui/dashboard/app/placeholders/ListingsRoutePlaceholder.jsx`
+- generated build artifact:
+  - `src/ui/dashboard/dist/app.js`
+  - do not hand-edit this file; only let the dashboard build regenerate it during validation if needed
+- shared formatting already exists under:
+  - `src/ui/dashboard/lib/formatters.js`
+- query state already exists under:
+  - `src/ui/dashboard/lib/use-url-query-state.js`
+- detail pane shell already exists via:
+  - `useDashboardShellSlots(...)`
+- the server and assets are already wired; do not take over that seam unless blocked
+
+Validation
+----------
+- verify the route against real Williamsburg data
+- confirm the newest-first behavior is correct
+- confirm filters and sorting round-trip through the URL
+- confirm row selection and detail pane behavior are stable
+- confirm the route reads the new dashboard envelope correctly
+- confirm the route works at `/listings` and remains the default landing path
+
+Handoff requirements
+--------------------
+Update `handoffs/worker_3_status.txt`:
+
+- when you start
+- if an API or shell blocker appears
+- when you finish
+
+Include:
+- files changed
+- commands run
+- missing API fields or follow-ups
+- any UX tradeoffs you made
+
+Success criteria
+----------------
+The user can open the app, land on `Listings`, filter quickly, inspect a listing and its source post, and understand what is new and relevant without touching the Debug route.

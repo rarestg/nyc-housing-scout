@@ -1,0 +1,135 @@
+Worker 5 Status
+===============
+
+Status
+------
+completed
+
+Started at
+----------
+2026-03-15 23:28:14 EDT
+
+Finished at
+-----------
+2026-03-15 23:39:07 EDT
+
+Owned paths
+-----------
+- `src/ui/dashboard/`
+- small dashboard integration seams
+- dashboard-related tests
+- Stage C dashboard docs/pass log
+
+Files changed
+-------------
+- `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_5_status.txt`
+- `src/storage/sqlite-storage.js`
+- `src/ui/inspection-server.js`
+- `src/ui/dashboard/app/AppShell.jsx`
+- `src/ui/dashboard/components/DataTable.jsx`
+- `src/ui/dashboard/components/DetailPane.jsx`
+- `src/ui/dashboard/routes/debug/DebugRoute.jsx`
+- `src/ui/dashboard/routes/listings/ListingsRoute.jsx`
+- `src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `src/ui/dashboard/routes/review/ReviewRoute.jsx`
+- `src/ui/dashboard/routes/shared/route-support.jsx`
+- `src/ui/dashboard/styles/dashboard.css`
+- `src/ui/dashboard/dist/app.js`
+- `src/ui/dashboard/app/placeholders/DebugRoutePlaceholder.jsx` (deleted)
+- `src/ui/dashboard/app/placeholders/ListingsRoutePlaceholder.jsx` (deleted)
+- `src/ui/dashboard/app/placeholders/PostsRoutePlaceholder.jsx` (deleted)
+- `src/ui/dashboard/app/placeholders/ReviewRoutePlaceholder.jsx` (deleted)
+- `src/ui/dashboard/app/placeholders/demo-data.js` (deleted)
+- `test/dashboard-api.test.js`
+- `docs/passes/2026-03-15_23-38-40_STAGE_CROSS_GROUP_DASHBOARD_INTEGRATION_PASS.md`
+- `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/04_SHARED_CONTRACTS_AND_BOUNDARIES.txt`
+
+Commands run
+------------
+- `sed -n '1,220p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/README.txt`
+- `sed -n '1,260p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/01_REVIEW_SYNTHESIS.txt`
+- `sed -n '1,320p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/02_REDESIGN_SPEC.txt`
+- `sed -n '1,320p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/03_PHASED_IMPLEMENTATION_PLAN.txt`
+- `sed -n '1,360p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/04_SHARED_CONTRACTS_AND_BOUNDARIES.txt`
+- `sed -n '361,520p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/04_SHARED_CONTRACTS_AND_BOUNDARIES.txt`
+- `sed -n '1,260p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/05_COORDINATION_BOARD.txt`
+- `sed -n '1,260p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_1_status.txt`
+- `sed -n '1,260p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_2_status.txt`
+- `sed -n '1,320p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_3_status.txt`
+- `sed -n '1,360p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_4_status.txt`
+- `sed -n '1,260p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/worker_5_stage_c_integration_and_polish.txt`
+- `sed -n '1,260p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_5_status.txt`
+- `sed -n '1,240p' .agents/skills/agent-browser/SKILL.md`
+- `TZ=America/New_York date '+%Y-%m-%d %H:%M:%S %Z'`
+- `git status --short`
+- `rg --files src/ui/dashboard test | sed -n '1,240p'`
+- `sed -n '1,320p' src/ui/dashboard/routes/shared/route-support.jsx`
+- `sed -n '1,860p' src/ui/dashboard/routes/listings/ListingsRoute.jsx`
+- `sed -n '1,760p' src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `sed -n '1,760p' src/ui/dashboard/routes/review/ReviewRoute.jsx`
+- `sed -n '1,760p' src/ui/dashboard/routes/debug/DebugRoute.jsx`
+- `sed -n '1,320p' src/ui/dashboard/components/DataTable.jsx`
+- `sed -n '1,320p' src/ui/dashboard/components/RouteScaffold.jsx`
+- `sed -n '1,320p' src/ui/dashboard/components/FilterControls.jsx`
+- `sed -n '1,340p' src/ui/dashboard/app/AppShell.jsx`
+- `sed -n '1,320p' src/ui/dashboard/app/DashboardApp.jsx`
+- `sed -n '1,320p' src/ui/dashboard/lib/use-url-query-state.js`
+- `sed -n '1,320p' src/ui/dashboard/lib/query-state.js`
+- `sed -n '1,320p' src/ui/dashboard/app/shell-context.jsx`
+- `sed -n '1,320p' src/ui/dashboard/components/DetailPane.jsx`
+- `sed -n '1,260p' src/ui/dashboard/components/SummaryStrip.jsx`
+- `sed -n '1,1040p' src/ui/dashboard/styles/dashboard.css`
+- `sed -n '140,290p' src/ui/inspection-server.js`
+- `sed -n '1760,2025p' src/storage/sqlite-storage.js`
+- `sed -n '3460,3595p' src/storage/sqlite-storage.js`
+- `sed -n '1,220p' test/dashboard-api.test.js`
+- `rg -n "dashboard/review|dashboard/posts|dashboard/listings|dashboard/debug" src/ui/inspection-server.js src/storage/sqlite-storage.js test/dashboard-api.test.js`
+- `rg -n "placeholders/|RoutePlaceholder|demo-data" src/ui/dashboard`
+- `wc -l src/ui/dashboard/routes/listings/ListingsRoute.jsx src/ui/dashboard/routes/posts/PostsRoute.jsx src/ui/dashboard/routes/review/ReviewRoute.jsx src/ui/dashboard/routes/debug/DebugRoute.jsx src/ui/dashboard/routes/shared/route-support.jsx`
+- `npm run build:dashboard`
+- `npm test`
+- `npm run inspect:ui -- --port 4316`
+- `curl -s http://127.0.0.1:4316/ | head -n 8`
+- `curl -s http://127.0.0.1:4316/listings | head -n 8`
+- `curl -s http://127.0.0.1:4316/posts | head -n 8`
+- `curl -s http://127.0.0.1:4316/review | head -n 8`
+- `curl -s http://127.0.0.1:4316/debug | head -n 8`
+- `curl -s http://127.0.0.1:4316/inspector | head -n 8`
+- `node --input-type=module -e '... fetch live dashboard ids for Williamsburg ...'`
+- `agent-browser open 'http://127.0.0.1:4316/'`
+- `agent-browser open 'http://127.0.0.1:4316/posts?sourceKey=williamsburggreenpointhousing&observationId=obs_001017&detail=open'`
+- `agent-browser open 'http://127.0.0.1:4316/review?sourceKey=williamsburggreenpointhousing&page=2&reviewId=ambiguous%3Alst_000255&detail=open'`
+- `agent-browser click @e26`
+- `agent-browser get url`
+- `agent-browser open 'http://127.0.0.1:4316/debug/runs/2026-03-16T03-35-22-550Z?detail=open'`
+- `agent-browser open 'http://127.0.0.1:4316/inspector'`
+
+Simplifications made
+--------------------
+- moved shared source-option fetching, posted-within options, page-size options, and results-status formatting into `src/ui/dashboard/routes/shared/route-support.jsx`
+- removed duplicated `useJsonResource`, `buildApiUrl`, and custom listings pagination glue from `src/ui/dashboard/routes/listings/ListingsRoute.jsx`
+- switched listings raw JSON rendering onto the shared `JsonDetails` component
+- deleted obsolete dashboard placeholder/demo route files after confirming nothing still imported them
+
+Polish fixes
+------------
+- added a dedicated read-only review detail path so `reviewId` deep links resolve even when the item is off the current page
+- made off-page detail selections explicit on Posts, Review, and Debug rather than silently implying the selected record is visible on the page
+- added `aria-busy` on tables plus `aria-expanded` and `aria-controls` wiring on detail-pane toggles
+- tightened disabled-button treatment, focused-row styling, and overflow wrapping for metadata-heavy surfaces
+- standardized refresh/error status footers across Listings, Posts, Review, and Debug
+
+Blockers
+--------
+- none
+
+Open questions
+--------------
+- none
+
+Handoff summary
+---------------
+- Stage C integration is complete.
+- The dashboard now shares the main fetch/source/pagination support that had drifted into the listings route, and the old placeholder/demo route files are removed.
+- `Review` deep links now resolve through `GET /api/dashboard/review/:reviewId`, including the previously broken off-page case.
+- Validation passed with `npm run build:dashboard`, `npm test`, `npm run inspect:ui -- --port 4316`, browser checks on `/`, `/listings`, `/posts`, `/review`, `/debug`, and `/inspector`, live Williamsburg data checks, and a cross-route navigation check from Review to Listings.

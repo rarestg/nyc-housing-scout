@@ -1,0 +1,64 @@
+Phase 2 Status
+==============
+
+Status
+------
+complete
+
+Started at
+----------
+2026-03-16 11:27 EDT
+
+Finished at
+-----------
+2026-03-16 11:40 EDT
+
+Owned paths
+-----------
+- `src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `src/ui/dashboard/routes/review/ReviewRoute.jsx`
+- `src/ui/dashboard/routes/debug/DebugRoute.jsx`
+- `src/ui/dashboard/components/RouteScaffold.jsx` if needed
+- `src/ui/dashboard/components/SummaryStrip.jsx` if needed
+
+Files changed
+-------------
+- `src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `src/ui/dashboard/routes/review/ReviewRoute.jsx`
+- `src/ui/dashboard/routes/debug/DebugRoute.jsx`
+- `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/handoffs/phase_2_status.txt`
+
+Commands run
+------------
+- `npm test`
+- `npm run build:dashboard`
+- `npm run inspect:ui`
+- `agent-browser --session phase2-smoke open 'http://127.0.0.1:4310/posts?detail=open&observationId=obs_001174' && ... snapshot -i -s '.detail-pane-actions'`
+- `agent-browser --session phase2-smoke click @e9 && ... wait --url '**/debug/runs/**'`
+- `agent-browser --session phase2-smoke open 'http://127.0.0.1:4310/review?detail=open&reviewId=low-confidence%3Alst_000258' && ... snapshot -i -s '.detail-pane-actions'`
+- `agent-browser --session phase2-smoke click @e8 && ... wait --url '**/listings**'`
+- `agent-browser --session phase2-smoke wait --fn \"!document.querySelector('.summary-strip') && !document.querySelector('.route-footer') && ...\" && ... snapshot -i -s '.detail-pane-actions'` on `/debug/runs/2026-03-16T14-27-25-259Z?detail=open`
+
+Blockers
+--------
+- none
+
+Open questions
+--------------
+- none
+
+Chrome removed
+--------------
+- Removed `summaryItems`/summary-strip usage from Posts, Review, and Debug.
+- Removed route footer/result-copy strings from Posts, Review, and Debug.
+- Posts: removed the duplicate capture-detail action row plus the captured-files/raw-JSON section.
+- Review: removed the body-level `Keep moving` action row and the raw queue-row JSON section.
+- Debug: removed the summary strip, route footer, `Inspector handoff` section, and the separate exports/action row.
+
+Handoff summary
+---------------
+- Posts now stays evidence-first: the detail drawer keeps the source post, extraction outcome, linked listing cards, and provenance facts, while route-level actions stay only in the drawer header.
+- Review now stays triage-first: the drawer header carries the navigation actions, and the body keeps only review rationale plus the evidence snapshot.
+- Debug keeps its forensic role: raw run/validation JSON, inspector links, export links, and source-route handoffs are still available, but they are consolidated into the drawer header instead of being repeated in body sections.
+- Posts intentionally lost raw JSON, artifact-inspector links, jobs-inspector links, and duplicate body action rows.
+- Review intentionally lost the `Keep moving` action band, jobs-inspector affordance, and raw JSON view.

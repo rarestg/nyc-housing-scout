@@ -15,16 +15,25 @@
     "crawl:dom": "node src/cli/crawl-dom-latest.js",
     "ingest:loop": "node src/cli/ingest-loop.js",
     "inspect:storage": "node src/cli/inspect-storage.js",
+    "inspect:ui": "node src/cli/inspect-ui.js",
+    "build:dashboard": "node src/ui/dashboard/app/build-dashboard.js",
     "enqueue:processing": "node src/cli/enqueue-processing.js",
     "inspect:jobs": "node src/cli/inspect-jobs.js",
     "process:jobs": "node src/cli/process-jobs.js",
     "retry:jobs": "node src/cli/retry-jobs.js",
-    "validate:queue": "node src/cli/validate-queue.js"
+    "validate:queue": "node src/cli/validate-queue.js",
+    "enrich:evidence": "node src/cli/enrich-evidence.js",
+    "resolve:addresses": "node src/cli/resolve-addresses.js"
   },
   "devDependencies": {
     "jsdom": "^26.1.0"
   },
   "dependencies": {
-    "@google/genai": "^1.45.0"
+    "@google/genai": "^1.45.0",
+    "@tanstack/react-table": "^8.21.3",
+    "esbuild": "^0.27.4",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.13.1"
   }
 }

@@ -1,0 +1,97 @@
+Phase 4 Task: Shell And CSS Cleanup
+===================================
+
+Mission
+-------
+Remove low-value shell branching and duplicated CSS after the route behavior is simpler. Freeze the nav rail in compact mode, remove the expand/collapse branch, keep Debug on one canonical selection path, and collapse duplicated compact-table and related shell styles.
+
+Dispatch order
+--------------
+- fourth phase
+- depends on earlier route and read-model simplifications being stable
+
+Read first
+----------
+1. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/README.txt`
+2. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/01_VERDICT_AND_PRIORITY_ORDER.txt`
+3. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/02_PR_SIZED_PHASE_BREAKDOWN.txt`
+4. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/03_MASTER_CHECKLIST.txt`
+5. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/04_DISPATCH_PROTOCOL.txt`
+6. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/05_COORDINATION_BOARD.txt`
+7. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/06_WHITEBOARD_AND_NOTES.txt`
+8. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/handoffs/phase_1_status.txt`
+9. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/handoffs/phase_2_status.txt`
+10. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/handoffs/phase_3_status.txt`
+11. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/handoffs/phase_4_status.txt`
+
+Primary references
+------------------
+- `src/ui/dashboard/app/AppShell.jsx`
+- `src/ui/dashboard/app/shell-context.jsx`
+- `src/ui/dashboard/routes/debug/DebugRoute.jsx`
+- `src/ui/dashboard/styles/dashboard.css`
+
+Ownership
+---------
+You own:
+
+- `src/ui/dashboard/app/AppShell.jsx`
+- `src/ui/dashboard/routes/debug/DebugRoute.jsx`
+- `src/ui/dashboard/styles/dashboard.css`
+
+You may touch:
+
+- `src/ui/dashboard/app/shell-context.jsx` if a tiny contract cleanup is justified
+
+You do not own:
+
+- backend contract changes
+- Listings chrome cleanup
+- route-support cleanup beyond what is necessary for CSS/shared-shell simplification
+
+Core deliverables
+-----------------
+1. Make the nav rail permanently compact.
+2. Delete the nav expand/collapse state and toggle.
+3. Remove expanded-nav layout branches from the shell and CSS.
+4. Remove Debug's query-param `runId` fallback and keep route-param selection as the canonical path.
+5. Merge duplicated compact-table style blocks.
+6. Merge duplicated action/link-pill styles if they are materially redundant.
+
+Requirements
+------------
+- Keep the shell-slot pattern intact.
+- Do not redesign the shell visually.
+- Do not introduce a new abstraction layer just to hide simple CSS duplication.
+- If a shell-context contract trim is helpful, keep it small and surgical.
+
+Out of scope
+------------
+- route-local query/update helper work
+- broad route-support cleanup
+- Listings route simplification
+
+Validation
+----------
+- `npm test`
+- `npm run build:dashboard`
+- `npm run inspect:ui`
+- smoke-check desktop and narrower-width behavior for the compact rail and detail pane
+
+Handoff requirements
+--------------------
+Update `handoffs/phase_4_status.txt`:
+
+- when you start
+- if a shell contract issue appears
+- when you finish
+
+Include:
+- files changed
+- layout branches removed
+- CSS sections merged
+- any shell behavior intentionally kept
+
+Success criteria
+----------------
+The shell is cheaper to maintain, the compact rail is the only rail, Debug has one canonical selection path, and the CSS no longer carries duplicated compact-table branches.

@@ -1,4 +1,8 @@
 import { cleanPostBodyText, normalizeAuthorName } from '../core/post-cleaning.js';
+import {
+  buildFacebookFallbackPostUrl,
+  normalizeFacebookPostUrl,
+} from '../core/facebook-post-identity.js';
 import { parseFacebookResponseText } from './facebook-response-parser.js';
 import { collectFacebookNumericHints } from './network-capture.js';
 
@@ -356,67 +360,6 @@ function getCreationTimestamp(payload) {
   ));
 }
 
-function normalizeFacebookPostUrl(url, { postId, groupId } = {}) {
-  const raw = normalizeNullableString(url);
-  if (!raw) return null;
-
-  try {
-    const parsed = new URL(raw, 'https://www.facebook.com');
-    const idFromUrl = normalizeNullableString(postId)
-      || normalizeNullableString(parsed.searchParams.get('story_fbid'))
-      || normalizeNullableString(parsed.searchParams.get('multi_permalinks'));
-
-    const pathname = parsed.pathname || '';
-    const groupsMatch = pathname.match(/^\/groups\/([^/]+)\/(?:posts|permalink)\/(\d{8,})\/?$/i);
-    if (groupsMatch) {
-      return `${parsed.origin}/groups/${groupsMatch[1]}/posts/${groupsMatch[2]}/`;
-    }
-
-    if (/^\/(?:story|permalink)\.php$/i.test(pathname) && idFromUrl) {
-      const groupRef = normalizeNullableString(parsed.searchParams.get('id')) || normalizeNullableString(groupId);
-      if (groupRef) {
-        return `${parsed.origin}/groups/${groupRef}/posts/${idFromUrl}/`;
-      }
-    }
-
-    if (/^\/groups\/([^/]+)\/$/i.test(pathname)) {
-      const groupRef = pathname.match(/^\/groups\/([^/]+)\/$/i)?.[1] || groupId;
-      const multiPermalinks = normalizeNullableString(parsed.searchParams.get('multi_permalinks'));
-      if (groupRef && multiPermalinks) {
-        return `${parsed.origin}/groups/${groupRef}/posts/${multiPermalinks}/`;
-      }
-    }
-
-    if (idFromUrl && groupId && !pathname.includes('/posts/')) {
-      return `${parsed.origin}/groups/${groupId}/posts/${idFromUrl}/`;
-    }
-
-    return parsed.toString();
-  } catch {
-    return raw;
-  }
-}
-
-function buildFallbackPostUrl(postId, groupRecord) {
-  const normalizedPostId = normalizeNullableString(postId);
-  if (!normalizedPostId) return null;
-
-  const groupUrl = normalizeNullableString(groupRecord?.url);
-  if (groupUrl) {
-    const normalized = normalizeFacebookPostUrl(groupUrl, {
-      postId: normalizedPostId,
-      groupId: normalizeNullableString(groupRecord?.id),
-    });
-    if (normalized && /\/posts\/\d{8,}\//.test(normalized)) {
-      return normalized;
-    }
-  }
-
-  const groupId = normalizeNullableString(groupRecord?.id);
-  if (!groupId) return null;
-  return `https://www.facebook.com/groups/${groupId}/posts/${normalizedPostId}/`;
-}
-
 function getUrls(payload, postId, groupRecord) {
   const urls = cleanObject({
     permalinkUrl: normalizeFacebookPostUrl(safeGet(payload, 'permalink_url'), { postId, groupId: groupRecord?.id }),
@@ -463,7 +406,10 @@ function selectCanonicalPostUrl(urls, postId, groupRecord) {
     urls.feedbackUrl,
     urls.wwwUrl,
     urls.overrideUrl,
-    buildFallbackPostUrl(postId, groupRecord),
+    buildFacebookFallbackPostUrl(postId, {
+      groupId: groupRecord?.id,
+      groupUrl: groupRecord?.url,
+    }),
   );
 }
 

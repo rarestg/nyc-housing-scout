@@ -1,0 +1,194 @@
+UI Sprint 2 Execution Plan
+==========================
+
+Sprint objective
+----------------
+Make the dashboard materially better at the core job:
+
+"scan many listings quickly, open the right one fast, and keep context while comparing entries."
+
+This sprint is not about adding more dashboard chrome.
+It is about removing friction from the main browsing workflow.
+
+Success criteria
+----------------
+- the table dominates the page visually
+- users can see more listings per screenful
+- selecting a row and reading details feels obvious
+- the detail drawer feels tied to the selected row, not to the page chrome
+- filters are quick to use without pushing results off-screen
+- listings, posts, and review feel like one product family
+
+Scope
+-----
+In scope:
+- shell compression
+- listings toolbar/filter compaction
+- table density and column simplification
+- detail-drawer hierarchy and behavior
+- interaction consistency across Listings, Posts, and Review
+- copy cleanup for user-facing labels
+- keyboard and focus improvements where they directly support browsing
+
+Out of scope:
+- map view
+- major data-model changes
+- manual correction persistence
+- linked-media enrichment
+- address resolution
+- notification delivery
+
+Phase 1: Shell Compression
+--------------------------
+Goal:
+- give more horizontal and vertical space to the listings table
+
+Changes:
+- collapse the left rail by default on desktop into a thin icon rail or very compact rail
+- remove or demote the "Operator shell" framing language
+- compress the route header into a lighter strip
+- reduce the visual weight of summary cards; prefer a compact summary strip over stacked large cards
+- ensure opening the detail drawer does not leave the table starved for width
+
+Recommended implementation stance:
+- keep the current left-rail architecture
+- do not replace it with a whole new top-nav system in this sprint
+- slim and simplify it instead
+- remove internal framing copy like `Operator shell`
+- use route chrome that feels closer to an app workspace than a dashboard hero
+
+Phase 2: Filter Bar Compression
+-------------------------------
+Goal:
+- keep the most useful controls visible without letting the filter area dominate the page
+
+Changes:
+- convert the current always-expanded filter section into:
+  - a compact default bar
+  - an expandable "More filters" region
+- keep only the highest-value controls visible by default:
+  - search
+  - source group
+  - posted window
+  - price
+  - beds
+  - neighborhood or borough
+  - sort
+- show active filters as chips or a concise summary
+- keep "Clear filters" visible but lightweight
+- ensure high-frequency controls visually dominate low-frequency controls
+
+Phase 3: Listings Table Density And Scanability
+-----------------------------------------------
+Goal:
+- make comparison faster and rows shorter
+
+Changes:
+- reduce the number of primary columns
+- combine secondary metadata into stacked sublines
+- clamp long summaries rather than fully wrapping them
+- keep author and source visible without giving them separate oversized footprint
+- use compact row height by default
+- optionally add a comfortable/compact density toggle only if it is very cheap and does not complicate the code materially
+- only preserve columns that help ranking and comparison at a glance
+
+Recommended primary columns:
+- posted
+- listing
+- price
+- rooms
+- location
+- source
+- review/status
+
+Recommended merge rules:
+- source cell can include author below source name
+- listing cell can include type / intent / variant count in a short subline
+- avoid wide standalone availability / confidence columns if those can sit in shorter stacked metadata
+- poster identity should remain visible without forcing a separate oversized column
+
+Phase 4: Detail Drawer Overhaul
+-------------------------------
+Goal:
+- make detail inspection feel like a natural extension of row selection
+
+Changes:
+- row click is the primary open/update trigger
+- drawer close button sits in the top-right of the drawer header
+- remove the page-level "Hide details" control from the header
+- reorganize drawer header into:
+  - row 1: listing title + close button
+  - row 2: source, author, posted time
+  - row 3: actions like "View Facebook post" and "Open source capture"
+- make the drawer wider where possible
+- reduce header clutter and demote technical actions
+- keep technical evidence/debug links available, but not as the first thing a user sees
+- style cross-route actions like real secondary buttons or pills rather than plain inline text links
+
+Content hierarchy inside the drawer:
+1. normalized listing facts
+2. source post preview
+3. missing/uncertain field explanations
+4. linked records and review/debug actions
+5. raw JSON and low-level provenance
+
+Important caveat:
+- rich field-level "why missing" messaging should only be added where the backend can support the distinction honestly
+
+Phase 5: Explicit Selection And Keyboard Flow
+---------------------------------------------
+Goal:
+- make table-to-detail linkage obvious and efficient
+
+Changes:
+- strengthen selected-row styling
+- ensure the drawer title/meta clearly maps to the active row
+- keep selection stable while browsing the current result set
+- when a route is opened via an exact-record deep link such as `observationId` or `listingId`, the table should visibly reflect that selected record rather than showing an unrelated page of rows
+- prefer exact-record filtering or a focused single-row mode when arriving from cross-route context links; if that is not desirable, the route must at least jump to the page that contains the selected row
+- support predictable keyboard behavior:
+  - Up/Down moves row focus/selection
+  - Enter opens or confirms detail
+  - Escape closes drawer
+
+Phase 6: Posts / Review Alignment
+---------------------------------
+Goal:
+- make the supporting routes feel consistent with Listings
+
+Changes:
+- use the same compact chrome principles on Posts and Review
+- make Review feel like an action queue, not a debug dump
+- keep Debug clearly advanced and forensic
+- prefer action language like "Resolve listing" or "Review evidence" over system language
+- keep the ownership boundary clear:
+  - Review is where correction workflows will later live
+  - Debug remains provenance-first
+- make deep-link arrivals feel coherent:
+  - if Listings opens a linked post on the `Posts` route, the posts table should be filtered or focused to that observation
+  - the same principle should apply to other cross-route exact-record links where practical
+
+Phase 7: Final Polish Pass
+--------------------------
+Goal:
+- tighten visual and interaction consistency after the structural changes land
+
+Changes:
+- normalize spacing, truncation, and overflow behavior
+- reduce visual noise from pills, outlines, and redundant labels
+- verify focus states and keyboard paths
+- verify narrower-width behavior
+
+Risks
+-----
+- over-compressing the UI into a sterile control panel
+- breaking cross-route consistency by fixing Listings in isolation
+- reintroducing technical language in the drawer and route headers
+
+Guardrails
+----------
+- the table remains the primary surface
+- the drawer remains contextual, not modal
+- Debug remains secondary
+- do not let new chrome or decorative cards displace the listings workspace again
+- do not mix manual correction UI into this sprint unless the backend override model lands first

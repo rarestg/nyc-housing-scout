@@ -1,0 +1,108 @@
+Phase 1 Task: Remove Secondary-Route Focused Mode
+=================================================
+
+Mission
+-------
+Delete the focused single-record table mode from Posts, Review, and Debug. Keep the normal paginated table. Keep the detail drawer open for deep links. Make off-page selection explicit instead of synthesizing a one-row focused table.
+
+Dispatch order
+--------------
+- first phase
+- do not start Phase 2 until this is merged or explicitly paused
+
+Read first
+----------
+1. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/README.txt`
+2. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/01_VERDICT_AND_PRIORITY_ORDER.txt`
+3. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/02_PR_SIZED_PHASE_BREAKDOWN.txt`
+4. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/03_MASTER_CHECKLIST.txt`
+5. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/04_DISPATCH_PROTOCOL.txt`
+6. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/05_COORDINATION_BOARD.txt`
+7. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/06_WHITEBOARD_AND_NOTES.txt`
+8. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/handoffs/phase_1_status.txt`
+
+Primary references
+------------------
+- `src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `src/ui/dashboard/routes/review/ReviewRoute.jsx`
+- `src/ui/dashboard/routes/debug/DebugRoute.jsx`
+- `src/ui/dashboard/routes/listings/ListingsRoute.jsx`
+- `src/ui/dashboard/routes/shared/route-support.jsx`
+- `src/ui/dashboard/styles/dashboard.css`
+
+Ownership
+---------
+You own:
+
+- `src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `src/ui/dashboard/routes/review/ReviewRoute.jsx`
+- `src/ui/dashboard/routes/debug/DebugRoute.jsx`
+- `src/ui/dashboard/routes/shared/route-support.jsx`
+- `src/ui/dashboard/styles/dashboard.css`
+
+You do not own:
+
+- broad Listings redesign
+- backend/storage changes
+- shell-layout cleanup beyond what is strictly needed for focused-mode removal
+
+Core deliverables
+-----------------
+1. Remove focused-row adapters/builders from Posts, Review, and Debug.
+2. Remove focused loading/error branches that exist only to support the one-row table mode.
+3. Remove the focused banner component if it becomes unused.
+4. Reuse Listings-style honest off-page behavior:
+   - normal table remains paginated
+   - deep-linked detail still opens
+   - UI makes it clear the selected record is outside the current page
+5. Keep route behavior stable for ordinary row selection.
+
+Requirements
+------------
+- Deep links into `/posts`, `/review`, and `/debug` must still open the right detail drawer.
+- Do not synthesize a one-row table to keep the open detail "coherent" with the current page.
+- Prefer deletion over new abstraction.
+- If a route needs an off-page notice, mirror the Listings behavior rather than inventing a new pattern.
+
+Expected deletions
+------------------
+- focused-row builders in Posts and Debug
+- focused-mode branches in Posts, Review, and Debug
+- `FocusedTableNotice` if no longer used
+- focused-banner CSS if no longer used
+
+Out of scope
+------------
+- summary-strip removal
+- footer cleanup
+- backend review-link changes
+- shell compact/nav cleanup
+- route-support cleanup beyond deleting dead focused-mode code
+
+Validation
+----------
+- `npm test`
+- `npm run build:dashboard`
+- `npm run inspect:ui`
+- smoke-check:
+  - `/posts?detail=open&observationId=<real-id>`
+  - `/review?detail=open&reviewId=<real-id>`
+  - `/debug/runs/<real-run-id>?detail=open`
+
+Handoff requirements
+--------------------
+Update `handoffs/phase_1_status.txt`:
+
+- when you start
+- if an off-page/deep-link blocker appears
+- when you finish
+
+Include:
+- files changed
+- commands run
+- exact focused-mode code deleted
+- any deep-link cases that still feel awkward
+
+Success criteria
+----------------
+Posts, Review, and Debug no longer rebuild focused one-row tables, and deep-linked detail works without the expensive exact-record table choreography.

@@ -1,0 +1,39 @@
+Worker 5 Status
+===============
+
+Status
+------
+- completed
+
+Start update
+------------
+- 2026-03-17 10:09:43 EDT: started Worker 5 from fresh context. Read the execution bundle in required order, then the prior Worker 1/2/3/4 handoffs and the evidence-resolution design contract; now inspecting override/audit storage helpers plus current Review and dashboard API surfaces before implementation.
+
+Blockers
+--------
+- none
+
+Finish summary
+--------------
+- 2026-03-17 10:27:39 EDT: completed Worker 5.
+- Added atomic audited manual-override actions in `src/storage/sqlite-storage.js` via `applyManualOverrideAction(...)`; create/update/clear now write `manual_overrides` and `audit_events` together without mutating raw listing or observation rows.
+- Extended the Review read model so `getDashboardReviewItem(...)` exposes `actions.manualOverride`, and active manual overrides suppress resolved-location review reasons for the overridden field while keeping underlying `resolved_fields` visible in `locationFieldStates`.
+- Added Review-only write endpoints in `src/ui/inspection-server.js`:
+- `POST /api/dashboard/review/manual-overrides`
+- `POST /api/dashboard/review/manual-overrides/clear`
+- Added forensic read-only CLI surfaces in `src/cli/inspect-storage.js`:
+- `manual`
+- `audit`
+- Added regression coverage in `test/evidence-resolution-storage.test.js`, `test/dashboard-api.test.js`, and `test/storage-inspection.test.js`; kept `test/inspect-ui.test.js` green.
+- Updated minimal docs in `docs/PIPELINE.md`, `docs/ROADMAP.md`, and `docs/passes/README.md`; wrote pass log `docs/passes/2026-03-17_10-38-39_OVERRIDE_MODEL_AND_REVIEW_API_PASS.md`.
+- Validation:
+- `node --test test/evidence-resolution-storage.test.js test/dashboard-api.test.js test/storage-inspection.test.js` -> pass
+- `node --test test/inspect-ui.test.js` -> pass
+- `npm test` -> 110/110 passing
+- Live validation used a temporary seeded data dir with `npm run inspect:ui -- --port 0` because port `4310` was already occupied by another local `node` process.
+- Verified:
+- `GET /api/dashboard/review/ambiguous:lst_000001?queue=ambiguous`
+- `POST /api/dashboard/review/manual-overrides`
+- `POST /api/dashboard/review/manual-overrides/clear`
+- `npm run inspect:storage -- manual --target-kind listing_record --target-id lst_000001 --limit 5`
+- `npm run inspect:storage -- audit --target-kind listing_record --target-id lst_000001 --limit 5`

@@ -1,0 +1,27 @@
+Worker 4 Status
+===============
+
+Status
+------
+- completed
+
+Start update
+------------
+- 2026-03-17 00:10:04 EDT: started Worker 4 from fresh context. Read the execution bundle in order, then the prior Worker 1/2/3 handoffs and the evidence-resolution design contract; now inspecting storage read helpers, inspection-server surfaces, and dashboard consumers for effective-value gaps.
+
+Blockers
+--------
+- none
+
+Finish summary
+--------------
+- 2026-03-17 09:56:35 EDT: completed Worker 4.
+- Updated `src/storage/sqlite-storage.js` so effective-value helpers preserve current manual/resolved rows even when they do not win precedence, then layered dashboard listing/review read models on top of raw + accepted-resolved + manual precedence for location fields.
+- Dashboard listing/detail/review payloads now expose `locationFieldStates` plus `locationResolutionSummary`; accepted resolved rows can win effective values, while `candidate`, `ambiguous`, and `unresolved` resolved rows remain visible to `Review` instead of being flattened away.
+- Updated `src/ui/dashboard/routes/listings/ListingsRoute.jsx` and `src/ui/dashboard/routes/review/ReviewRoute.jsx` to render raw / resolved / manual location layers honestly in detail panes without adding editorial actions to the dashboard.
+- Added regression coverage in `test/dashboard-api.test.js` and `test/evidence-resolution-storage.test.js`; updated minimal docs in `docs/PIPELINE.md`, `docs/ROADMAP.md`, and `docs/passes/README.md`; wrote pass log `docs/passes/2026-03-17_00-27-41_EFFECTIVE_VALUES_AND_REVIEW_READ_MODELS_PASS.md`.
+- Validation:
+- `node --test test/evidence-resolution-storage.test.js` -> pass
+- `node --test test/dashboard-api.test.js` -> pass
+- `npm run inspect:ui -- --port 0` -> pass; verified `http://127.0.0.1:58902/api/dashboard/listings?pageSize=1` while avoiding an existing listener already bound to port `4310`
+- `npm test` -> 107/107 passing

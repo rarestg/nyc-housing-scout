@@ -1,0 +1,38 @@
+Worker 5: Override Model And Review API
+=======================================
+
+Dispatch only after Worker 4 is stable.
+
+Mission
+-------
+Add durable manual overrides plus audit writes, and expose the minimal backend/API surface needed for Review-oriented correction.
+
+Requirements
+------------
+- override precedence must follow the canonical contract
+- all override actions must be auditable
+- Review owns actions; Debug remains forensic
+- read and incorporate prior Worker 1 through Worker 4 handoffs before coding
+- plug overrides into the current effective-value and location-field-state read model instead of inventing a parallel correction path
+- keep the write model minimal: create/update/clear override plus audit trail is enough for this phase
+
+Expected outcome
+----------------
+- override writes should change what later effective-value helpers return without mutating raw rows
+- audit writes should make it possible to distinguish:
+  - raw extracted state
+  - resolved system state
+  - manual override state
+- API/CLI surfaces should support Review-oriented actions without turning `Debug` into an editor
+
+Own these files
+---------------
+- `src/storage/sqlite-storage.js`
+- local API/CLI surfaces needed for overrides
+- tests
+- minimal docs/pass log
+
+Coordination
+------------
+Update only:
+- `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/handoffs/worker_5_status.txt`

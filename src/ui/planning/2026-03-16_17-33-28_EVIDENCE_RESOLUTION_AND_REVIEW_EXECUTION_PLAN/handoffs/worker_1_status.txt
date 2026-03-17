@@ -1,0 +1,28 @@
+Worker 1 Status
+===============
+
+Status
+------
+- completed
+
+Start update
+------------
+- 2026-03-16 17:37:46 EDT: started Worker 1. Reading completed through the execution-plan bundle and evidence-resolution design note; now inspecting storage migrations, sqlite helpers, and tests for the new contract.
+
+Blockers
+--------
+- none
+
+Finish summary
+--------------
+- 2026-03-16 17:50:25 EDT: completed Worker 1.
+- Added `src/storage/migrations/0003_evidence_resolution_and_review.sql` for `evidence_fragments`, `resolved_fields`, `manual_overrides`, and `audit_events`.
+- Added storage helpers in `src/storage/sqlite-storage.js` for writing/reading those layers plus `getEffectiveFieldValue(...)` with fixed precedence: active manual override -> accepted resolved field -> raw extracted value -> raw observation-derived fallback.
+- Kept `post_observations`, `processed_payloads`, and `listing_records` immutable; targeted test asserts layered writes do not rewrite raw rows.
+- Added `test/evidence-resolution-storage.test.js` and kept `test/storage-interface.test.js` green.
+- Updated minimal source-of-truth docs: `docs/VISION_AND_ARCHITECTURE.md`, `docs/ROADMAP.md`, `docs/PIPELINE.md`, `data/README.md`.
+- Wrote pass log: `docs/passes/2026-03-16_17-49-28_EVIDENCE_STORAGE_CONTRACT_PASS.md`.
+- Validation:
+- `node --test test/evidence-resolution-storage.test.js` -> pass
+- `node --test test/storage-interface.test.js` -> pass
+- `npm test` -> 95/95 passing

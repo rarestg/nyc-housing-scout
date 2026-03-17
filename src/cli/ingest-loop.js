@@ -571,7 +571,6 @@ function summarizeCrawl(crawl) {
     freshCollected: Number(crawl?.freshCollected || 0),
     seenCollected: Number(crawl?.seenCollected || 0),
     unidentifiedCollected: Number(crawl?.unidentifiedCollected || 0),
-    extractedListings: Number(crawl?.extractedListings || 0),
     stepCount: Array.isArray(crawl?.stepLog) ? crawl.stepLog.length : 0,
   };
 }

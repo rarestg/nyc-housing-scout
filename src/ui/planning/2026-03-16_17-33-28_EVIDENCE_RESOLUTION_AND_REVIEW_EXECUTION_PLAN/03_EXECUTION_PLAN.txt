@@ -1,0 +1,88 @@
+Execution Plan
+==============
+
+Phase 1: storage contract and precedence
+----------------------------------------
+Worker 1 owns:
+
+- migration for the new tables
+- storage helpers
+- precedence logic
+- contract tests
+- doc updates tied to the contract
+
+Deliverables:
+
+- `0003_evidence_resolution_and_review.sql`
+- SQLite helpers for evidence/resolved/manual/audit layers
+- tested effective-value precedence helpers
+
+Phase 2: evidence fragments
+---------------------------
+Worker 2 owns:
+
+- observation-scoped evidence extraction from existing persisted inputs
+- enrichment CLI/stage
+- persistence of evidence fragments
+
+Start with:
+
+- body text
+- comments
+- media metadata
+- capture/network enrichment metadata
+- obvious outbound/contact references already present in stored inputs
+
+Phase 3: address resolution
+---------------------------
+Worker 3 owns:
+
+- address candidate selection from fragments
+- NYC-constrained address resolution
+- resolved field writes for location/address-related paths
+- ambiguity/confidence storage
+
+Phase 4: effective values and review read models
+------------------------------------------------
+Worker 4 owns:
+
+- read helpers that apply precedence
+- listings/review read models that expose effective values honestly
+- dashboard/API surfaces for layered value display
+
+Phase 5: overrides and review API
+---------------------------------
+Worker 5 owns:
+
+- override write model
+- audit event writes
+- create/update/clear override APIs
+- explicit Review-vs-Debug boundary support
+
+Phase 6: Review UI
+------------------
+Worker 6 owns:
+
+- minimal Review UI for corrected/resolved/manual state
+- evidence panels and value lineage display
+- action affordances in Review only
+
+Dispatch sequencing
+-------------------
+Dispatch sequentially unless a later phase is explicitly narrowed to avoid overlap.
+
+Recommended order:
+
+1. Worker 1
+2. Worker 2
+3. Worker 3
+4. Worker 4
+5. Worker 5
+6. Worker 6
+
+Why this order
+--------------
+- precedence must be fixed before any UI or workflow meaning exists
+- fragments must exist before resolution
+- resolved/manual layers must exist before effective-value read models
+- Review correction UI must wait for real backend persistence

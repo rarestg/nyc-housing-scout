@@ -1,0 +1,103 @@
+Worker 1 Status
+===============
+
+Status
+------
+completed
+
+Started at
+----------
+2026-03-15 19:58:27 EDT
+
+Finished at
+-----------
+2026-03-15 20:13:08 EDT
+
+Owned paths
+-----------
+- `src/storage/`
+- API route additions in the local server
+- backend-facing tests
+
+Files changed
+-------------
+- `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_1_status.txt`
+- `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/04_SHARED_CONTRACTS_AND_BOUNDARIES.txt`
+- `src/storage/sqlite-storage.js`
+- `src/ui/inspection-server.js`
+- `test/dashboard-api.test.js`
+
+Commands run
+------------
+- `sed -n '1,220p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/README.txt`
+- `sed -n '1,260p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/01_REVIEW_SYNTHESIS.txt`
+- `sed -n '1,320p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/02_REDESIGN_SPEC.txt`
+- `sed -n '1,340p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/03_PHASED_IMPLEMENTATION_PLAN.txt`
+- `sed -n '1,360p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/04_SHARED_CONTRACTS_AND_BOUNDARIES.txt`
+- `sed -n '1,320p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/worker_1_api_and_storage_contract.txt`
+- `sed -n '1,260p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_1_status.txt`
+- `TZ=America/New_York date '+%Y-%m-%d %H:%M:%S %Z'`
+- `git status --short`
+- `rg --files src/storage src/ui test | sed -n '1,240p'`
+- `sed -n '1,260p' README.md`
+- `sed -n '1,260p' src/ui/inspection-server.js`
+- `sed -n '1,320p' src/storage/sqlite-storage.js`
+- `sed -n '1,260p' src/storage/storage.js`
+- `rg -n "listSources|listRecentRuns|listObservations|listProcessingJobs|listListings|listRunSteps|listArtifactRefs|validateRun" src/storage/sqlite-storage.js`
+- `sed -n '1,260p' test/inspect-ui.test.js`
+- `sed -n '1,520p' test/storage-inspection.test.js`
+- `sed -n '840,1505p' src/storage/sqlite-storage.js`
+- `sed -n '1,260p' src/storage/migrations/0001_init.sql`
+- `sed -n '1,320p' src/storage/migrations/0002_processing_pipeline.sql`
+- `rg -n "function mapObservationSummary|function mapListingSummary|function mapProcessingJobSummary|function mapRunSummary|function parseJsonColumn|function normalizeLimit|function buildWhereClause" src/storage/sqlite-storage.js`
+- `sed -n '1505,2365p' src/storage/sqlite-storage.js`
+- `rg -n "beds|baths|availability|ambigu|confidence|listingSummary|summary" src test | sed -n '1,260p'`
+- `sed -n '1,280p' docs/LISTING_SCHEMA.md`
+- `rg -n "insertListingRecords|recordProcessedPayload|processed_payloads|recordListingsBatch" src/storage/sqlite-storage.js test/processing-pipeline.test.js src/processing -g '!**/node_modules/**'`
+- `sed -n '680,860p' src/storage/sqlite-storage.js`
+- `sed -n '1,260p' test/processing-pipeline.test.js`
+- `rg -n "startInspectionServer|/api/listings|/api/observations|fetch\\(" test src | sed -n '1,260p'`
+- `sed -n '1,260p' src/ui/inspection-app.js`
+- `sed -n '1,260p' docs/passes/README.md`
+- `sed -n '1,260p' docs/passes/2026-03-15_11-50-16_LIGHTWEIGHT_INSPECTION_FRONTEND_PASS.md`
+- `sed -n '1,260p' package.json`
+- `sed -n '1,260p' docs/PIPELINE.md`
+- `sed -n '1,220p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_2_status.txt`
+- `sed -n '1,220p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_3_status.txt`
+- `sed -n '1,220p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_4_status.txt`
+- `npm run inspect:storage -- sources --limit 10`
+- `npm run inspect:jobs -- --limit 10`
+- `npm run inspect:storage -- listings --limit 10 --full`
+- `node --check src/storage/sqlite-storage.js`
+- `node --check src/ui/inspection-server.js`
+- `node --check test/dashboard-api.test.js`
+- `node --test test/dashboard-api.test.js`
+- `node --test test/storage-inspection.test.js test/inspect-ui.test.js test/dashboard-api.test.js`
+- `npm test`
+- `node --input-type=module -e "... startInspectionServer ... fetch /api/dashboard/listings|posts|review|debug/runs ..."`
+- `TZ=America/New_York date '+%Y-%m-%d %H:%M:%S %Z'`
+
+Contract changes
+----------------
+- `04_SHARED_CONTRACTS_AND_BOUNDARIES.txt` now locks the new dashboard list envelope (`items`, `count`, `pagination`, `sort`, `filters`).
+- Debug detail route is now documented as `GET /api/dashboard/debug/runs/:runId`.
+- `postedAt` is documented as a best-available derived browsing timestamp, with `capturedAt` fallback when the Facebook time text is not parseable.
+- Listings rows are explicitly grouped to one primary row per `(observationId, ordinal)` with `variantCount`; sibling extractor variants move to detail payloads.
+- Review queue semantics are now explicit: `pending` includes `pending|processing`, and `failed` includes `retryable|failed`.
+- Posts are documented as observation-centric for now.
+- Review responses now document `queueCounts` and `thresholds.lowConfidence`.
+
+Blockers
+--------
+- none
+
+Open questions
+--------------
+- Worker 3/4 should consume the new paginated dashboard envelope rather than the older inspector-only `{ count, items }` shape.
+- Posts are observation-centric, so repeated seen observations can still surface until stable-post collapsing is added in a later pass.
+
+Handoff summary
+---------------
+- Added schema-free storage helpers for cross-group listings, posts, review queues, and debug runs.
+- Added `/api/dashboard/listings`, `/api/dashboard/listings/:listingId`, `/api/dashboard/posts`, `/api/dashboard/posts/:observationId`, `/api/dashboard/review`, `/api/dashboard/debug/runs`, and `/api/dashboard/debug/runs/:runId` while preserving the existing inspector endpoints.
+- Added fixture-backed dashboard API/storage tests and validated the endpoints against live Williamsburg data.

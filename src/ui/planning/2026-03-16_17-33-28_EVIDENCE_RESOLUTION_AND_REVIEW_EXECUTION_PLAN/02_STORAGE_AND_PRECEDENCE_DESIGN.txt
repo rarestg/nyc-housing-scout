@@ -1,0 +1,44 @@
+Storage And Precedence Design
+=============================
+
+Primary design note
+-------------------
+Read this first:
+
+- `/Users/claudius/claudius-repos/nyc-housing-scout/docs/notes/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_OVERRIDE_DESIGN.md`
+
+Short version
+-------------
+Add four new generic SQLite layers:
+
+1. `evidence_fragments`
+2. `resolved_fields`
+3. `manual_overrides`
+4. `audit_events`
+
+Keep these rules fixed
+----------------------
+- raw tables stay immutable
+- enrichment is observation-scoped
+- resolved/manual state is layered
+- precedence is explicit everywhere
+- `Review` takes action
+- `Debug` stays forensic
+
+Canonical precedence
+--------------------
+1. active manual override
+2. accepted resolved field
+3. raw extracted value
+4. raw heuristic / observation-derived value
+
+Suggested migration
+-------------------
+- `0003_evidence_resolution_and_review.sql`
+
+Suggested first CLI stages
+--------------------------
+- `enrich:evidence`
+- `resolve:addresses`
+
+Do not start implementation until Worker 1 locks this contract down.

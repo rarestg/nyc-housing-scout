@@ -1,0 +1,56 @@
+Dispatch Protocol
+=================
+
+Default recommendation
+----------------------
+Dispatch Worker 1 now.
+
+Do not dispatch Worker 2 yet. Treat Worker 2 as optional follow-up only after reviewing Worker 1's result.
+
+How to dispatch Worker 1
+------------------------
+1. Give the worker the `worker_1_shell_reset_and_density.txt` file.
+2. Tell them to read the overview docs in the order listed in `README.txt`.
+3. Tell them they own only the files listed in the worker brief unless they document and justify a seam change.
+4. Tell them to update `handoffs/worker_1_status.txt`:
+   - at start
+   - at blocker
+   - at finish
+
+How to decide whether Worker 2 is needed
+----------------------------------------
+Dispatch Worker 2 only if, after Worker 1 lands, there are still clear issues in one of these buckets:
+
+- responsive regressions
+- lingering overflow/truncation bugs
+- keyboard/focus cleanup
+- obvious CSS simplification opportunity still left on the table
+- small visual consistency issues across Posts/Review/Debug
+
+Rules for workers
+-----------------
+- Do not silently widen this pass into backend or route-contract work.
+- Do not reopen the simplification sprint's behavior decisions unless a regression is proven.
+- Prefer deletion, consolidation, and simpler tokens/patterns over more one-off classes and branches.
+- Do not hand-edit generated dashboard bundle output.
+- Preserve the current `detail=open|closed`, row-selection, deep-link, and off-page-warning behavior.
+- Treat visible focus states, active-route clarity, and Escape/tab usability as part of Worker 1's baseline definition of done, not optional polish.
+
+Rules for the dispatcher
+------------------------
+- Do not split Worker 1 into multiple simultaneous workers.
+- Review the live UI after Worker 1 before dispatching Worker 2.
+- If Worker 1 reports a behavioral regression tied to the top-nav change or detail-pane reset, pause and review before dispatching more work.
+
+How to close the bundle
+-----------------------
+- If Worker 1 satisfies the pass goals without meaningful residual issues, mark Worker 2 as skipped/unused and close the bundle.
+- Dispatch Worker 2 only when there are concrete residual regressions or worthwhile polish items left after reviewing Worker 1.
+
+What not to re-open
+-------------------
+- whether the icon rail should remain
+- whether to remove the table library
+- whether to start manual correction UI now
+
+Those decisions are already made for this pass.

@@ -1,0 +1,113 @@
+Worker 1 Task: API And Storage Contract
+=======================================
+
+Mission
+-------
+Build the read-only API and storage-query foundation for the new cross-group dashboard. Your job is to make `Listings`, `Posts`, `Review`, and `Debug` possible without requiring `runId` as the primary browsing key.
+
+Read first
+----------
+1. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/README.txt`
+2. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/01_REVIEW_SYNTHESIS.txt`
+3. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/02_REDESIGN_SPEC.txt`
+4. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/03_PHASED_IMPLEMENTATION_PLAN.txt`
+5. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/04_SHARED_CONTRACTS_AND_BOUNDARIES.txt`
+6. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_1_status.txt`
+
+Ownership
+---------
+You own:
+
+- `src/storage/`
+- API route additions in `src/ui/inspection-server.js` or successor server files
+- backend-facing tests under `test/`
+- data/API contract updates in `04_SHARED_CONTRACTS_AND_BOUNDARIES.txt`
+
+You do not own:
+
+- frontend app shell
+- route UI components
+- shared frontend styling
+
+Core deliverables
+-----------------
+1. Cross-group listings query helpers.
+2. Cross-group posts query helpers.
+3. Review-oriented query helpers for ambiguous/low-confidence/pending/failed/incomplete work.
+4. Read-only API endpoints with:
+   - filtering
+   - sorting
+   - pagination
+   - linked provenance fields needed by the UI
+5. Detail payloads for listings and posts that support a right-side detail pane.
+6. Tests that cover query/filter/pagination behavior against the existing dataset and contract assumptions.
+
+Requirements
+------------
+- Preserve the current inspector endpoints during transition.
+- Prefer no schema changes.
+- Do not turn artifact JSON into the browser contract.
+- Keep SQLite as canonical.
+- Support listing-first browsing without forcing the frontend to fetch 500 full records and filter client-side.
+
+Specific data priorities
+------------------------
+Listings API should make it easy for the UI to show:
+
+- newest listings first
+- source group
+- listing summary
+- price
+- beds
+- baths
+- borough/neighborhood
+- freshness
+- confidence
+- ambiguity count
+- links to post/debug context
+
+Posts API should make it easy for the UI to show:
+
+- newest posts first
+- body preview
+- author
+- source group
+- freshness
+- processing status
+- linked listing count
+
+Review API should make it easy for the UI to show:
+
+- what needs human attention now
+- why it needs review
+- where to click next
+
+Constraints
+-----------
+- You are not alone in the codebase. Do not revert or overwrite work from others.
+- Avoid frontend framework/tooling changes unless required for a server integration seam.
+- Duplicate clustering is out of scope. If you see obvious future hooks, document them but do not build them.
+
+Validation
+----------
+- `npm test`
+- smoke the new endpoints against Williamsburg data
+- confirm pagination/filtering/sorting behavior on real stored data
+
+Handoff requirements
+--------------------
+Update `handoffs/worker_1_status.txt`:
+
+- when you start
+- if a contract mismatch or blocker appears
+- when you finish
+
+Include:
+- files changed
+- commands run
+- contract changes made
+- unresolved risks
+
+Success criteria
+----------------
+The frontend should be able to browse listings and posts across groups without using `runId` as the primary entry point, and without depending on client-side filtering of giant full-payload result sets.

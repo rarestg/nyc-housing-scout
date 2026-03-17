@@ -1,0 +1,383 @@
+Shared Contracts And Boundaries
+===============================
+
+Purpose
+-------
+This file is the working contract between the API/storage work and the frontend shell/route work. It exists to keep parallel workers from drifting into incompatible assumptions.
+
+Recommended implementation stack
+--------------------------------
+- keep the existing local read-only Node server
+- keep SQLite as the canonical backing store
+- build the new dashboard frontend as a small React app served locally by that server
+- use TanStack Table for dense listings and posts surfaces
+- keep state management minimal
+- keep filter state in the URL
+
+If the implementation needs to deviate:
+- Worker 1 owns API/data contract updates in this file
+- Worker 2 owns app structure/shared UI contract updates in this file
+
+Recommended frontend folder shape
+---------------------------------
+The redesign should live alongside the current inspector, not destroy it immediately.
+
+Recommended new root:
+- `src/ui/dashboard/`
+
+Suggested subfolders:
+- `src/ui/dashboard/app/`
+- `src/ui/dashboard/app/placeholders/`
+- `src/ui/dashboard/routes/listings/`
+- `src/ui/dashboard/routes/posts/`
+- `src/ui/dashboard/routes/review/`
+- `src/ui/dashboard/routes/debug/`
+- `src/ui/dashboard/components/`
+- `src/ui/dashboard/lib/`
+- `src/ui/dashboard/styles/`
+
+The existing inspector files should remain available during the transition:
+- `src/ui/inspection-app.html`
+- `src/ui/inspection-app.css`
+- `src/ui/inspection-app.js`
+- `src/ui/inspection-server.js`
+
+Dashboard boot + mount contract
+-------------------------------
+- the new dashboard is the default UI mounted at `/`
+- client routes served by the dashboard shell should include:
+  - `/listings`
+  - `/posts`
+  - `/review`
+  - `/debug`
+  - `/debug/runs/:runId`
+- the dashboard static assets should be served at:
+  - `/dashboard/app.js`
+  - `/dashboard/styles.css`
+- the legacy run inspector should remain reachable at:
+  - `/inspector`
+- dashboard app bundling lives under:
+  - `src/ui/dashboard/app/build-dashboard.js`
+- Worker 2 may touch the static asset mount in `src/ui/inspection-server.js`, but should not take over API route logic there
+
+Route model
+-----------
+Recommended initial route model:
+
+- `/`
+- `/listings`
+- `/posts`
+- `/review`
+- `/debug`
+- `/debug/runs/:runId` or equivalent route param model
+- `/inspector` for the preserved legacy surface
+
+Initial URL query model
+-----------------------
+Shared query keys should be stable and human-readable.
+
+Shared shell query keys:
+- `detail`
+  - default: open when absent
+  - explicit close state: `detail=closed`
+
+Recommended detail-selection keys:
+- Listings: `listingId`
+- Posts: `observationId`
+- Review: `reviewId`
+- Debug: `runId`
+
+Listings query keys:
+- `q`
+- `sourceKey`
+- `freshness`
+- `listingType`
+- `intent`
+- `borough`
+- `neighborhood`
+- `priceMin`
+- `priceMax`
+- `bedsMin`
+- `bedsMax`
+- `bathsMin`
+- `postedWithinHours`
+- `minConfidence`
+- `hasAmbiguities`
+- `sort`
+- `page`
+- `pageSize`
+
+Posts query keys:
+- `q`
+- `sourceKey`
+- `freshness`
+- `processingStatus`
+- `postedWithinHours`
+- `sort`
+- `page`
+- `pageSize`
+
+Review query keys:
+- `queue`
+- `sourceKey`
+- `postedWithinHours`
+- `sort`
+- `page`
+- `pageSize`
+
+Queue values for `Review`:
+- `ambiguous`
+- `low-confidence`
+- `pending`
+- `failed`
+- `incomplete`
+- later: `duplicate-suspect`
+
+Minimum API surface
+-------------------
+Recommended endpoints:
+
+- `GET /api/dashboard/listings`
+- `GET /api/dashboard/listings/:listingId`
+- `GET /api/dashboard/posts`
+- `GET /api/dashboard/posts/:observationId`
+- `GET /api/dashboard/review`
+- `GET /api/dashboard/review/:reviewId`
+- `GET /api/dashboard/debug/runs`
+- `GET /api/dashboard/debug/runs/:runId`
+
+Read-only list envelope
+-----------------------
+All new dashboard collection endpoints should return:
+
+- `items`
+- `count`
+- `pagination`
+  - `page`
+  - `pageSize`
+  - `totalItems`
+  - `totalPages`
+  - `hasNextPage`
+  - `hasPreviousPage`
+- `sort`
+- `filters`
+
+Time semantics
+--------------
+- `postedAt` is the best available absolute timestamp for browsing.
+- The API should derive `postedAt` from `postedAtText` plus `capturedAt` when possible.
+- If the post time text is missing or not parseable, `postedAt` may fall back to `capturedAt`.
+- `postedWithinHours` filters should use that same best-available browsing timestamp.
+
+Existing inspector endpoints can remain in place during transition.
+
+Listings list response contract
+-------------------------------
+Each row should expose enough to support dense browsing without opening JSON.
+
+Important grouping rule:
+
+- the listings table should return one primary row per `(observationId, ordinal)`
+- `variantCount` reports how many extractor variants exist for that listing slot
+- the detail endpoint should expose sibling variants for comparison
+
+Minimum row fields:
+- `listingId`
+- `observationId`
+- `runId`
+- `sourceKey`
+- `sourceDisplayName`
+- `postUrl`
+- `authorName`
+- `postedAt`
+- `postedAtText`
+- `capturedAt`
+- `listingSummary`
+- `listingType`
+- `intent`
+- `borough`
+- `neighborhood`
+- `priceAmount`
+- `priceCurrency`
+- `pricePeriod`
+- `beds`
+- `roomsAvailable`
+- `baths`
+- `availableFrom`
+- `freshness`
+- `confidenceOverall`
+- `ambiguityCount`
+- `variantCount`
+- `extractorVersion`
+
+Recommended listings sort values:
+- `newest`
+- `oldest`
+- `price-asc`
+- `price-desc`
+- `confidence-desc`
+- `confidence-asc`
+
+Listings detail response contract
+---------------------------------
+The detail payload should include:
+
+- the primary listing row
+- the full normalized listing payload for the selected variant
+- original post preview/body text
+- source metadata
+- processing provenance
+- linked run/debug identifiers
+- linked sibling extractor variants when available
+- artifact references and raw JSON payloads as explicit detail-only fields
+
+Posts list response contract
+----------------------------
+Current shape note:
+- rows are observation-centric for now
+- a future stable-post collapse can reduce repeated seen observations without changing the route shape
+
+Minimum row fields:
+- `observationId`
+- `runId`
+- `sourceKey`
+- `sourceDisplayName`
+- `postUrl`
+- `authorName`
+- `postedAt`
+- `postedAtText`
+- `capturedAt`
+- `freshness`
+- `processingStatus`
+- `bodyPreview`
+- `linkedListingCount`
+
+`processingStatus` may currently be:
+- `unprocessed`
+- `pending`
+- `processing`
+- `processed`
+- `retryable`
+- `failed`
+
+Recommended posts sort values:
+- `newest`
+- `oldest`
+
+Posts detail response contract
+------------------------------
+- full post/observation payload
+- linked listings
+- processing job status and key provenance
+- debug/run links
+- artifact references if useful
+
+Review response contract
+------------------------
+Review rows may be heterogeneous, but each row should include:
+
+- `reviewType`
+- `primaryId`
+- `observationId`
+- `runId`
+- `sourceKey`
+- `sourceDisplayName`
+- `postUrl`
+- `authorName`
+- `postedAt`
+- `postedAtText`
+- `capturedAt`
+- `summaryText`
+- `reasonSummary`
+- `reasons`
+- `linkTargets`
+
+Recommended extra metadata:
+- `queueCounts`
+- `thresholds.lowConfidence`
+
+Recommended review queue semantics:
+- `ambiguous` uses listing rows with `ambiguityCount > 0`
+- `low-confidence` uses listing rows below the backend review threshold
+- `incomplete` uses listing rows missing key fields like price, location, or room counts
+- `pending` includes queue rows in `pending` or `processing`
+- `failed` includes queue rows in `retryable` or `failed`
+
+Review detail response contract
+-------------------------------
+- review detail fetches may ignore pagination while still honoring the active non-page filters
+- `GET /api/dashboard/review/:reviewId` should return:
+  - `item`
+  - `thresholds.lowConfidence`
+
+Recommended review sort values:
+- `newest`
+- `oldest`
+
+App structure boundaries
+------------------------
+Worker 1 ownership:
+- `src/storage/`
+- API route additions in the local server
+- backend-facing tests
+- data contract updates in this file
+
+Worker 2 ownership:
+- `package.json` changes needed for frontend stack
+- `src/ui/dashboard/app/`
+- `src/ui/dashboard/components/` shared primitives
+- `src/ui/dashboard/lib/` shared formatting and query-state helpers
+- `src/ui/dashboard/styles/`
+- app structure/shared UI contract updates in this file
+
+Shared shell contract for route workers
+---------------------------------------
+Route-level screens should plug into the shell rather than rebuild it.
+
+Worker 2 provides the shell-slot registration hook:
+- `useDashboardShellSlots(...)` from `src/ui/dashboard/app/shell-context.jsx`
+
+Route surfaces should set these shell fields as needed:
+- `eyebrow`
+- `title`
+- `description`
+- `toolbar`
+- `detailTitle`
+- `detailMeta`
+- `detailContent`
+- `detailActions`
+- `detailEmptyTitle`
+- `detailEmptyMessage`
+
+Shared primitives now expected to be reused by route workers:
+- `DataTable`
+- `RouteScaffold`
+- `SummaryStrip`
+- `LoadingState`
+- `EmptyState`
+- `ErrorState`
+- filter controls under `src/ui/dashboard/components/FilterControls.jsx`
+- query helpers under `src/ui/dashboard/lib/query-state.js` and `src/ui/dashboard/lib/use-url-query-state.js`
+- formatting helpers under `src/ui/dashboard/lib/formatters.js`
+
+Worker 3 ownership:
+- `src/ui/dashboard/routes/listings/`
+- listing detail pane components under listings route ownership
+
+Worker 4 ownership:
+- `src/ui/dashboard/routes/posts/`
+- `src/ui/dashboard/routes/review/`
+- `src/ui/dashboard/routes/debug/`
+
+Shared UX rules
+---------------
+- `Listings` is the default landing route
+- humanized time is required
+- raw IDs are secondary metadata, not headings
+- slash-separated metric displays are not allowed in the new dashboard
+- badges should be minimal and meaningful
+- raw JSON belongs in explicit expanders or drawers, not inline card sprawl
+
+Open future note
+----------------
+Duplicate clustering is intentionally out of scope for the first frontend pass, but any new UI model should leave room for future duplicate indicators without changing the main layout model.

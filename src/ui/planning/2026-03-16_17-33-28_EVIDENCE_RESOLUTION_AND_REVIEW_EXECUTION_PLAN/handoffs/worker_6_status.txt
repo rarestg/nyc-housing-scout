@@ -1,0 +1,32 @@
+Worker 6 Status
+===============
+
+Status
+------
+- completed
+
+Start update
+------------
+- 2026-03-17 10:34:03 EDT: started Worker 6 from fresh context. Read the execution bundle in required order, then the evidence-resolution design contract plus Worker 1 through Worker 5 handoffs; now inspecting the Review, Listings, and Debug dashboard surfaces to add Review-only layered-state actions without making Debug editorial.
+
+Blockers
+--------
+- none
+
+Finish summary
+--------------
+- 2026-03-17 10:53:09 EDT: completed Worker 6.
+- Updated `src/ui/dashboard/routes/review/ReviewRoute.jsx` so Review always loads the backend review-detail contract, renders layered raw / resolved / manual location state, and offers manual override create/update/clear only through `actions.manualOverride`.
+- Added a small shared request helper in `src/ui/dashboard/routes/shared/route-support.jsx`; tightened `src/ui/dashboard/routes/listings/ListingsRoute.jsx` so Listings only links into Review when a real `reviewLinkTarget` exists; updated `src/ui/dashboard/routes/debug/DebugRoute.jsx` copy to keep the Review-vs-Debug boundary explicit.
+- Added Review correction styling in `src/ui/dashboard/styles/dashboard.css` and a focused UI bundle regression check in `test/inspect-ui.test.js`.
+- Updated minimal docs in `docs/PIPELINE.md`, `docs/ROADMAP.md`, and `docs/passes/README.md`; wrote pass log `docs/passes/2026-03-17_10-53-09_REVIEW_UI_AND_DEBUG_BOUNDARY_PASS.md`.
+- Validation:
+- `npm run build:dashboard` -> pass
+- `node --test test/dashboard-api.test.js` -> pass
+- `node --test test/inspect-ui.test.js` -> pass
+- `npm test` -> 110/110 passing
+- Live validation on a disposable temp data dir via `npm run inspect:ui -- --data-dir <temp> --port 0`:
+- `GET /api/dashboard/review/ambiguous:lst_000001?queue=ambiguous` returned `actions.manualOverride.supported: true`
+- `POST /api/dashboard/review/manual-overrides` created a neighborhood override and switched the effective layer to `manual_override`
+- `POST /api/dashboard/review/manual-overrides/clear` cleared the override and restored the layered ambiguous/manual state without mutating raw rows
+- `/dashboard/app.js` contained the Review override UI strings/endpoints and the explicit Debug forensic boundary copy

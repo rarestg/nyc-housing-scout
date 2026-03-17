@@ -1,0 +1,67 @@
+Verdict And Priority Order
+==========================
+
+Final call
+----------
+The two engineering reviews align on the main problem: the expensive code is in the route-specific exact-record synchronization and the supporting chrome around it. The correct call is to simplify that first.
+
+Accept now
+----------
+- Remove focused single-record table mode from Posts, Review, and Debug.
+- Keep the normal paginated tables on those routes.
+- Keep the detail drawer open for deep links.
+- Reuse Listings' honest off-page behavior instead of synthesizing one-row focused tables.
+- Move review-link semantics into the backend read model.
+- Remove duplicate secondary-route action rows and debug-heavy affordances from Posts and Review.
+- Strip summary strips and narrative footers from secondary routes.
+- Freeze the navigation rail in compact mode.
+- Remove Debug's query-param `runId` fallback and keep one canonical selection path.
+- Merge duplicate compact-table and related shell CSS.
+- Add route-local query/update helpers to replace repeated `setQueryState({ page: 1, selectionId: '', ... })` patches.
+
+Defer or reject for this pass
+-----------------------------
+- Do not remove `@tanstack/react-table` now.
+- Do not add a shared focused-row primitive unless product insists on keeping focused-row tables.
+- Do not heavily cut Listings before the secondary-route cleanup lands.
+- Do not swap UI libraries.
+
+Why this order is right
+-----------------------
+1. The secondary-route focused mode is the largest complexity leak and touches the most repeated logic.
+2. Backend-provided review targets delete fragile UI heuristics and reduce future drift.
+3. Shell, CSS, and helper cleanup are safer after the biggest route-specific behavior is gone.
+4. Listings should be revisited only after the rest of the app is cheaper and cleaner.
+
+Keep as-is
+----------
+- the shell-slot pattern
+- the detail pane component
+- the shared data table wrapper
+- URL query-state parsing and serialization
+- route-local column definitions and route-local detail bodies
+- Listings' honest "outside current page" behavior
+
+Ordered execution
+-----------------
+Phase 1
+- Remove focused mode on Posts, Review, and Debug.
+
+Phase 2
+- Trim summary strips, footers, duplicate action rows, and Posts/Review debug leakage.
+
+Phase 3
+- Add backend review-link targets and delete frontend derivation logic.
+
+Phase 4
+- Simplify shell and CSS branching.
+
+Phase 5
+- Reduce query-state boilerplate and shrink `route-support.jsx`.
+
+Phase 6
+- Optional last-pass Listings chrome trim, but only if the core product remains strong.
+
+Escalation rule
+---------------
+If product stakeholders insist on preserving focused-row tables, stop and escalate before proceeding. In that case the correct move is one shared primitive, not three route-local copies.

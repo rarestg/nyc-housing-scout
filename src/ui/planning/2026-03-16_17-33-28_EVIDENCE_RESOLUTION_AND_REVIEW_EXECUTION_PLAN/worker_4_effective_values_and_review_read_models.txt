@@ -1,0 +1,43 @@
+Worker 4: Effective Values And Review Read Models
+=================================================
+
+Dispatch only after Worker 3 is stable.
+
+Mission
+-------
+Update read helpers and dashboard/API surfaces so listings and review use honest effective values layered from raw extraction, resolved fields, and later overrides.
+
+Requirements
+------------
+- keep raw rows forensic and immutable
+- make effective values explicit in the read model
+- prepare the dashboard to display raw/resolved/manual layers honestly
+- preserve the distinction between:
+  - accepted resolved values that can currently win precedence
+  - candidate / ambiguous / unresolved resolved rows that still matter for review and explanation
+- do not flatten away non-accepted resolved rows just because the effective-value helper only promotes `accepted` today
+- read and incorporate prior Worker 1/2/3 handoffs before coding
+
+Expected outcome
+----------------
+- listings/review read helpers should expose:
+  - effective value
+  - effective layer
+  - current resolved-field state for the field when one exists
+  - enough raw/resolved/manual context that Review can later explain why a field is missing, ambiguous, candidate, or accepted
+- dashboard/API surfaces should stay honest:
+  - an unresolved or ambiguous resolved row should not masquerade as a winning effective value
+  - but it should still be visible to `Review`
+
+Own these files
+---------------
+- `src/storage/sqlite-storage.js`
+- `src/ui/inspection-server.js`
+- dashboard read-model consumers if needed
+- tests
+- minimal docs/pass log
+
+Coordination
+------------
+Update only:
+- `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/handoffs/worker_4_status.txt`

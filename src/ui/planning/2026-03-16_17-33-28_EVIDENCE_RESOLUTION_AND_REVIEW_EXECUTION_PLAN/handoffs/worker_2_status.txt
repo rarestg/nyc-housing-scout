@@ -1,0 +1,30 @@
+Worker 2 Status
+===============
+
+Status
+------
+- completed
+
+Start update
+------------
+- 2026-03-16 23:07:43 EDT: started Worker 2. Read the execution-plan bundle in order plus the evidence-resolution design note and Worker 1 handoff; now inspecting the new storage contract and current observation/processing seams for the enrichment stage.
+
+Blockers
+--------
+- none
+
+Finish summary
+--------------
+- 2026-03-16 23:24:46 EDT: completed Worker 2.
+- Added observation-scoped evidence extraction in `src/core/evidence-fragments.js` and `src/processing/run-evidence-enrichment.js` with stable producer tuple `observation_enrichment` / `evidence-enrichment-v1`.
+- Added stage CLI `npm run enrich:evidence -- ...` plus `inspect:storage evidence` for persisted fragment inspection.
+- Fragment coverage now includes body text, comments, media metadata, capture-derived metadata, network-enrichment metadata, and obvious contact/outbound references already present in stored observations.
+- Kept `post_observations` immutable; stage writes only to `evidence_fragments` and skips observations already enriched by the same producer version on rerun.
+- Added focused tests in `test/evidence-enrichment.test.js`; extended storage filtering with `producerVersion`; updated `docs/PIPELINE.md`; wrote pass log `docs/passes/2026-03-16_23-23-04_EVIDENCE_ENRICHMENT_STAGE_PASS.md`.
+- Validation:
+- `node --test test/evidence-enrichment.test.js` -> pass
+- `node --test test/evidence-resolution-storage.test.js` -> pass
+- `node --test test/storage-inspection.test.js` -> pass
+- `npm run enrich:evidence -- --source-key williamsburggreenpointhousing --limit 5` -> enriched 5 real observations, wrote 45 fragments
+- `npm run enrich:evidence -- --observation-id obs_000917` -> enriched 1 real observation with network metadata, wrote 14 fragments
+- `npm test` -> 98/98 passing

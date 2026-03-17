@@ -1,0 +1,99 @@
+Phase 3 Task: Backend Review Link Targets
+=========================================
+
+Mission
+-------
+Move review-link semantics into the backend read model so frontend routes stop re-deriving them. Add a canonical review navigation field to the relevant listing payloads and consume it in the frontend. Delete the existing frontend heuristics.
+
+Dispatch order
+--------------
+- third phase
+- depends on the route simplification phases being stable enough to consume the new payloads cleanly
+
+Read first
+----------
+1. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/README.txt`
+2. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/01_VERDICT_AND_PRIORITY_ORDER.txt`
+3. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/02_PR_SIZED_PHASE_BREAKDOWN.txt`
+4. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/03_MASTER_CHECKLIST.txt`
+5. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/04_DISPATCH_PROTOCOL.txt`
+6. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/05_COORDINATION_BOARD.txt`
+7. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/06_WHITEBOARD_AND_NOTES.txt`
+8. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/handoffs/phase_1_status.txt`
+9. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/handoffs/phase_2_status.txt`
+10. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/handoffs/phase_3_status.txt`
+
+Primary references
+------------------
+- `src/storage/sqlite-storage.js`
+- `src/ui/inspection-server.js`
+- `src/ui/dashboard/routes/listings/ListingsRoute.jsx`
+- `src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `test/dashboard-api.test.js`
+
+Ownership
+---------
+You own:
+
+- `src/storage/sqlite-storage.js`
+- `src/ui/inspection-server.js` if read-model wiring changes are needed
+- `src/ui/dashboard/routes/listings/ListingsRoute.jsx`
+- `src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `test/dashboard-api.test.js`
+
+You may touch:
+
+- other route tests if payload shape changes require it
+
+You do not own:
+
+- shell/layout cleanup
+- broad route simplification beyond replacing the review-link heuristics
+
+Core deliverables
+-----------------
+1. Pick one canonical backend field for review navigation.
+2. Expose that field on listing list/detail payloads where review navigation is needed.
+3. Expose that field on linked-listing payloads used by Posts detail.
+4. Consume the backend field in Listings and Posts.
+5. Delete frontend helpers that currently derive review IDs or queues from listing fields.
+6. Add test coverage for the new contract.
+
+Requirements
+------------
+- Keep the contract read-only and lightweight.
+- Do not duplicate queue-threshold logic in both backend and frontend.
+- Choose a field name that reads as canonical intent, not an implementation leak.
+- If the best shape is `reviewLinkTarget`, use that or a similarly explicit field.
+
+Out of scope
+------------
+- changing how the Review route itself computes queue rows
+- any new review queue categories
+- Listings chrome cleanup
+
+Validation
+----------
+- `npm test`
+- verify:
+  - listing detail to review navigation
+  - post linked-listing to review navigation
+  - no remaining route-local review derivation helpers
+
+Handoff requirements
+--------------------
+Update `handoffs/phase_3_status.txt`:
+
+- when you start
+- if the payload naming needs a decision
+- when you finish
+
+Include:
+- final field name and payload shape
+- files changed
+- tests added or updated
+- deleted frontend helpers
+
+Success criteria
+----------------
+Review navigation semantics come from the backend read model, and the frontend no longer re-implements the review-routing rules.

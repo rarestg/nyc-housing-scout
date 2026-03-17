@@ -1,0 +1,22 @@
+Worker 2 Status
+===============
+
+Status
+------
+- hold
+
+Reason
+------
+- Dispatch only if Worker 1 leaves meaningful cleanup or regressions.
+
+Start update
+------------
+- pending
+
+Blockers
+--------
+- none
+
+Finish summary
+--------------
+- pending

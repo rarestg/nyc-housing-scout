@@ -1,0 +1,50 @@
+Worker 1 Status
+===============
+
+Status
+------
+- completed
+
+Start update
+------------
+- 2026-03-16 14:32:13 EDT: started worker 1 shell reset and density pass; reading required docs and current owned files before making changes.
+
+Blockers
+--------
+- none
+
+Finish summary
+--------------
+- 2026-03-16 14:46:58 EDT: shipped the shared shell reset with a top nav, flatter surface system, tighter detail header/actions, and quieter listings/posts/review/debug density while preserving current detail/query-state behavior.
+- 2026-03-16 14:54:33 EDT follow-up: collapsed the desktop top nav into one real flex row so the brand, route tabs, and inspector action no longer consume a second row at wide widths.
+
+Files changed
+-------------
+- `src/ui/dashboard/app/AppShell.jsx`
+- `src/ui/dashboard/components/DetailPane.jsx`
+- `src/ui/dashboard/styles/dashboard.css`
+- `src/ui/dashboard/dist/app.js` (generated via `npm run build:dashboard`)
+- `docs/passes/2026-03-16_14-46-38_UI_SHELL_RESET_AND_DENSITY_PASS.md`
+- `src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/handoffs/worker_1_status.txt`
+
+Commands run
+------------
+- `npm run build:dashboard`
+- `npm test`
+- `npm run inspect:ui -- --port 4316`
+- `curl -s http://127.0.0.1:4316/{/,listings,posts,review,debug,inspector}`
+- `agent-browser --session worker-1-shell-reset-4316 ...` for desktop/narrow route checks, `Escape` close validation, row-selection reopen validation, and review off-page deep-link validation
+- follow-up validation: desktop and 900px `agent-browser` topbar screenshots after converting the nav to a single-row flex layout
+
+Validation notes
+----------------
+- build passed
+- tests passed
+- verified `/`, `/listings`, `/posts`, `/review`, `/debug`, and `/inspector`
+- verified top nav labels, left-rail removal, compact filter action row, pinned close control, quieter table hierarchy, and cross-route shell alignment
+- verified `Escape` closes detail, row selection still opens detail from a closed state, and review deep links still show `Outside current page`
+
+Remaining gaps
+--------------
+- no blocker discovered
+- did not run a full tab-order sweep across every control; medium-width overlay still intentionally favors persistent detail context over maximum table width when open

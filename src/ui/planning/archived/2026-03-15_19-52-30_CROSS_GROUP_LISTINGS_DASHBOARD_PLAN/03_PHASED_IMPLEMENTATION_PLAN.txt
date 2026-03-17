@@ -1,0 +1,199 @@
+Phased Implementation Plan
+==========================
+
+Implementation strategy
+-----------------------
+Keep the existing thin local API boundary, but redesign the frontend around a new listing-first dashboard surface. The recommended execution model is a mix of parallel and sequential work to minimize collisions.
+
+Phase 0: lock contracts and app shape
+-------------------------------------
+Goal
+- define the app shell, route model, shared filter model, and API contract before route-heavy implementation begins
+
+Primary owners
+- Worker 1
+- Worker 2
+
+Deliverables
+- shared route list
+- shared query/filter keys
+- shared row/detail payload expectations
+- agreed frontend folder structure
+
+Validation
+- shared docs updated if needed
+- no unresolved contract blockers between API and UI shells
+
+Phase 1: cross-group API foundation
+-----------------------------------
+Goal
+- expose listing-first and post-first read APIs that do not require `runId` as the main entry point
+
+Primary owner
+- Worker 1
+
+Deliverables
+- storage read helpers for cross-run listings
+- storage read helpers for cross-run posts
+- review-oriented query helpers
+- read-only API endpoints with filtering, sorting, and pagination
+- detail endpoints or expanded payloads with linked provenance
+- test coverage for query behavior
+
+Validation
+- endpoint smoke tests against existing Williamsburg data
+- `npm test`
+
+Phase 2: app shell and shared primitives
+----------------------------------------
+Goal
+- build the reusable frontend frame the route-level workers will plug into
+
+Primary owner
+- Worker 2
+
+Deliverables
+- frontend bootstrapping
+- app shell and navigation
+- route scaffolding
+- top filter/search primitives
+- right detail pane shell
+- shared formatting utilities
+- shared table wrapper and loading/error states
+- baseline accessibility and responsive behavior
+
+Validation
+- app boots locally
+- routes render
+- filter state is URL-aware
+
+Phase 3: listings workspace
+---------------------------
+Goal
+- make `Listings` the default/home experience and the strongest surface in the app
+
+Primary owner
+- Worker 3
+
+Dependencies
+- Phase 1 and Phase 2 stable enough to consume
+
+Deliverables
+- newest-first listings table
+- server-backed filtering and sorting
+- pagination or infinite-scroll equivalent
+- listing detail pane
+- raw post preview inside detail
+- linked provenance/debug affordances
+- minimal summary strip above the table
+
+Validation
+- required listings render from real Williamsburg data
+- row selection and detail pane behavior are solid
+- filters narrow results correctly
+
+Phase 4: posts and review workspaces
+------------------------------------
+Goal
+- provide the raw post evidence view and the action-oriented review queue
+
+Primary owner
+- Worker 4
+
+Dependencies
+- Phase 1 and Phase 2 stable enough to consume
+
+Deliverables
+- cross-group posts screen
+- review screen for ambiguous/low-confidence/pending/failed/incomplete items
+- strong linking from posts/review to listings and debug
+
+Validation
+- post rows render from real data
+- review queues are meaningfully filterable
+- navigation to related listing/debug detail works
+
+Phase 5: debug integration
+--------------------------
+Goal
+- preserve the current run inspector as a secondary advanced/debug route
+
+Primary owner
+- Worker 4
+
+Deliverables
+- debug route shell
+- integration or adaptation of the current run inspector
+- demotion of run/debug surfaces from the primary home flow
+
+Validation
+- the existing run inspector remains usable
+- debug does not dominate the primary navigation
+
+Phase 6: saved-filter and alert scaffolding
+-------------------------------------------
+Goal
+- prepare the app for monitoring and notification workflows without implementing push delivery yet
+
+Primary owner
+- integration owner
+
+Deliverables
+- stable URL filter state
+- local saved-filter model if time allows
+- clear serialization for future backend alert reuse
+
+Validation
+- filters restore correctly from URL
+- saved searches reopen the same results state
+
+Phase 7: polish, accessibility, and performance
+-----------------------------------------------
+Goal
+- tighten usability after the product shape is correct
+
+Primary owner
+- integration owner, with parallel bug-fix help if needed
+
+Deliverables
+- focus styles
+- keyboard behavior
+- loading and empty-state polish
+- truncation and overflow fixes
+- lazy JSON loading
+- dense but readable spacing
+
+Validation
+- `npm test`
+- local app smoke pass against Williamsburg runs/listings/posts
+- no obvious layout collapse at narrower widths
+
+Recommended delegation sequence
+-------------------------------
+Round 1: parallel
+
+- dispatch Worker 1
+- dispatch Worker 2
+
+Round 2: parallel after Round 1 stabilizes
+
+- dispatch Worker 3
+- dispatch Worker 4
+
+Round 3: sequential integration
+
+- reconcile API/UI seams
+- fix shared contract drift
+- wire cross-screen navigation fully
+
+Round 4: parallel polish if needed
+
+- accessibility fixes
+- responsive cleanup
+- performance cleanup
+
+Risk notes
+----------
+- The largest risk is not styling. It is accidentally rebuilding the current run inspector under a nicer shell instead of delivering a listing-first product.
+- Avoid adding a map or source-activity-heavy dashboard before the listings workflow is strong.
+- Avoid over-fetching giant payload sets into the browser as the primary browsing model.

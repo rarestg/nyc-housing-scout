@@ -1,0 +1,108 @@
+Worker 3 Status
+===============
+
+Status
+------
+completed
+
+Started at
+----------
+2026-03-15 20:36:13 EDT
+
+Finished at
+-----------
+2026-03-15 20:45:49 EDT
+
+Owned paths
+-----------
+- `src/ui/dashboard/routes/listings/`
+
+Files changed
+-------------
+- `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_3_status.txt`
+- `src/ui/dashboard/routes/listings/ListingsRoute.jsx`
+- `src/ui/dashboard/app/DashboardApp.jsx`
+- `src/ui/dashboard/styles/dashboard.css`
+- `src/ui/dashboard/dist/app.js` (regenerated via `npm run build:dashboard`)
+
+Commands run
+------------
+- `rg --files -g 'worker_3_listings_workspace.txt'`
+- `sed -n '1,240p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/worker_3_listings_workspace.txt`
+- `git status --short`
+- `sed -n '1,220p' README.md`
+- `sed -n '1,220p' docs/INDEX.md`
+- `sed -n '1,260p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/README.txt`
+- `sed -n '1,240p' docs/VISION_AND_ARCHITECTURE.md`
+- `sed -n '1,220p' docs/ROADMAP.md`
+- `sed -n '1,220p' docs/PIPELINE.md`
+- `sed -n '1,260p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/01_REVIEW_SYNTHESIS.txt`
+- `sed -n '1,320p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/02_REDESIGN_SPEC.txt`
+- `sed -n '1,280p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/03_PHASED_IMPLEMENTATION_PLAN.txt`
+- `sed -n '1,280p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/04_SHARED_CONTRACTS_AND_BOUNDARIES.txt`
+- `sed -n '1,220p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_1_status.txt`
+- `sed -n '1,220p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_2_status.txt`
+- `sed -n '1,220p' src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_3_status.txt`
+- `rg --files src/ui/dashboard`
+- `sed -n '1,260p' package.json`
+- `sed -n '1,320p' src/ui/inspection-server.js`
+- `sed -n '1,280p' test/dashboard-api.test.js`
+- `sed -n '1,260p' src/ui/dashboard/app/DashboardApp.jsx`
+- `sed -n '1,320p' src/ui/dashboard/app/AppShell.jsx`
+- `sed -n '1,260p' src/ui/dashboard/app/shell-context.jsx`
+- `sed -n '1,320p' src/ui/dashboard/app/placeholders/ListingsRoutePlaceholder.jsx`
+- `sed -n '1,280p' src/ui/dashboard/components/DataTable.jsx`
+- `sed -n '1,260p' src/ui/dashboard/components/DetailPane.jsx`
+- `sed -n '1,280p' src/ui/dashboard/components/FilterControls.jsx`
+- `sed -n '1,260p' src/ui/dashboard/components/RouteScaffold.jsx`
+- `sed -n '1,260p' src/ui/dashboard/components/SummaryStrip.jsx`
+- `sed -n '1,260p' src/ui/dashboard/lib/formatters.js`
+- `sed -n '1,260p' src/ui/dashboard/lib/use-url-query-state.js`
+- `sed -n '1,260p' src/ui/dashboard/lib/query-state.js`
+- `sed -n '1,260p' src/ui/dashboard/styles/dashboard.css`
+- `rg -n "listDashboardListings|getDashboardListingDetail|listDashboardPosts|getDashboardPostDetail" src/storage/sqlite-storage.js`
+- `sed -n '1484,1718p' src/storage/sqlite-storage.js`
+- `sed -n '2860,3125p' src/storage/sqlite-storage.js`
+- `sed -n '3335,3495p' src/storage/sqlite-storage.js`
+- `node --input-type=module -e "... createStorage ... listDashboardListings ... getDashboardListingDetail ..."`
+- `node --input-type=module -e "... createStorage ... listSources ..."`
+- `node --input-type=module -e "... createStorage ... listDashboardReviewItems ..."`
+- `node --input-type=module -e "... createStorage ... distinct listingType/neighborhood/borough ..."`
+- `npm run build:dashboard`
+- `npm test`
+- `npm run inspect:ui -- --port 4314`
+- `curl -s 'http://127.0.0.1:4314/api/dashboard/listings?pageSize=5&sort=newest'`
+- `curl -s 'http://127.0.0.1:4314/listings?sourceKey=williamsburggreenpointhousing&postedWithinHours=24&detail=open' | head -n 12`
+- `agent-browser open 'http://127.0.0.1:4314/listings?sourceKey=williamsburggreenpointhousing&postedWithinHours=24&detail=open'`
+- `agent-browser snapshot -i`
+- `agent-browser snapshot -i -C`
+- `agent-browser select @e19 'Sublet'`
+- `agent-browser get url`
+- `agent-browser screenshot --full`
+- `agent-browser errors --json`
+- `TZ=America/New_York date '+%Y-%m-%d %H:%M:%S %Z'`
+
+API or shell blockers
+---------------------
+- none
+
+Open questions
+--------------
+- missing API fields: none for the current listings workspace
+- follow-up: neighborhood remains a free-text server-backed input because the API does not expose dedicated facet endpoints yet
+- follow-up: selection now snaps to the first visible row whenever filters or pagination move the current `listingId` off-page; this keeps the detail pane aligned with the visible table at the cost of preserving off-page deep links
+
+Handoff summary
+---------------
+- replaced the listings placeholder with a real route-owned workspace wired into `DashboardApp.jsx`
+- shipped server-backed listings filters for search, source, freshness, listing type, borough, neighborhood, price range, beds, baths, posted window, ambiguity flag, confidence threshold, sort, and page size
+- added a dense newest-first table, summary strip, pagination controls, and a detail pane with normalized facts, full post preview, provenance/debug links, variant comparison, and raw JSON at the end
+- validated the route against live Williamsburg data and confirmed:
+  - `/` still lands on `/listings`
+  - listings read the new paginated dashboard envelope correctly
+  - filter state round-trips through the URL
+  - detail selection stays aligned with the visible result set when filters change
+- UX tradeoffs:
+  - kept the summary strip to three compact signals instead of reintroducing card sprawl
+  - kept listing rows dense by folding listing type / intent / variant count into the listing cell and confidence / ambiguities / freshness into one review cell
+  - used a text neighborhood filter instead of a long select so the toolbar stays scannable without a facet API

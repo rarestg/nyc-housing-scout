@@ -1,0 +1,73 @@
+Worker 1: Storage Contract And Precedence
+=========================================
+
+Read order
+----------
+1. `/Users/claudius/claudius-repos/nyc-housing-scout/README.md`
+2. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/INDEX.md`
+3. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/VISION_AND_ARCHITECTURE.md`
+4. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/ROADMAP.md`
+5. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/PIPELINE.md`
+6. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/LISTING_SCHEMA.md`
+7. `/Users/claudius/claudius-repos/nyc-housing-scout/data/README.md`
+8. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/passes/README.md`
+9. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/notes/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_OVERRIDE_DESIGN.md`
+10. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/README.txt`
+11. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/01_REPO_STATE_SYNTHESIS.txt`
+12. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/02_STORAGE_AND_PRECEDENCE_DESIGN.txt`
+13. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/03_EXECUTION_PLAN.txt`
+14. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/04_DISPATCH_PROTOCOL.txt`
+15. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/05_COORDINATION_BOARD.txt`
+16. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/handoffs/worker_1_status.txt`
+
+Then inspect:
+
+17. `/Users/claudius/claudius-repos/nyc-housing-scout/src/storage/migrations/0001_init.sql`
+18. `/Users/claudius/claudius-repos/nyc-housing-scout/src/storage/migrations/0002_processing_pipeline.sql`
+19. `/Users/claudius/claudius-repos/nyc-housing-scout/src/storage/sqlite-storage.js`
+20. `/Users/claudius/claudius-repos/nyc-housing-scout/test/`
+
+Mission
+-------
+Lock the storage contract and precedence rules for evidence, resolved values, manual overrides, and auditability.
+
+Own these files
+---------------
+- `src/storage/migrations/`
+- `src/storage/sqlite-storage.js`
+- relevant tests under `test/`
+- minimal doc updates required by the new contract
+
+Required outcomes
+-----------------
+- add the new migration
+- add storage helpers for:
+  - evidence fragments
+  - resolved fields
+  - manual overrides
+  - audit events
+- define and test the effective-value precedence rule
+- keep raw observation/payload/listing tables immutable
+- document the contract changes
+
+Constraints
+-----------
+- do not build enrichment logic yet
+- do not build address resolution yet
+- do not build frontend correction UI
+- do not add compatibility shims for stale state
+
+Validation
+----------
+- `npm test`
+- targeted storage tests for the new layers and precedence
+
+Docs
+----
+Update the minimal source-of-truth docs required by the contract change.
+Write one timestamped pass log under `docs/passes/`.
+
+Coordination
+------------
+Update only:
+- `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/handoffs/worker_1_status.txt`

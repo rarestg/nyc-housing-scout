@@ -1,0 +1,77 @@
+Coordination Board
+==================
+
+Status summary
+--------------
+Phase 1
+- status: complete
+- owner: completed
+- handoff: `handoffs/phase_1_status.txt`
+
+Phase 2
+- status: complete
+- owner: completed
+- handoff: `handoffs/phase_2_status.txt`
+
+Phase 3
+- status: complete
+- owner: completed
+- handoff: `handoffs/phase_3_status.txt`
+
+Phase 4
+- status: complete
+- owner: completed
+- handoff: `handoffs/phase_4_status.txt`
+
+Phase 5
+- status: complete
+- owner: completed
+- handoff: `handoffs/phase_5_status.txt`
+
+Phase 6
+- status: complete
+- owner: completed
+- handoff: `handoffs/phase_6_status.txt`
+
+Recommended next dispatch
+-------------------------
+- no further dispatch required
+- simplification program complete
+
+Stage gates
+-----------
+Phase 1 is complete when:
+- focused single-record table mode is gone from Posts, Review, and Debug
+- off-page deep-link behavior works
+- no focused banner or focused-row adapters remain
+
+Phase 2 is complete when:
+- secondary routes no longer rely on summary strips and narrative footers
+- duplicate body-level actions are gone
+- Posts and Review are cleaner and less debug-heavy
+
+Phase 3 is complete when:
+- review-link semantics come from backend payloads
+- frontend heuristics are deleted
+- tests cover the new contract
+
+Phase 4 is complete when:
+- shell nav is permanently compact
+- Debug has one canonical selection path
+- duplicate CSS branches are collapsed
+
+Phase 5 is complete when:
+- route-local query/update helpers exist
+- `route-support.jsx` is materially smaller and cleaner
+
+Phase 6 is complete when:
+- Listings chrome is lighter without hurting the primary product surface
+- any Phase 6 dispatch is treated as the final optional pass, not a required continuation
+
+Current standing decisions
+--------------------------
+- keep the shell-slot pattern
+- keep the data table wrapper
+- keep URL query-state parsing
+- defer table-library replacement
+- defer any bigger Listings cuts until the rest of the app is simpler

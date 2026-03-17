@@ -1,0 +1,78 @@
+Master Checklist
+================
+
+Dispatcher preflight
+--------------------
+- [ ] Confirm everyone has read `README.txt` through `06_WHITEBOARD_AND_NOTES.txt`.
+- [ ] Confirm dispatch will happen sequentially unless the phase is re-scoped to avoid file overlap.
+- [ ] Confirm each engineer will update only their own handoff file under `handoffs/`.
+- [ ] Confirm all blockers and scope changes will also be written to `06_WHITEBOARD_AND_NOTES.txt`.
+
+Phase 1 merge gate
+------------------
+- [ ] Focused single-record table mode is gone from Posts.
+- [ ] Focused single-record table mode is gone from Review.
+- [ ] Focused single-record table mode is gone from Debug.
+- [ ] Deep links still open the right detail drawer.
+- [ ] Off-page state is explicit instead of synthesizing a one-row table.
+- [ ] `FocusedTableNotice` is deleted if no longer used.
+- [ ] Focus-banner CSS is deleted if no longer used.
+- [ ] `npm test` passed.
+- [ ] `npm run build:dashboard` passed.
+
+Phase 2 merge gate
+------------------
+- [ ] Posts no longer uses a summary strip.
+- [ ] Review no longer uses a summary strip.
+- [ ] Debug no longer uses a summary strip.
+- [ ] Secondary-route narrative footers are removed.
+- [ ] Posts has only one action cluster.
+- [ ] Review has only one action cluster.
+- [ ] Raw JSON and inspector-heavy affordances are removed from Posts and Review where they are not primary.
+- [ ] Debug keeps the forensic affordances it needs.
+- [ ] `npm test` passed.
+
+Phase 3 merge gate
+------------------
+- [ ] Listing list/detail payloads expose canonical review navigation info.
+- [ ] Linked listings in post detail expose canonical review navigation info.
+- [ ] Frontend review derivation helpers are deleted.
+- [ ] Review navigation uses backend-provided targets.
+- [ ] Tests cover the new payload shape and link behavior.
+- [ ] `npm test` passed.
+
+Phase 4 merge gate
+------------------
+- [ ] Navigation rail is permanently compact.
+- [ ] Nav expand/collapse toggle is removed.
+- [ ] Expanded-nav shell branches are removed.
+- [ ] Debug query-param `runId` fallback is removed.
+- [ ] Compact-table CSS duplication is merged.
+- [ ] Action/link-pill CSS duplication is merged if touched.
+- [ ] `npm test` passed.
+- [ ] `npm run build:dashboard` passed.
+
+Phase 5 merge gate
+------------------
+- [ ] Each dashboard route has a small local query/filter update helper.
+- [ ] Repeated `setQueryState({ page: 1, selectionId: '', ... })` boilerplate is materially reduced.
+- [ ] `route-support.jsx` no longer carries dead or over-bundled route UI.
+- [ ] `useJsonResource`, URL helpers, and other durable shared helpers remain healthy.
+- [ ] `npm test` passed.
+
+Phase 6 merge gate
+------------------
+- [ ] Listings summary chrome is reduced only if it still leaves Listings strong and scannable.
+- [ ] Extra fetches that only powered removed chrome are deleted.
+- [ ] Results bar and primary filters remain clear.
+- [ ] Active filter chips are preserved unless the replacement is clearly better.
+- [ ] `npm test` passed.
+
+Final integration checklist
+---------------------------
+- [ ] `/listings` still feels like the primary route.
+- [ ] `/posts`, `/review`, and `/debug` feel materially simpler than before.
+- [ ] Cross-route navigation still works.
+- [ ] Debug remains secondary but capable.
+- [ ] No one spent time on table-library churn.
+- [ ] Deferred items are recorded in `06_WHITEBOARD_AND_NOTES.txt`.

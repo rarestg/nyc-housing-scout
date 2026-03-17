@@ -4,8 +4,10 @@ import {
 } from '../browser/facebook-post-normalizer.js';
 import {
   extractFacebookPostIdFromUrl,
-  mergeCollectedPostWithNetworkData,
   normalizeFacebookPostUrl,
+} from '../core/facebook-post-identity.js';
+import {
+  mergeCollectedPostWithNetworkData,
 } from '../core/collected-post.js';
 
 function normalizeMatchText(value) {
@@ -23,6 +25,20 @@ function normalizeReuseBodyText(value) {
     .trim();
 }
 
+function uniqueStrings(values) {
+  const items = [];
+  const seen = new Set();
+
+  for (const value of values || []) {
+    const normalized = String(value || '').trim();
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    items.push(normalized);
+  }
+
+  return items;
+}
+
 function hasAuthorAndBodyEvidence(reasons) {
   const normalizedReasons = new Set(Array.isArray(reasons) ? reasons : []);
   const hasBodyEvidence = normalizedReasons.has('body_strong_overlap')
@@ -33,20 +49,6 @@ function hasAuthorAndBodyEvidence(reasons) {
 
 function candidateSupportsIdentityRecovery(candidate) {
   return Boolean(candidate?.postId || candidate?.postUrl);
-}
-
-function getCandidateIdentityAliases(candidate) {
-  const keys = getCandidateExactIdentityKeys(candidate);
-
-  if (candidate?.storyId) {
-    keys.push(`story_id:${String(candidate.storyId)}`);
-  }
-
-  if (candidate?.feedbackId) {
-    keys.push(`feedback_id:${String(candidate.feedbackId)}`);
-  }
-
-  return keys;
 }
 
 function getCandidateExactIdentityKeys(candidate) {
@@ -66,6 +68,20 @@ function getCandidateExactIdentityKeys(candidate) {
   }
 
   return keys;
+}
+
+function getCandidateIdentityAliases(candidate) {
+  const keys = getCandidateExactIdentityKeys(candidate);
+
+  if (candidate?.storyId) {
+    keys.push(`story_id:${String(candidate.storyId)}`);
+  }
+
+  if (candidate?.feedbackId) {
+    keys.push(`feedback_id:${String(candidate.feedbackId)}`);
+  }
+
+  return uniqueStrings(keys);
 }
 
 function getPostExactIdentityKeys(post) {
@@ -92,11 +108,8 @@ export function createNetworkIntegrationState(enabled = true) {
     enabled: Boolean(enabled),
     currentStepIndex: null,
     maxFuzzyCandidateStepAge: 6,
-    candidateEntries: new Map(),
-    exactIdentityIndex: new Map(),
-    fuzzyCandidateKeys: new Set(),
-    consumedFuzzyIdentityKeys: new Set(),
-    resolvedDomReuseIndex: new Map(),
+    entries: new Map(),
+    identityAliases: new Map(),
     parseErrors: [],
     candidatesExtracted: 0,
     pooledCandidates: 0,
@@ -112,9 +125,7 @@ export function createNetworkIntegrationState(enabled = true) {
 
 export function beginNetworkIntegrationStep(state, stepIndex) {
   if (!state?.enabled) return;
-  if (state.currentStepIndex === stepIndex) return;
   state.currentStepIndex = stepIndex;
-  pruneFuzzyCandidateKeys(state);
 }
 
 export function getNetworkCandidateKey(candidate, fallbackKey) {
@@ -201,18 +212,6 @@ function groupsAreCompatible(left, right) {
   return true;
 }
 
-function findResolvedReuseEntries(state, post) {
-  const target = getResolvedDomReuseMatchParts(post);
-  if (!target) return [];
-
-  const bucket = state.resolvedDomReuseIndex.get(getResolvedDomReuseKey(post)) || [];
-  return bucket.filter((entry) => {
-    const entryParts = getResolvedDomReuseMatchParts(entry?.candidate);
-    if (!entryParts) return false;
-    return groupsAreCompatible(target, entryParts);
-  });
-}
-
 function choosePreferredEntry(left, right) {
   if (!left) return right;
   if (!right) return left;
@@ -220,69 +219,6 @@ function choosePreferredEntry(left, right) {
   return scoreNetworkCandidateRichness(right.candidate) > scoreNetworkCandidateRichness(left.candidate)
     ? right
     : left;
-}
-
-function registerExactIdentityEntry(state, entry) {
-  for (const identityKey of getCandidateExactIdentityKeys(entry.candidate)) {
-    const existingKey = state.exactIdentityIndex.get(identityKey);
-    const existingEntry = existingKey ? state.candidateEntries.get(existingKey) : null;
-    const preferred = choosePreferredEntry(existingEntry, entry);
-    if (preferred) {
-      state.exactIdentityIndex.set(identityKey, preferred.key);
-    }
-  }
-}
-
-function entryIsWithinFuzzyWindow(state, entry, stepIndex = state?.currentStepIndex) {
-  if (!entry || entry.fuzzyConsumed) return false;
-  if (!Number.isInteger(stepIndex) || !Number.isInteger(entry.stepIndex)) return true;
-
-  const age = stepIndex - entry.stepIndex;
-  return age >= 0 && age <= state.maxFuzzyCandidateStepAge;
-}
-
-function pruneFuzzyCandidateKeys(state) {
-  const nextKeys = new Set();
-
-  for (const key of state?.fuzzyCandidateKeys || []) {
-    const entry = state.candidateEntries.get(key);
-    if (entryIsWithinFuzzyWindow(state, entry, state.currentStepIndex)) {
-      nextKeys.add(key);
-    }
-  }
-
-  state.fuzzyCandidateKeys = nextKeys;
-  pruneConsumedFuzzyCandidateKeys(state);
-}
-
-function entryMatchesConsumedFuzzyIdentity(state, entry) {
-  const aliases = getCandidateIdentityAliases(entry?.candidate);
-  return aliases.some((alias) => state?.consumedFuzzyIdentityKeys?.has(alias));
-}
-
-function markCandidateFuzzyIdentityConsumed(state, candidate) {
-  const aliases = getCandidateIdentityAliases(candidate);
-  if (!aliases.length) return;
-
-  for (const alias of aliases) {
-    state.consumedFuzzyIdentityKeys.add(alias);
-  }
-}
-
-function pruneConsumedFuzzyCandidateKeys(state) {
-  for (const key of Array.from(state?.fuzzyCandidateKeys || [])) {
-    const entry = state.candidateEntries.get(key);
-    if (!entry) {
-      state.fuzzyCandidateKeys.delete(key);
-      continue;
-    }
-
-    if (entryMatchesConsumedFuzzyIdentity(state, entry)) {
-      entry.fuzzyConsumed = true;
-      markCandidateFuzzyIdentityConsumed(state, entry.candidate);
-      state.fuzzyCandidateKeys.delete(key);
-    }
-  }
 }
 
 function buildEntryMatch(post, entry, minScore) {
@@ -297,13 +233,119 @@ function buildEntryMatch(post, entry, minScore) {
     : null;
 }
 
+function isNetworkEntry(entry) {
+  return entry?.entryType === 'network_candidate';
+}
+
+function canUseEntryForDuplicateReuse(entry) {
+  return Boolean(entry?.allowDuplicateReuse && entry?.reuseKey && entry?.reuseParts);
+}
+
+function isEntryWithinFuzzyWindow(state, entry, stepIndex = state?.currentStepIndex) {
+  if (!entry?.allowFuzzyRecovery || entry.fuzzyConsumed) return false;
+  if (!candidateSupportsIdentityRecovery(entry.candidate)) return false;
+  if (!Number.isInteger(stepIndex) || !Number.isInteger(entry.stepIndex)) return true;
+
+  const age = stepIndex - entry.stepIndex;
+  return age >= 0 && age <= state.maxFuzzyCandidateStepAge;
+}
+
+function countPooledNetworkEntries(state) {
+  let count = 0;
+
+  for (const entry of state?.entries?.values?.() || []) {
+    if (isNetworkEntry(entry)) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
+function buildResolverEntry(candidate, options = {}) {
+  const normalizedPostUrl = normalizeFacebookPostUrl(candidate?.postUrl, {
+    postId: candidate?.postId,
+    groupId: candidate?.groupId,
+  });
+  const fallbackKey = options.fallbackKey
+    || options.entryKey
+    || options.key
+    || normalizedPostUrl
+    || candidate?.postId
+    || getResolvedDomReuseKey(candidate);
+
+  return {
+    key: fallbackKey,
+    candidate,
+    entryType: options.entryType || 'network_candidate',
+    allowExactIdentityMatch: Boolean(options.allowExactIdentityMatch),
+    allowFuzzyRecovery: Boolean(options.allowFuzzyRecovery),
+    allowDuplicateReuse: Boolean(options.allowDuplicateReuse),
+    fuzzyConsumed: Boolean(options.fuzzyConsumed),
+    captureId: options.captureId || null,
+    captureMode: options.captureMode || null,
+    retentionReason: options.retentionReason || null,
+    stepIndex: Number.isInteger(options.stepIndex) ? options.stepIndex : null,
+    capturePhase: options.capturePhase || null,
+    identityAliases: getCandidateIdentityAliases(candidate),
+    exactIdentityKeys: getCandidateExactIdentityKeys(candidate),
+    reuseKey: getResolvedDomReuseKey(candidate),
+    reuseParts: getResolvedDomReuseMatchParts(candidate),
+  };
+}
+
+function getIndexedEntryKeys(state, aliases) {
+  const keys = new Set();
+
+  for (const alias of aliases || []) {
+    const key = state?.identityAliases?.get(alias);
+    if (key && state.entries.has(key)) {
+      keys.add(key);
+    }
+  }
+
+  return Array.from(keys);
+}
+
+function choosePreferredFromEntries(entries, fallbackEntry = null) {
+  let preferred = fallbackEntry;
+
+  for (const entry of entries || []) {
+    preferred = choosePreferredEntry(preferred, entry);
+  }
+
+  return preferred;
+}
+
+function indexEntryAliases(state, entry) {
+  if (!isNetworkEntry(entry)) return;
+
+  for (const alias of entry.identityAliases || []) {
+    state.identityAliases.set(alias, entry.key);
+  }
+}
+
+function replaceEntry(state, nextEntry, entriesToCollapse = []) {
+  const collapsed = Array.isArray(entriesToCollapse) ? entriesToCollapse : [];
+
+  for (const entry of collapsed) {
+    if (entry?.key && entry.key !== nextEntry.key) {
+      state.entries.delete(entry.key);
+    }
+  }
+
+  state.entries.set(nextEntry.key, nextEntry);
+  indexEntryAliases(state, nextEntry);
+  return nextEntry;
+}
+
 function getExactIdentityEntryForPost(state, post) {
   for (const identityKey of getPostExactIdentityKeys(post)) {
-    const candidateKey = state.exactIdentityIndex.get(identityKey);
-    if (!candidateKey) continue;
+    const entryKey = state?.identityAliases?.get(identityKey);
+    if (!entryKey) continue;
 
-    const entry = state.candidateEntries.get(candidateKey);
-    if (entry) {
+    const entry = state.entries.get(entryKey);
+    if (entry?.allowExactIdentityMatch) {
       return entry;
     }
   }
@@ -311,50 +353,180 @@ function getExactIdentityEntryForPost(state, post) {
   return null;
 }
 
-export function registerResolvedPostForReuse(state, post, options = {}) {
-  if (!state?.enabled || !post || (!post.postId && !post.postUrl)) {
+function findResolvedReuseEntries(state, post) {
+  const target = getResolvedDomReuseMatchParts(post);
+  const reuseKey = getResolvedDomReuseKey(post);
+  if (!target || !reuseKey) return [];
+
+  return Array.from(state?.entries?.values?.() || []).filter((entry) => {
+    if (!canUseEntryForDuplicateReuse(entry)) return false;
+    if (entry.reuseKey !== reuseKey) return false;
+    return groupsAreCompatible(target, entry.reuseParts);
+  });
+}
+
+function findMatchingResolvedEntries(state, targetEntry) {
+  const targetExactKeys = new Set(targetEntry.exactIdentityKeys || []);
+
+  return Array.from(state?.entries?.values?.() || []).filter((entry) => {
+    if (!canUseEntryForDuplicateReuse(entry)) return false;
+    if (entry.reuseKey !== targetEntry.reuseKey) return false;
+    if (!groupsAreCompatible(targetEntry.reuseParts, entry.reuseParts)) return false;
+    if (entry.key === targetEntry.key) return true;
+    if (!targetExactKeys.size || !entry.exactIdentityKeys?.length) return false;
+    return entry.exactIdentityKeys.some((identityKey) => targetExactKeys.has(identityKey));
+  });
+}
+
+function refreshConsumedNetworkEntry(state, entry, mergedPost) {
+  const currentEntry = state?.entries?.get(entry?.key);
+  if (!isNetworkEntry(currentEntry)) {
     return;
   }
 
-  const reuseKey = getResolvedDomReuseKey(post);
-  if (!reuseKey) return;
+  const mergedCandidate = choosePreferredEntry(
+    currentEntry,
+    buildResolverEntry(mergedPost, {
+      key: currentEntry.key,
+      entryType: 'network_candidate',
+      allowExactIdentityMatch: true,
+      allowFuzzyRecovery: candidateSupportsIdentityRecovery(mergedPost),
+      captureId: currentEntry.captureId,
+      captureMode: currentEntry.captureMode,
+      retentionReason: currentEntry.retentionReason,
+      stepIndex: currentEntry.stepIndex,
+      capturePhase: currentEntry.capturePhase,
+    }),
+  )?.candidate || currentEntry.candidate;
+  const refreshed = buildResolverEntry(mergedCandidate, {
+    key: currentEntry.key,
+    entryType: 'network_candidate',
+    allowExactIdentityMatch: true,
+    allowFuzzyRecovery: candidateSupportsIdentityRecovery(mergedCandidate),
+    fuzzyConsumed: true,
+    captureId: currentEntry.captureId,
+    captureMode: currentEntry.captureMode,
+    retentionReason: currentEntry.retentionReason,
+    stepIndex: currentEntry.stepIndex,
+    capturePhase: currentEntry.capturePhase,
+  });
 
-  const entry = {
-    key: options.entryKey || post.postId || normalizeFacebookPostUrl(post.postUrl, {
+  refreshed.identityAliases = uniqueStrings([
+    ...(currentEntry.identityAliases || []),
+    ...getCandidateIdentityAliases(mergedPost),
+  ]);
+  refreshed.exactIdentityKeys = uniqueStrings([
+    ...(currentEntry.exactIdentityKeys || []),
+    ...getCandidateExactIdentityKeys(mergedPost),
+  ]);
+
+  replaceEntry(state, refreshed);
+}
+
+export function registerNetworkCandidate(state, candidate, options = {}) {
+  if (!state?.enabled || !candidate) {
+    return null;
+  }
+
+  const nextEntry = buildResolverEntry(candidate, {
+    key: options.entryKey || options.key || options.fallbackKey || getNetworkCandidateKey(candidate, options.fallbackKey),
+    entryType: 'network_candidate',
+    allowExactIdentityMatch: true,
+    allowFuzzyRecovery: candidateSupportsIdentityRecovery(candidate),
+    fuzzyConsumed: false,
+    captureId: options.captureId,
+    captureMode: options.captureMode,
+    retentionReason: options.retentionReason,
+    stepIndex: options.stepIndex,
+    capturePhase: options.capturePhase,
+  });
+  const matchingKeys = getIndexedEntryKeys(state, nextEntry.identityAliases);
+  const existingEntries = matchingKeys
+    .map((key) => state.entries.get(key))
+    .filter(isNetworkEntry);
+  const preferredEntry = choosePreferredFromEntries(existingEntries, nextEntry) || nextEntry;
+  const storedEntry = {
+    ...preferredEntry,
+    key: existingEntries[0]?.key || nextEntry.key,
+    entryType: 'network_candidate',
+    allowExactIdentityMatch: true,
+    allowFuzzyRecovery: candidateSupportsIdentityRecovery(preferredEntry.candidate),
+    allowDuplicateReuse: false,
+    fuzzyConsumed: existingEntries.some((entry) => entry.fuzzyConsumed),
+    identityAliases: uniqueStrings([
+      ...existingEntries.flatMap((entry) => entry.identityAliases || []),
+      ...nextEntry.identityAliases,
+    ]),
+    exactIdentityKeys: uniqueStrings([
+      ...existingEntries.flatMap((entry) => entry.exactIdentityKeys || []),
+      ...nextEntry.exactIdentityKeys,
+    ]),
+    reuseKey: getResolvedDomReuseKey(preferredEntry.candidate),
+    reuseParts: getResolvedDomReuseMatchParts(preferredEntry.candidate),
+  };
+
+  const replacedExisting = existingEntries.length
+    && scoreNetworkCandidateRichness(preferredEntry.candidate) > scoreNetworkCandidateRichness(existingEntries[0].candidate);
+  if (replacedExisting) {
+    state.replacedCandidates += 1;
+  }
+
+  return replaceEntry(state, storedEntry, existingEntries);
+}
+
+export function registerResolvedPostForReuse(state, post, options = {}) {
+  if (!state?.enabled || !post || (!post.postId && !post.postUrl)) {
+    return null;
+  }
+
+  const candidate = options.candidate || post;
+  const resolvedIdentityKey = options.entryKey
+    || post.postId
+    || normalizeFacebookPostUrl(post.postUrl, {
       postId: post.postId,
       groupId: post.groupId,
-    }) || reuseKey,
-    candidate: options.candidate || post,
-    captureId: options.captureId || null,
+    })
+    || getResolvedDomReuseKey(post);
+  const entry = buildResolverEntry(candidate, {
+    key: resolvedIdentityKey ? `resolved:${resolvedIdentityKey}` : null,
+    entryType: 'resolved_post',
+    allowExactIdentityMatch: false,
+    allowFuzzyRecovery: false,
+    allowDuplicateReuse: true,
+    captureId: options.captureId,
     captureMode: options.captureMode || 'resolved_post',
-    retentionReason: options.retentionReason || null,
-    stepIndex: Number.isInteger(options.stepIndex) ? options.stepIndex : null,
-    capturePhase: options.capturePhase || null,
+    retentionReason: options.retentionReason,
+    stepIndex: options.stepIndex,
+    capturePhase: options.capturePhase,
+  });
+
+  if (!entry.reuseKey) {
+    return null;
+  }
+
+  const existingEntries = findMatchingResolvedEntries(state, entry);
+  const preferredEntry = choosePreferredFromEntries(existingEntries, entry) || entry;
+  const storedEntry = {
+    ...preferredEntry,
+    key: existingEntries[0]?.key || entry.key,
+    entryType: 'resolved_post',
+    allowExactIdentityMatch: false,
+    allowFuzzyRecovery: false,
+    allowDuplicateReuse: true,
+    fuzzyConsumed: false,
+    identityAliases: uniqueStrings([
+      ...existingEntries.flatMap((existing) => existing.identityAliases || []),
+      ...entry.identityAliases,
+    ]),
+    exactIdentityKeys: uniqueStrings([
+      ...existingEntries.flatMap((existing) => existing.exactIdentityKeys || []),
+      ...entry.exactIdentityKeys,
+    ]),
+    reuseKey: preferredEntry.reuseKey || entry.reuseKey,
+    reuseParts: preferredEntry.reuseParts || entry.reuseParts,
   };
-  const existingEntries = state.resolvedDomReuseIndex.get(reuseKey) || [];
-  const entryIdentityKeys = getCandidateExactIdentityKeys(entry.candidate);
-  const nextEntries = [];
-  let replaced = false;
 
-  for (const existing of existingEntries) {
-    const existingIdentityKeys = getCandidateExactIdentityKeys(existing.candidate);
-    const sharesIdentity = entryIdentityKeys.length
-      && existingIdentityKeys.length
-      && entryIdentityKeys.some((identityKey) => existingIdentityKeys.includes(identityKey));
-
-    if (sharesIdentity || existing.key === entry.key) {
-      nextEntries.push(choosePreferredEntry(existing, entry));
-      replaced = true;
-      continue;
-    }
-    nextEntries.push(existing);
-  }
-
-  if (!replaced) {
-    nextEntries.push(entry);
-  }
-
-  state.resolvedDomReuseIndex.set(reuseKey, nextEntries);
+  return replaceEntry(state, storedEntry, existingEntries);
 }
 
 export function registerNetworkCandidates(state, items, stepIndex = state?.currentStepIndex) {
@@ -376,46 +548,14 @@ export function registerNetworkCandidates(state, items, stepIndex = state?.curre
 
       for (let index = 0; index < candidates.length; index += 1) {
         const candidate = candidates[index];
-        const candidateKey = getNetworkCandidateKey(candidate, `${item.captureId}:${index}`);
-        const entry = {
-          key: candidateKey,
-          candidate,
+        registerNetworkCandidate(state, candidate, {
+          entryKey: getNetworkCandidateKey(candidate, `${item.captureId}:${index}`),
           captureId: item.captureId,
           captureMode: item.captureMode,
           retentionReason: item.retentionReason || null,
           stepIndex: item.stepIndex,
           capturePhase: item.capturePhase,
-          fuzzyConsumed: false,
-        };
-        if (entryMatchesConsumedFuzzyIdentity(state, entry)) {
-          entry.fuzzyConsumed = true;
-          markCandidateFuzzyIdentityConsumed(state, entry.candidate);
-        }
-        const existing = state.candidateEntries.get(candidateKey);
-        const preferred = choosePreferredEntry(existing, entry);
-
-        if (preferred === entry) {
-          if (existing) {
-            state.replacedCandidates += 1;
-          }
-          state.candidateEntries.set(candidateKey, entry);
-        }
-
-        const storedEntry = state.candidateEntries.get(candidateKey);
-        if (entryMatchesConsumedFuzzyIdentity(state, storedEntry)) {
-          storedEntry.fuzzyConsumed = true;
-          markCandidateFuzzyIdentityConsumed(state, storedEntry.candidate);
-        }
-        registerExactIdentityEntry(state, storedEntry);
-
-        if (
-          storedEntry
-          && candidateSupportsIdentityRecovery(storedEntry.candidate)
-          && entryIsWithinFuzzyWindow(state, storedEntry, state.currentStepIndex)
-        ) {
-          storedEntry.fuzzyConsumed = false;
-          state.fuzzyCandidateKeys.add(candidateKey);
-        }
+        });
       }
     } catch (error) {
       state.parseErrors.push({
@@ -426,7 +566,7 @@ export function registerNetworkCandidates(state, items, stepIndex = state?.curre
   }
 
   state.candidatesExtracted += extractedCount;
-  state.pooledCandidates = state.candidateEntries.size;
+  state.pooledCandidates = countPooledNetworkEntries(state);
 
   return extractedCount;
 }
@@ -480,13 +620,10 @@ export function matchNetworkCandidateForPost(state, post) {
     }
   }
 
-  const availableEntries = Array.from(state.fuzzyCandidateKeys)
-    .map((key) => state.candidateEntries.get(key))
-    .filter((entry) => (
-      entry
-      && candidateSupportsIdentityRecovery(entry.candidate)
-      && entryIsWithinFuzzyWindow(state, entry, state.currentStepIndex)
-    ));
+  const availableEntries = Array.from(state.entries.values()).filter((entry) => (
+    isNetworkEntry(entry)
+    && isEntryWithinFuzzyWindow(state, entry, state.currentStepIndex)
+  ));
   if (!availableEntries.length) return null;
 
   const minScore = 55;
@@ -591,11 +728,7 @@ export function resolveWorkingSetEntry(state, entry, stepIndex) {
 
   const mergeResult = applyNetworkCandidateMatch(entry.post, match, stepIndex);
   if (match.matchKind === 'fuzzy_recovery' && match.entry) {
-    markCandidateFuzzyIdentityConsumed(state, match.entry.candidate);
-    markCandidateFuzzyIdentityConsumed(state, mergeResult.post);
-    match.entry.fuzzyConsumed = true;
-    state.fuzzyCandidateKeys.delete(match.entry.key);
-    pruneConsumedFuzzyCandidateKeys(state);
+    refreshConsumedNetworkEntry(state, match.entry, mergeResult.post);
   }
 
   if (mergeResult.post?.postId || mergeResult.post?.postUrl) {

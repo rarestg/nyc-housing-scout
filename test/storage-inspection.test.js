@@ -44,7 +44,7 @@ test('sqlite inspection helpers expose sources, runs, steps, observations, listi
   assert.equal(runs[0].seenObservationCount, 1);
   assert.equal(runs[0].unidentifiedObservationCount, 1);
   assert.equal(runs[0].listingCount, listings.length);
-  assert.equal(runs[0].artifactCount, 5);
+  assert.equal(runs[0].artifactCount, 4);
   assert.equal(runs[0].runStepCount, 1);
 
   assert.equal(steps.length, 1);
@@ -70,22 +70,22 @@ test('sqlite inspection helpers expose sources, runs, steps, observations, listi
   assert.equal(listingRows[0].observationFreshness, 'fresh');
   assert.equal(listingRows[0].payload.source.sourceKey, 'nyc-housing-group');
 
-  assert.equal(artifacts.length, 5);
+  assert.equal(artifacts.length, 4);
   assert.deepEqual(new Set(artifacts.map((artifact) => artifact.artifactKind)), new Set([
     'raw_post_payload',
     'collected_export',
-    'listing_export',
   ]));
 
   assert.equal(validation.isHealthy, true);
   assert.deepEqual(validation.issues, []);
   assert.equal(validation.counts.observations, 3);
   assert.equal(validation.counts.listings, listings.length);
+  assert.equal(validation.counts.listingExports, 0);
   assert.equal(validation.matches.collected, true);
   assert.equal(validation.matches.withIds, true);
 });
 
-test('inspect-storage CLI returns JSON for runs, observations, and validate-run', () => {
+test('inspect-storage CLI returns JSON for runs, observations, manual overrides, audit events, and validate-run', () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nyc-housing-scout-inspect-cli-'));
   const fixture = seedStorageFixture(dataDir);
   fixture.storage.close();
@@ -93,6 +93,8 @@ test('inspect-storage CLI returns JSON for runs, observations, and validate-run'
   const cliPath = path.resolve(process.cwd(), 'src/cli/inspect-storage.js');
   const runsResult = runCli(cliPath, ['runs', '--data-dir', dataDir, '--source-key', 'nyc-housing-group', '--limit', '1']);
   const observationsResult = runCli(cliPath, ['observations', '--data-dir', dataDir, '--run-id', fixture.run.id, '--limit', '1', '--full']);
+  const manualResult = runCli(cliPath, ['manual', '--data-dir', dataDir, '--target-kind', 'listing_record', '--target-id', fixture.listingId, '--limit', '5']);
+  const auditResult = runCli(cliPath, ['audit', '--data-dir', dataDir, '--target-kind', 'listing_record', '--target-id', fixture.listingId, '--limit', '5']);
   const validationResult = runCli(cliPath, ['validate-run', '--data-dir', dataDir, '--run-id', fixture.run.id]);
 
   assert.equal(runsResult.command, 'runs');
@@ -104,6 +106,15 @@ test('inspect-storage CLI returns JSON for runs, observations, and validate-run'
   assert.equal(observationsResult.results[0].runId, fixture.run.id);
   assert.match(observationsResult.results[0].bodyText, /Still available|Roommate Wanted/);
   assert.ok(observationsResult.results[0].payload);
+
+  assert.equal(manualResult.command, 'manual');
+  assert.equal(manualResult.count, 1);
+  assert.equal(manualResult.results[0].targetId, fixture.listingId);
+  assert.equal(manualResult.results[0].status, 'active');
+
+  assert.equal(auditResult.command, 'audit');
+  assert.equal(auditResult.count, 1);
+  assert.equal(auditResult.results[0].eventKind, 'manual_override_set');
 
   assert.equal(validationResult.command, 'validate-run');
   assert.equal(validationResult.result.runId, fixture.run.id);
@@ -224,6 +235,19 @@ function seedStorageFixture(dataDir) {
     }],
     extractorVersion: 'test-v1',
   });
+  const listingId = storage.listListings({
+    observationId: firstBatch[0].observation.id,
+    limit: 1,
+  })[0].id;
+  storage.applyManualOverrideAction({
+    action: 'set',
+    targetKind: 'listing_record',
+    targetId: listingId,
+    fieldPath: 'location.neighborhood',
+    value: 'Williamsburg',
+    operatorId: 'claudius',
+    reason: 'Inspection fixture manual override.',
+  });
 
   storage.appendRunStep({
     runId: run.id,
@@ -250,7 +274,6 @@ function seedStorageFixture(dataDir) {
       freshCollected: 1,
       seenCollected: 1,
       unidentifiedCollected: 1,
-      extractedListings: listings.length,
       withIds: 2,
     },
     exports: [
@@ -260,12 +283,6 @@ function seedStorageFixture(dataDir) {
         sha256: 'sha-collected',
         byteSize: 240,
       },
-      {
-        artifactKind: 'listing_export',
-        relativePath: 'data/listings/facebook/nyc-housing-group/crawl-2026-03-12T22-30-00-000Z.json',
-        sha256: 'sha-listings',
-        byteSize: 180,
-      },
     ],
   });
 
@@ -274,6 +291,7 @@ function seedStorageFixture(dataDir) {
     source,
     run,
     listings,
+    listingId,
     firstObservationId: firstBatch[0].observation.id,
   };
 }

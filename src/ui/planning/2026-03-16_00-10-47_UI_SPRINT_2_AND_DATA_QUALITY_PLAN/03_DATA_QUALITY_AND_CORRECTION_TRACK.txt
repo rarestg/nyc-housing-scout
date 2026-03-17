@@ -1,0 +1,167 @@
+Data Quality And Correction Track
+=================================
+
+Purpose
+-------
+This is the companion track to UI Sprint 2.
+
+UI Sprint 2 makes the current listings workflow faster.
+This track makes the underlying listing data more complete, more explainable, and eventually correctable.
+
+This is not a pure frontend sprint.
+Most of the work starts in storage, processing, and provenance.
+
+Principles
+----------
+- treat listing extraction as multi-source evidence fusion
+- preserve field-level provenance
+- prefer "unknown" over false certainty
+- keep NYC geographic guardrails strict
+- put correction workflows in Review, not in raw Debug
+- treat resolved data as first-class structured data once validated so it improves the core listings experience
+
+Workstream 1: Linked-Media Evidence Enrichment
+----------------------------------------------
+Goal:
+- capture useful metadata from outbound links and supported media
+
+First targets:
+- YouTube titles
+- YouTube descriptions
+- provider / media type metadata
+- outbound URL capture
+
+Deliverables:
+- enrichment step for supported linked media
+- stored metadata: url, provider, media type, title, description
+- provenance link from observation/listing back to the enriched evidence
+
+Non-goal:
+- this should not begin as a vague full-web scraping stage; start with narrow, safe, high-signal metadata capture
+
+Why this comes first:
+- obvious clues already exist in linked media
+- this improves extraction without requiring full correction tooling first
+
+Workstream 2: Evidence Aggregation Layer
+----------------------------------------
+Goal:
+- move from "post text in, listing out" to "evidence fragments in, resolved fields out"
+
+Deliverables:
+- evidence aggregation per observation or listing candidate
+- field-level evidence references for price, location, beds, baths, dates, etc.
+- conflict representation when sources disagree
+- confidence that reflects evidence quality, not only extractor certainty
+
+Why this must precede strong UI surfacing:
+- the UI cannot truthfully explain why a field is unknown or resolved until the backend knows which evidence exists
+
+Workstream 3: Address Resolution
+--------------------------------
+Goal:
+- turn raw location clues into structured NYC-safe location values
+
+Deliverables:
+- address candidate extraction from post text and enriched media metadata
+- NYC-constrained geocoding or place resolution
+- resolved address object with confidence state
+- explicit provenance such as:
+  - resolved from post text
+  - resolved from YouTube title
+  - ambiguous candidate, not auto-applied
+
+Guardrails:
+- reject out-of-area or weak matches
+- ambiguous is better than confidently wrong
+
+Optional assist:
+- use an LLM only for tightly-bounded candidate parsing when heuristics are weak
+- always run deterministic validation after that step
+
+Workstream 4: Manual Address Validation
+---------------------------------------
+Goal:
+- let a user safely validate or correct an address
+
+Deliverables:
+- review-oriented address correction UI
+- candidate search backed by geocoding provider
+- selected-address preview before apply
+- explicit action like "Apply validated address"
+
+Important placement:
+- this belongs in Review / Resolve workflows
+- Debug can link to raw evidence, but should not be the main editing surface
+
+Workstream 5: Broader Manual Overrides
+--------------------------------------
+Goal:
+- let humans fix key listing fields when automation is wrong or incomplete
+
+Fields:
+- address
+- price
+- beds
+- baths
+- availability
+- listing type
+- intent
+
+Deliverables:
+- override storage model
+- precedence rules
+- audit trail
+- ability to revert overrides
+
+Required layered values:
+- extracted value
+- resolved/enriched value
+- human override value
+
+Recommended precedence:
+- human override wins for display and filtering unless reverted
+- extracted and resolved values remain preserved for audit and reprocessing decisions
+
+Workstream 6: UI Surfacing Of Provenance And Missing-State Explanations
+-----------------------------------------------------------------------
+Goal:
+- show users why a field is missing or how it was resolved
+
+Deliverables:
+- badges or labels like:
+  - Extracted
+  - Resolved
+  - Validated manually
+- field-level "why missing" messaging, for example:
+  - no clear location found in post text
+  - linked media not yet analyzed
+  - clue found but not confidently resolved
+- next-action hints such as:
+  - open source evidence
+  - resolve address
+  - review extraction
+
+Critical product rule:
+- once a resolved or manually validated value is accepted, it must flow back into:
+  - listings table display
+  - filters
+  - detail views
+  - review prioritization
+
+Recommended order for this track
+--------------------------------
+1. linked-media enrichment
+2. evidence aggregation
+3. address resolution
+4. manual validated address flow
+5. broader manual overrides
+6. UI surfacing of provenance and missing-state reasons
+
+Reason for the order
+--------------------
+The UI should not invent explanations or correction states before the backend has a durable model for them.
+
+Backend note: duplicate handling
+--------------------------------
+Stable-post collapse and near-duplicate clustering should be planned as a later companion effort. That work will improve alerting, listings cleanliness, and trust, but it should remain separate from the correction model.

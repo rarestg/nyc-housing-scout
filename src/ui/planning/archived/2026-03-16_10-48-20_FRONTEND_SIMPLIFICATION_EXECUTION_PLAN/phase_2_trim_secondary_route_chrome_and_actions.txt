@@ -1,0 +1,97 @@
+Phase 2 Task: Trim Secondary-Route Chrome And Actions
+=====================================================
+
+Mission
+-------
+Simplify Posts, Review, and Debug now that focused mode is gone. Remove low-value summary strips and narrative footers from those routes. Keep one action cluster per route, preferably in the drawer header. Pull raw JSON and inspector-heavy affordances out of Posts and Review where they muddy the route purpose.
+
+Dispatch order
+--------------
+- second phase
+- depends on Phase 1 being merged or explicitly stabilized
+
+Read first
+----------
+1. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/README.txt`
+2. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/01_VERDICT_AND_PRIORITY_ORDER.txt`
+3. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/02_PR_SIZED_PHASE_BREAKDOWN.txt`
+4. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/03_MASTER_CHECKLIST.txt`
+5. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/04_DISPATCH_PROTOCOL.txt`
+6. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/05_COORDINATION_BOARD.txt`
+7. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/06_WHITEBOARD_AND_NOTES.txt`
+8. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/handoffs/phase_1_status.txt`
+9. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/handoffs/phase_2_status.txt`
+
+Primary references
+------------------
+- `src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `src/ui/dashboard/routes/review/ReviewRoute.jsx`
+- `src/ui/dashboard/routes/debug/DebugRoute.jsx`
+- `src/ui/dashboard/components/RouteScaffold.jsx`
+- `src/ui/dashboard/components/SummaryStrip.jsx`
+
+Ownership
+---------
+You own:
+
+- `src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `src/ui/dashboard/routes/review/ReviewRoute.jsx`
+- `src/ui/dashboard/routes/debug/DebugRoute.jsx`
+- `src/ui/dashboard/components/RouteScaffold.jsx` if a tiny cleanup is needed
+- `src/ui/dashboard/components/SummaryStrip.jsx` if it becomes dead or underused
+
+You do not own:
+
+- backend payload changes
+- AppShell/nav behavior changes
+- Listings chrome cleanup
+
+Core deliverables
+-----------------
+1. Remove summary strip usage from Posts, Review, and Debug.
+2. Remove low-value route footers on Posts, Review, and Debug.
+3. Keep only one action cluster per route.
+4. Remove body-level duplicate action rows where the same actions already exist in the detail header.
+5. Keep Posts evidence-first, Review triage-first, and Debug forensic.
+6. Remove raw JSON and inspector clutter from Posts and Review unless it is clearly essential to the route's primary job.
+
+Requirements
+------------
+- Do not strip Debug down so far that it loses the forensic handoff role.
+- Do not move summary-strip removal onto Listings in this phase.
+- Prefer deleting low-value copy over replacing it with new copy.
+- Keep navigation between Listings, Posts, Review, and Debug intact.
+
+Out of scope
+------------
+- backend review-link work
+- shell compact/nav cleanup
+- route-support cleanup
+- table-library churn
+
+Validation
+----------
+- `npm test`
+- `npm run build:dashboard`
+- smoke-check the three secondary routes for:
+  - route purpose clarity
+  - single action cluster behavior
+  - retained cross-route navigation
+
+Handoff requirements
+--------------------
+Update `handoffs/phase_2_status.txt`:
+
+- when you start
+- if removing a route affordance seems risky
+- when you finish
+
+Include:
+- files changed
+- what chrome was removed
+- any affordances intentionally kept in Debug
+- any affordances intentionally removed from Posts or Review
+
+Success criteria
+----------------
+Posts, Review, and Debug are visibly leaner, less repetitive, and more role-specific, with no product-value loss in their main workflows.

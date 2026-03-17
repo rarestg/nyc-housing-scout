@@ -1,0 +1,38 @@
+Worker 6: Review UI And Debug Boundary
+======================================
+
+Dispatch only after Worker 5 is stable.
+
+Mission
+-------
+Expose the new layered states in `Review` and related dashboard surfaces without making `Debug` editorial.
+
+Requirements
+------------
+- show raw vs resolved vs manual states honestly
+- expose correction actions from `Review`
+- keep `Debug` focused on provenance and forensics
+- read and incorporate prior Worker 1 through Worker 5 handoffs before coding
+- use the new Review detail/write contract instead of inventing a parallel client-side override flow:
+  - `actions.manualOverride` from review detail
+  - `POST /api/dashboard/review/manual-overrides`
+  - `POST /api/dashboard/review/manual-overrides/clear`
+- keep editing affordances out of Listings and Debug; link or surface them through Review
+
+Expected outcome
+----------------
+- Review detail should make layered location state understandable and actionable
+- manual override actions should be available only where the backend says they are supported
+- UI should reflect set/update/clear results honestly without hiding raw/resolved layers
+- Debug should remain a place to inspect provenance, not to edit values
+
+Own these files
+---------------
+- dashboard route/UI files needed for Review and related detail surfaces
+- tests
+- minimal docs/pass log
+
+Coordination
+------------
+Update only:
+- `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/handoffs/worker_6_status.txt`

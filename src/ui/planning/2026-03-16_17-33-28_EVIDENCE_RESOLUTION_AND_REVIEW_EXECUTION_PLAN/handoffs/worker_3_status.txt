@@ -1,0 +1,29 @@
+Worker 3 Status
+===============
+
+Status
+------
+- completed
+
+Start update
+------------
+- 2026-03-16 23:38:58 EDT: picked up Worker 3 from fresh context; reading bundle in required order, then prior Worker 1/2 handoffs and the design contract before implementation.
+
+Blockers
+--------
+- none
+
+Finish summary
+--------------
+- 2026-03-16 23:58:27 EDT: completed Worker 3.
+- Added the NYC-constrained address-resolution core in `src/core/address-resolution.js` and the standalone stage runner/CLI in `src/processing/run-address-resolution.js` plus `src/cli/resolve-addresses.js`.
+- Resolver now writes one `resolved_fields` row per `listing_record` for `location.address`, `location.neighborhood`, `location.borough`, `location.city`, and `location.state`, with explicit `accepted`, `candidate`, `ambiguous`, or `unresolved` status plus confidence, ambiguity payload, and `supportingFragmentIds`.
+- Added `inspect:storage resolved` and resolver-side storage filtering in `src/cli/inspect-storage.js` / `src/storage/sqlite-storage.js`; did not mutate `post_observations` or `listing_records`.
+- Added focused coverage in `test/address-resolution.test.js`; updated `docs/PIPELINE.md`; wrote pass log `docs/passes/2026-03-16_23-55-43_ADDRESS_RESOLUTION_STAGE_PASS.md`.
+- Validation:
+- `node --test test/address-resolution.test.js` -> pass
+- `node --test test/evidence-resolution-storage.test.js` -> pass
+- `node --test test/evidence-enrichment.test.js` -> pass
+- `node --test test/storage-inspection.test.js` -> pass
+- `npm run resolve:addresses -- --observation-id obs_001207` -> wrote 5 real rows, accepted neighborhood/borough/city/state for `lst_000263`, rerun wrote 0 / unchanged 5
+- `npm test` -> 104/104 passing

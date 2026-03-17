@@ -1,0 +1,40 @@
+Repo-State Synthesis
+====================
+
+Confirmed state
+---------------
+- The repo is already observation-centric and SQLite-canonical.
+- Raw observation capture already preserves body text, comments, media, derived location, capture hints, and payload JSON.
+- Linked-media and network-enrichment signals already exist in observation-shaped data, but they are not promoted into a reusable evidence layer.
+- Processing jobs, processed payloads, and listing records already provide a clean downstream seam.
+- Provenance exists at row level, but not at field level.
+- The dashboard is a read-only inspection surface today; `Review` is derived, not durable workflow state.
+
+Key implication
+---------------
+The next milestone should layer on top of the current spine, not replace it.
+
+What is missing
+---------------
+- no generic evidence-fragment model
+- no resolved-field layer
+- no NYC-constrained address resolution stage
+- no durable override model
+- no audit trail
+- no explicit effective-value precedence model
+
+Recommended milestone shape
+---------------------------
+1. add the storage contract
+2. write observation-scoped evidence fragments
+3. resolve addresses into generic resolved fields
+4. compute effective listing/review values from raw + resolved + manual layers
+5. add manual overrides and audit
+6. only then add Review correction UI
+
+Do not do these first
+---------------------
+- correction UI
+- client-only precedence explanations
+- editing in `Debug`
+- hosted/workflow orchestration

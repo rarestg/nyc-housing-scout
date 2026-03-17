@@ -1,0 +1,40 @@
+Worker 2: Evidence Fragments And Enrichment Stage
+=================================================
+
+Dispatch only after Worker 1 is stable.
+
+Mission
+-------
+Add the observation-scoped enrichment stage that writes reusable evidence fragments from already-persisted inputs.
+
+Primary sources to cover first
+------------------------------
+- body text
+- comments JSON
+- media metadata
+- capture/network enrichment metadata already stored with observations
+- obvious outbound/contact references already present in stored inputs
+
+Constraints
+-----------
+- do not mutate raw observation rows
+- do not resolve addresses yet
+- do not build UI
+
+Own these files
+---------------
+- enrichment/processing stage files under `src/core/`, `src/processing/`, or a new narrow stage module if needed
+- `src/storage/sqlite-storage.js`
+- relevant CLIs under `src/cli/`
+- tests
+- minimal docs/pass log
+
+Validation
+----------
+- `npm test`
+- run the relevant CLI/stage on real local data if feasible
+
+Coordination
+------------
+Update only:
+- `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/handoffs/worker_2_status.txt`

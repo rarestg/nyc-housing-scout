@@ -1,0 +1,108 @@
+Phase 5 Task: Route-Support And Query-State Cleanup
+===================================================
+
+Mission
+-------
+Reduce route boilerplate without creating another dumping ground. Add small route-local query/update helpers, cut repeated `setQueryState` patch objects, and shrink `route-support.jsx` down to the genuinely healthy shared layer.
+
+Dispatch order
+--------------
+- fifth phase
+- depends on earlier behavior and shell cleanup landing first
+
+Read first
+----------
+1. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/README.txt`
+2. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/01_VERDICT_AND_PRIORITY_ORDER.txt`
+3. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/02_PR_SIZED_PHASE_BREAKDOWN.txt`
+4. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/03_MASTER_CHECKLIST.txt`
+5. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/04_DISPATCH_PROTOCOL.txt`
+6. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/05_COORDINATION_BOARD.txt`
+7. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/06_WHITEBOARD_AND_NOTES.txt`
+8. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/handoffs/phase_1_status.txt`
+9. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/handoffs/phase_2_status.txt`
+10. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/handoffs/phase_3_status.txt`
+11. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/handoffs/phase_4_status.txt`
+12. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/handoffs/phase_5_status.txt`
+
+Primary references
+------------------
+- `src/ui/dashboard/routes/shared/route-support.jsx`
+- `src/ui/dashboard/routes/listings/ListingsRoute.jsx`
+- `src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `src/ui/dashboard/routes/review/ReviewRoute.jsx`
+- `src/ui/dashboard/routes/debug/DebugRoute.jsx`
+- `src/ui/dashboard/lib/use-url-query-state.js`
+- `src/ui/dashboard/lib/query-state.js`
+
+Ownership
+---------
+You own:
+
+- `src/ui/dashboard/routes/shared/route-support.jsx`
+- `src/ui/dashboard/routes/listings/ListingsRoute.jsx`
+- `src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `src/ui/dashboard/routes/review/ReviewRoute.jsx`
+- `src/ui/dashboard/routes/debug/DebugRoute.jsx`
+
+You may touch:
+
+- small shared components if a helper or presentation primitive is better housed there
+
+You do not own:
+
+- backend changes
+- shell-layout changes
+- Listings chrome trim beyond what is required for query-helper cleanup
+
+Core deliverables
+-----------------
+1. Add a small route-local helper in each route for common query/filter updates.
+2. Reduce repeated `setQueryState({ page: 1, selectionId: '', ... })` boilerplate.
+3. Remove dead code and over-bundled UI from `route-support.jsx`.
+4. Keep the durable shared pieces healthy:
+   - `useJsonResource`
+   - URL builders
+   - inspector-link helpers
+   - any remaining truly shared pagination or JSON helpers that still earn their keep
+5. Avoid extracting new abstractions unless they are tiny and obviously better than the repeated code.
+
+Requirements
+------------
+- Prefer route-local clarity over clever shared plumbing.
+- Do not try to make every route identical.
+- Keep URL query-state behavior stable.
+- Keep the query-state parsing layer as-is unless a bug forces a small change.
+
+Out of scope
+------------
+- removing the table library
+- major Listings UI redesign
+- shell compact/nav changes
+
+Validation
+----------
+- `npm test`
+- `npm run build:dashboard`
+- verify route filter changes still:
+  - reset page when appropriate
+  - clear selection when appropriate
+  - preserve URL-driven state
+
+Handoff requirements
+--------------------
+Update `handoffs/phase_5_status.txt`:
+
+- when you start
+- if helper placement is unclear
+- when you finish
+
+Include:
+- files changed
+- helper pattern chosen
+- what was removed from `route-support.jsx`
+- any repetition intentionally left in place
+
+Success criteria
+----------------
+The dashboard routes are cheaper to edit, query-state updates are clearer, and `route-support.jsx` is no longer a growing mixed-responsibility file.

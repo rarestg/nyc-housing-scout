@@ -1,0 +1,76 @@
+Coordination Board
+==================
+
+Status summary
+--------------
+Stage A
+- Worker 1: completed
+- Worker 2: completed
+- Stage A status: ready for Stage B dispatch
+
+Stage B
+- Worker 3: completed
+- Worker 4: completed
+- Stage B status: ready for integration review and polish
+
+Stage C
+- Worker 5: completed
+- integration: complete
+- recommended next dispatch: none required for the current redesign pass
+
+Worker handoff files
+--------------------
+- `handoffs/worker_1_status.txt`
+- `handoffs/worker_2_status.txt`
+- `handoffs/worker_3_status.txt`
+- `handoffs/worker_4_status.txt`
+- `handoffs/worker_5_status.txt`
+
+Update protocol
+---------------
+- Each worker updates only their own handoff file.
+- The integrator reads all four handoff files before merging or reassigning work.
+- If a worker discovers a contract change that affects others:
+  - note it in the worker handoff file immediately
+  - if you own that shared contract section, update `04_SHARED_CONTRACTS_AND_BOUNDARIES.txt`
+  - if you do not own that shared contract section, stop and raise it as a blocker in your handoff
+
+Stage gates
+-----------
+Stage A is complete when:
+- Worker 1 has landed stable read-only dashboard endpoints and tests
+- Worker 2 has landed the new dashboard shell and shared primitives
+- there are no unresolved contract mismatches between API payloads and UI assumptions
+
+Stage B is complete when:
+- Worker 3 has landed the Listings workspace
+- Worker 4 has landed Posts, Review, and Debug
+- cross-route navigation between listings, posts, and debug exists
+
+Stage C is complete when:
+- the new app opens to `Listings`
+- filters are URL-driven
+- required data loads on real Williamsburg data
+- the old run inspector is available only under `Debug`
+
+Integration checklist
+---------------------
+- confirm `Listings` is the default route
+- confirm server-backed pagination/filtering is used for large browsing surfaces
+- confirm timestamps are humanized
+- confirm run IDs are visually demoted
+- confirm slash-separated metric blocks are gone from the new dashboard
+- confirm raw JSON is not the primary browsing surface
+- confirm Debug still preserves provenance and run forensics
+
+Known intentional omissions
+---------------------------
+- no map view in this pass
+- no duplicate clustering in this pass
+- no push notification system in this pass
+
+Later product follow-ups
+------------------------
+- saved searches built on the same filter model
+- duplicate-suspect review queues once backend support exists
+- alert delivery once saved search semantics are stable

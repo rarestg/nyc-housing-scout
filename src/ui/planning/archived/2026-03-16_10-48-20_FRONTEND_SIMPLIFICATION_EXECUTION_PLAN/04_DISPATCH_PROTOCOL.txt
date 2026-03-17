@@ -1,0 +1,52 @@
+Dispatch Protocol
+=================
+
+How to dispatch a phase
+-----------------------
+1. Give the engineer the single phase brief file for the assigned phase.
+2. Tell them to read the overview docs in the order listed in `README.txt`.
+3. Tell them to read all prior handoff files if their phase depends on earlier work.
+4. Tell them they own only the files listed in the phase brief unless they document and justify a seam change.
+5. Tell them to update their handoff file:
+   - at start
+   - at blocker
+   - at finish
+
+Default dispatch message shape
+------------------------------
+Use this structure when handing off work:
+
+- scope: one phase only
+- ownership: only the files listed in the phase brief
+- success criteria: exactly the phase brief's success section
+- validation: run the commands listed in the phase brief
+- handoff: update the matching file in `handoffs/`
+- escalation: if product requirements conflict with the brief, stop and document the conflict before widening scope
+
+Rules for workers
+-----------------
+- Do not silently expand scope to another phase.
+- Do not revert unrelated changes.
+- Do not redesign the route if the phase is about deletion and simplification.
+- Prefer deletion and straightforward route-local code over new abstractions.
+- If a backend contract change is required outside the assigned phase, stop and document it.
+
+Rules for the dispatcher
+------------------------
+- Do not dispatch Phase 2 until Phase 1 is merged or explicitly paused.
+- Do not dispatch Phase 4 before Phase 3 if Phase 3 still owns active route consumers.
+- Treat Phase 6 as optional unless the earlier phases land cleanly and the product still has obvious low-value Listings chrome.
+
+What to do with blockers
+------------------------
+- Write the blocker in the current phase handoff file.
+- Append a dated note to `06_WHITEBOARD_AND_NOTES.txt`.
+- Update `05_COORDINATION_BOARD.txt` if the blocker changes the next recommended dispatch.
+
+What not to re-open
+-------------------
+- whether to replace the table library
+- whether to add a new UI library
+- whether to keep three route-local focused-row implementations
+
+Those decisions are already made for this execution plan.

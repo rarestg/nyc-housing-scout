@@ -1,0 +1,52 @@
+Worker 2: Optional Polish And Regression Follow-Up
+==================================================
+
+Use this only if Worker 1 lands and there is still meaningful cleanup left.
+
+Read order
+----------
+1. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/README.txt`
+2. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/01_VERDICT_AND_GOALS.txt`
+3. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/02_EXECUTION_PLAN.txt`
+4. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/03_DISPATCH_PROTOCOL.txt`
+5. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/04_COORDINATION_BOARD.txt`
+6. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/handoffs/worker_1_status.txt`
+7. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/handoffs/worker_2_status.txt`
+
+Mission
+-------
+Clean up the residual issues left after Worker 1, but do not widen scope into a new redesign.
+
+Expected scope
+--------------
+- responsive cleanup
+- overflow/truncation cleanup
+- keyboard/focus cleanup
+- small CSS simplification after the shell reset
+- cross-route visual consistency checks
+
+Note
+----
+Worker 2 is for residual cleanup only. Worker 1 should already ship the baseline active-route, focus, keyboard-close, and behavior-preservation requirements.
+
+Constraints
+-----------
+- only run this if there are real residual issues
+- do not re-open top-level shell decisions unless Worker 1 shipped a clear regression
+- do not widen into backend or workflow features
+
+Validation
+----------
+- `npm run build:dashboard`
+- `npm test`
+- `npm run inspect:ui`
+- verify the specific regressions or cleanup items called out after Worker 1
+
+Coordination
+------------
+- Update only:
+  - `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/handoffs/worker_2_status.txt`
+
+Deliverable
+-----------
+Leave the shell reset cleaner and safer, not broader.

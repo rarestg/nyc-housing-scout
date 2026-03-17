@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NYC Housing Scout Inspector</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Operator UI</p>
+          <h1>NYC Housing Scout Inspector</h1>
+          <p class="subtitle">SQLite-backed inspection for runs, observations, jobs, listings, steps, and artifacts.</p>
+        </div>
+        <div class="topbar-actions">
+          <button id="refreshAllButton" type="button" class="ghost-button">Refresh</button>
+          <div id="globalStatus" class="status-pill">Loading sources...</div>
+        </div>
+      </header>
+
+      <section class="toolbar">
+        <label class="field">
+          <span>Source key</span>
+          <select id="sourceFilterSelect">
+            <option value="">All sources</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Run search</span>
+          <input id="runSearchInput" type="search" placeholder="Run ID, source, summary text">
+        </label>
+      </section>
+
+      <main class="layout">
+        <aside class="panel runs-panel">
+          <div class="panel-header">
+            <h2>Runs</h2>
+            <span id="runsCountLabel" class="panel-count"></span>
+          </div>
+          <div id="runsList" class="runs-list"></div>
+        </aside>
+
+        <section class="panel detail-panel">
+          <div id="detailHeader" class="detail-header empty-state">
+            Select a run to inspect.
+          </div>
+          <div id="summaryStrip" class="summary-strip"></div>
+          <nav id="tabBar" class="tab-bar" aria-label="Run detail sections"></nav>
+          <div id="tabFilters" class="tab-filters"></div>
+          <div id="tabContent" class="tab-content empty-state">Run details will appear here.</div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

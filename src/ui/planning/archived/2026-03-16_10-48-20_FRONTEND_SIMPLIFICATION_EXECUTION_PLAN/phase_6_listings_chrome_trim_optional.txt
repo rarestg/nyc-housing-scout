@@ -1,0 +1,96 @@
+Phase 6 Task: Listings Chrome Trim
+==================================
+
+Mission
+-------
+Optionally trim the remaining low-value chrome on Listings after the rest of the app is simpler. This is the last phase on purpose. The goal is subtraction, not weakening the primary route.
+
+Dispatch order
+--------------
+- optional sixth phase
+- only dispatch after Phases 1 through 5 are merged and the team still sees obvious low-value Listings chrome
+
+Read first
+----------
+1. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/README.txt`
+2. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/01_VERDICT_AND_PRIORITY_ORDER.txt`
+3. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/02_PR_SIZED_PHASE_BREAKDOWN.txt`
+4. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/03_MASTER_CHECKLIST.txt`
+5. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/04_DISPATCH_PROTOCOL.txt`
+6. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/05_COORDINATION_BOARD.txt`
+7. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/06_WHITEBOARD_AND_NOTES.txt`
+8. all prior phase handoff files
+9. `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/handoffs/phase_6_status.txt`
+
+Primary references
+------------------
+- `src/ui/dashboard/routes/listings/ListingsRoute.jsx`
+- `src/ui/dashboard/components/RouteScaffold.jsx`
+- `src/ui/dashboard/components/SummaryStrip.jsx`
+- `src/ui/dashboard/styles/dashboard.css`
+
+Ownership
+---------
+You own:
+
+- `src/ui/dashboard/routes/listings/ListingsRoute.jsx`
+- `src/ui/dashboard/components/RouteScaffold.jsx` if a small cleanup is needed
+- `src/ui/dashboard/components/SummaryStrip.jsx` if usage changes make that worthwhile
+- `src/ui/dashboard/styles/dashboard.css`
+
+You do not own:
+
+- backend changes
+- secondary-route cleanup work that should already be complete
+- table-library replacement
+
+Core deliverables
+-----------------
+1. Review Listings chrome and remove only what is clearly low-value.
+2. Prefer cutting:
+   - summary strip
+   - explanatory microcopy
+   - extra fetches that only exist to power removed summary chrome
+3. Preserve:
+   - results bar
+   - primary filters
+   - strong table/detail workflow
+   - active filter chips unless there is a clearly better replacement
+
+Requirements
+------------
+- Listings must remain the strongest route in the app.
+- If a chrome cut makes Listings less scannable, revert that idea and document it.
+- Do not use this phase to reopen larger design debates.
+
+Out of scope
+------------
+- route-state model changes
+- table-library replacement
+- shell redesign
+- backend query changes unless a removed fetch is now unused
+
+Validation
+----------
+- `npm test`
+- `npm run build:dashboard`
+- `npm run inspect:ui`
+- confirm Listings still feels like the best route in the product after the cuts
+
+Handoff requirements
+--------------------
+Update `handoffs/phase_6_status.txt`:
+
+- when you start
+- if you decide this phase should be skipped
+- when you finish
+
+Include:
+- files changed
+- chrome removed
+- chrome intentionally kept
+- whether the phase should be considered done or intentionally skipped
+
+Success criteria
+----------------
+Listings is modestly lighter without losing its role as the primary browsing surface. If no safe simplification remains, the correct outcome is to document that and skip the phase.

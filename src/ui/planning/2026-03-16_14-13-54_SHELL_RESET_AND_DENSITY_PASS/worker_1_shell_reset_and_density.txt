@@ -1,0 +1,174 @@
+Worker 1: Shell Reset And Density
+=================================
+
+Read order
+----------
+Read these files in order before changing code:
+
+1. `/Users/claudius/claudius-repos/nyc-housing-scout/README.md`
+2. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/INDEX.md`
+3. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/VISION_AND_ARCHITECTURE.md`
+4. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/ROADMAP.md`
+5. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/PIPELINE.md`
+6. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/passes/2026-03-15_23-38-40_STAGE_CROSS_GROUP_DASHBOARD_INTEGRATION_PASS.md`
+7. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_00-10-47_UI_SPRINT_2_AND_DATA_QUALITY_PLAN/README.txt`
+8. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/README.txt`
+9. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/01_VERDICT_AND_GOALS.txt`
+10. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/02_EXECUTION_PLAN.txt`
+11. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/03_DISPATCH_PROTOCOL.txt`
+12. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/04_COORDINATION_BOARD.txt`
+13. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/handoffs/worker_1_status.txt`
+
+Then inspect the current implementation:
+
+14. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/dashboard/app/AppShell.jsx`
+15. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/dashboard/components/DetailPane.jsx`
+16. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/dashboard/components/DataTable.jsx`
+17. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/dashboard/components/FilterControls.jsx`
+18. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/dashboard/components/RouteScaffold.jsx`
+19. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/dashboard/styles/dashboard.css`
+
+Mission
+-------
+Reset the dashboard shell and visual density so the listings workspace gets more width, the shell becomes easier to understand, and the detail pane/table become calmer and more legible.
+
+Behavior guardrail
+------------------
+Preserve the current shell/query-state behavior while doing this visual reset:
+
+- keep `detail=open|closed` behavior intact
+- keep current row-selection and deep-link behavior intact
+- keep off-page warning states intact
+- if the top-nav or detail-header reset appears to require changing those semantics, stop and document the conflict instead of widening scope
+
+Own these files
+---------------
+- `src/ui/dashboard/app/AppShell.jsx`
+- `src/ui/dashboard/components/DetailPane.jsx`
+- `src/ui/dashboard/components/DataTable.jsx`
+- `src/ui/dashboard/components/FilterControls.jsx`
+- `src/ui/dashboard/components/RouteScaffold.jsx`
+- `src/ui/dashboard/styles/dashboard.css`
+
+You may also touch route files only if it is truly necessary for copy alignment of visible top-level action labels:
+- `src/ui/dashboard/routes/listings/ListingsRoute.jsx`
+- `src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `src/ui/dashboard/routes/review/ReviewRoute.jsx`
+- `src/ui/dashboard/routes/debug/DebugRoute.jsx`
+
+Do not own
+----------
+- backend/storage/query logic
+- route behavior redesign
+- correction/editing workflows
+- data-quality/enrichment work
+
+Required changes
+----------------
+1. Navigation
+- replace the fixed left rail with a thin top nav
+- use full text labels
+- remove `HS`, `LS`, `PS`, `RV`, `DB`
+- at narrower widths, keep the nav compact and legible without awkward multi-row sprawl or horizontal overflow
+
+2. Shell flattening
+- reduce the "cards inside cards" feeling
+- simplify and reduce border radii globally
+- prefer a small radius-token system over repeated hard-coded values
+- use at most three radius tokens across the main dashboard surface system
+- reassess shell max width, outer padding, and detail width so the table gets more room
+
+3. Filters and controls
+- keep the compact filter bar model
+- fix the layout bug where `More filters` and `Clear filters` stack vertically and waste height
+- make the controls feel denser and more intentional
+
+4. Detail pane
+- pin the close affordance in the top-right corner
+- reduce detail title size and weight
+- keep source / author / posted time high in the hierarchy
+- make metadata feel different from actions
+- make actions visibly clickable without using oversized pill buttons that look too similar to metadata
+
+5. Table typography
+- quiet the table hierarchy
+- reduce oversized/bold text
+- keep Listings strongest
+- de-emphasize source/time/location/rooms/supporting columns
+- target table primary text around `13px / 600`
+- target meta/supporting text around `11-12px`
+- reserve the strongest emphasis for the Listings column and truly exceptional status states
+
+6. Cross-route alignment
+- Posts, Review, and Debug should inherit the shell reset cleanly
+- Debug should remain clearly advanced/forensic, but visually aligned
+
+Important style guidance
+------------------------
+- Do not merely square everything off.
+- Do introduce a smaller, clearer radius system.
+- Do keep that radius system to at most three tokens across the main dashboard surface system.
+- Do not create a new decorative card language.
+- Prefer cleaner and calmer over "more UI."
+- If a simpler layout can remove code and visual noise at the same time, prefer that.
+
+Constraints
+-----------
+- Do not hand-edit `src/ui/dashboard/dist/app.js`.
+- Do not widen into backend or route-contract work.
+- Do not reopen the simplification sprint's behavioral deletions unless you hit a proven regression.
+- Do not turn this into a brand/design-system exploration.
+- Do not change route-selection/query-state semantics unless you hit a proven regression and document it first.
+
+Validation
+----------
+- `npm run build:dashboard`
+- `npm test`
+- `npm run inspect:ui`
+- verify at least:
+  - `/`
+  - `/listings`
+  - `/posts`
+  - `/review`
+  - `/debug`
+  - `/inspector`
+- verify on desktop and at a narrower width
+- verify that:
+  - the left rail is gone
+  - the top nav is self-explanatory
+  - the table area has more usable width
+  - at narrower widths the top nav stays controlled and legible without awkward wrapping or horizontal overflow
+  - the filter action row stays compact
+  - the detail close control is pinned where expected
+  - the table typography is quieter and more scannable
+  - active-route state is visually clear
+  - visible focus states remain clear on nav and interactive controls
+  - Escape still closes the detail pane
+  - the close control is easy to reach by keyboard
+  - current deep-link and off-page-warning behavior still works
+
+Docs
+----
+Write one timestamped pass log under `docs/passes/`:
+
+- filename: `YYYY-MM-DD_HH-MM-SS_UI_SHELL_RESET_AND_DENSITY_PASS.md`
+
+Include:
+- scope
+- files changed
+- commands run
+- shell/layout decisions
+- typography/radius decisions
+- validation
+- remaining gaps
+
+Coordination
+------------
+- You are not alone in the codebase. Do not revert unrelated changes.
+- Update only:
+  - `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/handoffs/worker_1_status.txt`
+- Update it when you start, if a blocker appears, and when you finish.
+
+Deliverable
+-----------
+Deliver the shell reset and density pass as one coherent visual cleanup, not as a pile of isolated CSS tweaks.

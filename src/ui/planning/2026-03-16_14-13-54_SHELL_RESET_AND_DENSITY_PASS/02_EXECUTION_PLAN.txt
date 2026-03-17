@@ -1,0 +1,99 @@
+Execution Plan
+==============
+
+Recommended shape
+-----------------
+Do this as one main shared-UI pass, then evaluate whether a short polish/regression pass is still necessary.
+
+Pass 1: shell reset and density
+-------------------------------
+Primary targets:
+
+- `src/ui/dashboard/app/AppShell.jsx`
+- `src/ui/dashboard/components/DetailPane.jsx`
+- `src/ui/dashboard/components/DataTable.jsx`
+- `src/ui/dashboard/components/FilterControls.jsx`
+- `src/ui/dashboard/components/RouteScaffold.jsx`
+- `src/ui/dashboard/styles/dashboard.css`
+
+Expected changes:
+
+0. Behavior guardrail
+- keep the current shell/query-state behavior intact:
+  - `detail=open|closed`
+  - row selection
+  - deep links
+  - off-page warning states
+- this pass is a presentation reset, not a route-behavior rewrite
+
+1. Top navigation
+- replace the fixed left rail with a thin top nav
+- use full text labels
+- remove the coded brand/route tiles
+- at narrower widths, keep the nav compact and readable without awkward multi-row sprawl or horizontal overflow
+
+2. Shell flattening
+- reduce stacked card treatment across nav, header, toolbar, route surface, and detail pane
+- lower or simplify border radii globally
+- prefer a small token system over repeated one-off radius values
+- use at most three radius tokens across the main dashboard surface system
+- reassess shell `max-width`, outer padding, and detail width so the table gets more room
+
+3. Filter/control cleanup
+- keep the compact filter model from the earlier Listings pass
+- fix the layout bug that lets `More filters` and `Clear filters` stack vertically in a narrow action cell
+- make control rows read as intentional and compact
+
+4. Detail pane reset
+- pin the close control top-right
+- reduce title scale
+- make the header hierarchy compact and stable
+- keep source / author / posted time near the top
+- visually separate metadata from actions
+- make action controls feel clickable without looking like the same pills used for metrics
+
+5. Table density and typography
+- reduce row noise
+- quiet bold text and oversized type
+- let Listings remain the strongest emphasized column
+- de-emphasize supporting columns
+- target table primary text around `13px / 600`
+- target meta/supporting text around `11-12px` with lower contrast
+- reserve the strongest emphasis for the Listings column and truly exceptional status states
+
+6. Cross-route visual consistency
+- ensure Posts, Review, and Debug inherit the shell/density reset cleanly
+- keep Debug explicitly forensic, but visually aligned
+
+Pass 2: optional polish/regression
+----------------------------------
+Only run this if Worker 1 lands with obvious remaining cleanup:
+
+- responsive cleanup
+- residual overflow/truncation issues
+- keyboard/focus pass
+- small CSS simplification after the larger shell reset
+- final documentation/pass-log closeout
+
+Success bar for Pass 1
+----------------------
+Pass 1 is successful if:
+
+- the left rail is gone
+- the top nav is clear and self-explanatory
+- the table area visibly gains more useful width
+- the shell no longer reads as nested rounded cards
+- the filter action row is compact and stable
+- the detail header feels compact and readable
+- the table typography is materially easier to scan
+- the existing detail open/close, deep-link, and off-page-warning behavior still works
+- the narrower-width nav remains compact, readable, and controlled
+- active-route state and focus states remain clear
+- keyboard close/tab flow for the detail pane still works cleanly
+
+What not to widen into
+----------------------
+- route behavior redesign
+- new backend features
+- correction workflows
+- evidence/provenance model changes

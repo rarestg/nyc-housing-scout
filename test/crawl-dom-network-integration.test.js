@@ -15,6 +15,7 @@ import {
   getNetworkCandidateKey,
   createWorkingSetEntry,
   matchNetworkCandidateForPost,
+  registerNetworkCandidate,
   registerNetworkCandidates,
   registerResolvedPostForReuse,
   resolveWorkingSetEntries,
@@ -346,21 +347,14 @@ test('exact identity matching canonicalizes slug and numeric group post urls', (
     bodyText: 'Offering a room in Williamsburg starting May 1.',
   };
   const candidateKey = getNetworkCandidateKey(candidate, 'candidate-1');
-
-  state.candidateEntries.set(candidateKey, {
-    key: candidateKey,
-    candidate,
+  registerNetworkCandidate(state, candidate, {
+    entryKey: candidateKey,
     captureId: 'netcap_exact_0001',
     captureMode: 'full_text',
     retentionReason: 'high_signal_full_text',
     stepIndex: 6,
     capturePhase: 'after-expand',
-    fuzzyConsumed: false,
   });
-  state.exactIdentityIndex.set(
-    'post_url:https://www.facebook.com/groups/2664056243718928/posts/24490000000000000/',
-    candidateKey,
-  );
 
   const domPost = createCollectedPost({
     author: 'Casey Example',
@@ -438,17 +432,15 @@ test('fuzzy recovery consumes identity aliases so richer re-registrations do not
     partial: true,
   };
 
-  state.candidateEntries.set(urlOnlyCandidate.postUrl, {
-    key: urlOnlyCandidate.postUrl,
-    candidate: urlOnlyCandidate,
+  const candidateKey = getNetworkCandidateKey(urlOnlyCandidate, 'candidate-1');
+  registerNetworkCandidate(state, urlOnlyCandidate, {
+    entryKey: candidateKey,
     captureId: 'netcap_urlonly_0001',
     captureMode: 'matched_fragments',
     retentionReason: 'matched_fragments',
     stepIndex: 4,
     capturePhase: 'after-expand',
-    fuzzyConsumed: false,
   });
-  state.fuzzyCandidateKeys.add(urlOnlyCandidate.postUrl);
 
   const resolvedEntry = resolveWorkingSetEntry(
     state,
@@ -469,9 +461,11 @@ test('fuzzy recovery consumes identity aliases so richer re-registrations do not
     resolvedEntry.post.postUrl,
     'https://www.facebook.com/groups/2664056243718928/posts/24405637689134137/',
   );
-  assert.equal(state.fuzzyCandidateKeys.has(urlOnlyCandidate.postUrl), false);
+  const consumedAfterRecovery = Array.from(state.entries.values()).find((entry) => entry.entryType === 'network_candidate');
+  assert.ok(consumedAfterRecovery);
+  assert.equal(consumedAfterRecovery.fuzzyConsumed, true);
   assert.equal(
-    state.consumedFuzzyIdentityKeys.has(
+    consumedAfterRecovery.identityAliases.includes(
       'post_url:https://www.facebook.com/groups/2664056243718928/posts/24405637689134137/',
     ),
     true,
@@ -484,9 +478,12 @@ test('fuzzy recovery consumes identity aliases so richer re-registrations do not
     capturePhase: 'after-scroll',
   }], 5);
 
-  assert.equal(state.fuzzyCandidateKeys.has('24405637689134137'), false);
+  const networkEntries = Array.from(state.entries.values())
+    .filter((entry) => entry.entryType === 'network_candidate');
+  assert.equal(networkEntries.length, 1);
+  assert.equal(networkEntries[0].fuzzyConsumed, true);
   assert.equal(
-    state.consumedFuzzyIdentityKeys.has('post_id:24405637689134137'),
+    networkEntries[0].identityAliases.includes('post_id:24405637689134137'),
     true,
   );
 });

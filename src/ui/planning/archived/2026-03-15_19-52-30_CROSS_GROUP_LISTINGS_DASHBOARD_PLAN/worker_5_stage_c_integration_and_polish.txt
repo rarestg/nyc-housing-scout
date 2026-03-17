@@ -1,0 +1,167 @@
+Worker 5 Task: Stage C Integration, Polish, And Simplification
+===============================================================
+
+Mission
+-------
+Take the completed Stage A and Stage B dashboard work and turn it into a tighter, more coherent Stage C result.
+
+This is not a new feature-sprawl pass. It is an integration, cleanup, UX polish, and simplification pass.
+
+Your goals are:
+
+- reconcile cross-route seams
+- remove unnecessary duplication
+- tighten polish and consistency
+- fix the known low-severity issues
+- look for opportunities to accomplish the same UX with materially less code
+
+Read first
+----------
+1. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/README.txt`
+2. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/01_REVIEW_SYNTHESIS.txt`
+3. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/02_REDESIGN_SPEC.txt`
+4. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/03_PHASED_IMPLEMENTATION_PLAN.txt`
+5. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/04_SHARED_CONTRACTS_AND_BOUNDARIES.txt`
+6. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/05_COORDINATION_BOARD.txt`
+7. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_1_status.txt`
+8. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_2_status.txt`
+9. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_3_status.txt`
+10. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_4_status.txt`
+11. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_5_status.txt`
+
+Current state
+-------------
+Stage A and Stage B are complete.
+
+Current product shape:
+- dashboard shell at `/`
+- `Listings` as the default route
+- real server-backed `Posts`, `Review`, and `Debug` routes
+- legacy inspector preserved at `/inspector`
+
+Your job is to make this result tighter, cleaner, and more maintainable without changing the core product direction.
+
+Ownership
+---------
+You may work across the integrated dashboard surface, including:
+
+- `src/ui/dashboard/`
+- `src/ui/inspection-server.js` if a small integration seam truly needs cleanup
+- dashboard-related tests under `test/`
+- minimal docs updates if commands or operator guidance changed
+- a new pass doc under `docs/passes/` for this Stage C pass
+
+You should not:
+- redesign the product direction again
+- introduce map view
+- introduce push notifications
+- add auth
+- redesign storage schema unless absolutely necessary
+- build backend duplicate clustering
+
+Important scope priorities
+--------------------------
+1. Integration coherence
+2. UX polish
+3. Simplification / code reduction
+4. Accessibility and responsive cleanup
+5. Documentation and pass log
+
+Known issues to address
+-----------------------
+1. Listings route duplicates logic that already exists in shared route support.
+   - Specifically, the listings route re-implements fetch/API/pagination helpers that already exist elsewhere.
+   - Consolidate this if it improves maintainability without degrading clarity.
+
+2. Review deep links are still page-scoped.
+   - Right now a `reviewId` only resolves if the item is on the current page of `items`.
+   - If there is a clean way to improve this without overbuilding, do it.
+   - If not, keep the behavior honest and well-signaled in the UI.
+
+3. General polish and consistency still matter.
+   - consistent loading/error/empty states
+   - consistent pagination behavior
+   - consistent detail-pane behavior
+   - truncation/overflow/wrapping cleanup
+   - focus states and keyboard behavior
+   - consistency across Listings, Posts, Review, and Debug
+
+4. Simplification is explicitly in scope.
+   - If you can reduce line count and duplicated logic while preserving the same UX and clarity, do it.
+   - Prefer fewer concepts, fewer helper variants, and less repeated fetch/query/pagination glue.
+   - Do not golf the code into unreadability.
+
+Specific simplification questions to ask yourself
+-------------------------------------------------
+- Can repeated route patterns be extracted cleanly?
+- Can duplicated pagination or fetch helpers be unified?
+- Can repeated detail-panel wiring be simplified?
+- Can formatting helpers or shared state patterns remove route-specific boilerplate?
+- Can old placeholder/demo remnants now be removed safely?
+- Can the same UX be preserved with fewer ad hoc helper functions?
+
+Polish expectations
+-------------------
+Please look across the integrated dashboard for:
+
+- visual consistency between routes
+- filter ergonomics
+- detail-pane clarity
+- responsive behavior at narrower widths
+- text wrapping and overflow
+- humanized timestamps
+- raw ID demotion
+- debug staying secondary
+- keyboard reachability and focus visibility
+
+You do not need to invent a new visual design language. This is about making the current direction tighter and more credible.
+
+Validation requirements
+-----------------------
+- `npm run build:dashboard`
+- `npm test`
+- launch the app locally with `npm run inspect:ui`
+- verify at least:
+  - `/`
+  - `/listings`
+  - `/posts`
+  - `/review`
+  - `/debug`
+  - `/inspector`
+- verify real Williamsburg data still works
+- verify cross-route navigation still works
+
+Deliverables
+------------
+1. Integrated code cleanup and polish.
+2. Reduced duplication where it is worth it.
+3. Any small UX fixes that materially improve coherence.
+4. Updated handoff file.
+5. A timestamped pass doc in `docs/passes/` documenting:
+   - scope
+   - files changed
+   - commands run
+   - what was simplified
+   - what polish issues were fixed
+   - validation
+   - known remaining gaps
+
+Coordination rules
+------------------
+- You are not alone in the codebase. Do not revert unrelated work.
+- Update only your own handoff file:
+  - `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_5_status.txt`
+- Update it when you start, if a blocker appears, and when you finish.
+- If you decide not to fix one of the known issues, explain why.
+
+Success criteria
+----------------
+The dashboard should feel like one coherent product surface rather than four freshly landed route slices.
+
+It should also be simpler:
+- less duplicated code
+- fewer route-specific one-off helpers
+- clearer shared patterns
+- same or better UX
+
+If you can achieve the same UX with many fewer lines of code, do it.

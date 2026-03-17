@@ -1,0 +1,115 @@
+Delegation And Phases
+=====================
+
+Recommended stance
+------------------
+Run UI Sprint 2 first.
+
+Do not start manual correction or address-resolution UI work before the data-quality foundation is at least designed, because otherwise the frontend will guess at states that the backend cannot preserve.
+
+Track split
+-----------
+Track A:
+- UI Sprint 2
+
+Track B:
+- Data Quality / Correction
+
+Track A can start immediately.
+Track B should start with backend/storage/processing design and implementation, then feed the UI later.
+
+UI Sprint 2 Suggested Phases
+----------------------------
+Phase A1: structural layout
+- shell compression
+- header/summary compression
+- filter bar compaction
+
+Phase A2: listings interaction
+- column reduction
+- row density pass
+- selection and drawer model
+
+Phase A3: supporting routes
+- Posts and Review alignment
+- copy cleanup
+- consistent action labels and route chrome
+
+Phase A4: integration polish
+- responsive cleanup
+- keyboard/focus pass
+- overflow and truncation pass
+- regression validation
+
+UI Sprint 2 parallel worker split
+---------------------------------
+Worker A: shell and page chrome
+- owns shell, nav rail, header, summary strip, route chrome, responsive shell behavior
+- explicitly remove or demote system-facing labels and reclaim space for the table
+
+Worker B: listings workspace scanability
+- owns listings columns, row density, filter bar compaction, active-filter summary, pagination placement
+- explicitly preserve author/source/time context while reducing column competition
+
+Worker C: detail drawer and selection model
+- owns drawer hierarchy, close/open behavior, row-selection linkage, keyboard interaction, drawer copy/actions
+- explicitly demote advanced evidence/debug links below primary review actions
+- owns styling of drawer actions so cross-route actions read as intentional controls, not incidental inline links
+
+Worker D: posts/review alignment and copy cleanup
+- owns Posts and Review parity, route wording, state labels, action naming, Debug demotion consistency
+- explicitly prepare Review to be the eventual home for correction workflows
+- owns exact-record deep-link coherence across routes, especially the `Listings -> Posts` observation link so the posts table visibly reflects the selected observation
+
+Then run:
+- one integration/polish worker or main integrator pass after A/B/C/D land
+
+Why this split works
+--------------------
+- ownership boundaries are mostly disjoint
+- Listings remains the main product surface
+- shell changes do not need to wait on backend data changes
+
+Data Quality / Correction suggested sequence
+--------------------------------------------
+Phase B1:
+- linked-media enrichment
+- evidence aggregation design
+
+Phase B2:
+- address candidate extraction
+- NYC-constrained resolution
+
+Phase B3:
+- manual validated address workflow
+- override storage model
+
+Phase B4:
+- broader manual overrides
+- provenance and missing-state UI surfacing
+
+Recommended delegation for Track B
+----------------------------------
+Worker E: evidence enrichment
+- supported outbound links/media metadata capture
+- start with narrow high-signal providers like YouTube
+
+Worker F: evidence aggregation and address resolution
+- evidence model, field-level provenance, candidate ranking, NYC guardrails
+- tightly-bounded LLM assist only if deterministic validation remains in front of storage
+
+Worker G: override model and review workflow design
+- override storage, precedence, auditability, correction-surface ownership
+- explicitly define Review vs Debug ownership for correction actions
+
+Later frontend worker:
+- consume the new states in Review and Listings once the backend contract is real
+
+What not to mix together
+------------------------
+Do not mix these in the same worker scope:
+- shell compression and backend enrichment
+- detail-drawer polish and override storage
+- review UI copy cleanup and geocoding logic
+
+Those are different layers and will slow each other down.

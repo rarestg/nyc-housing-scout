@@ -1,0 +1,255 @@
+Cross-Group Listings Dashboard Redesign Spec
+============================================
+
+Primary product objective
+-------------------------
+Build a local-first dashboard that makes it dramatically easier to see and inspect the newest housing listings across multiple Facebook groups.
+
+The app should feel meaningfully better than scrolling Facebook directly.
+
+Primary user questions
+----------------------
+The default experience should answer these questions quickly:
+
+1. What are the newest listings across all my groups right now?
+2. Which of those listings match what I care about?
+3. What does the original post actually say?
+4. How trustworthy is the extraction?
+5. What needs review or follow-up?
+6. If something looks wrong, where is the debug trail?
+
+Core UX thesis
+--------------
+- listing-first
+- post-second
+- debug-third
+
+The app should be optimized for `Listings`, not for `Runs` and not for source activity leaderboards.
+
+Top-level information architecture
+----------------------------------
+Phase 1 routes:
+
+- `Listings` (default home)
+- `Posts`
+- `Review`
+- `Debug`
+
+Deferred route:
+
+- `Sources`
+
+Why `Sources` is deferred
+-------------------------
+Group activity is useful context, but it is not the main product value. The main product value is seeing useful listings quickly.
+
+Listings screen
+---------------
+This is the primary workspace and the default route.
+
+The screen should have:
+
+- a compact summary strip at the top
+  - new listings in last 24h
+  - listings matching active filters
+  - pending/failed review counts
+  - maybe one or two key totals only
+- a strong filter/search bar
+- a dense table/list as the main body
+- a right-side detail pane
+
+Default table behavior:
+
+- sort by newest first
+- cross-group by default
+- one row should be easy to scan without opening details
+
+Listings table should expose at minimum:
+
+- posted time
+- source group
+- concise listing summary
+- price
+- beds
+- baths
+- listing type
+- borough
+- neighborhood
+- availability
+- freshness
+- confidence
+- ambiguity count
+- extraction status or variant indicator
+
+Listings detail pane should prioritize:
+
+1. normalized listing summary
+2. original post preview
+3. provenance and linked records
+4. raw JSON and artifacts
+
+If multiple extractor variants exist for the same observation, do not spray them as badges in the table. Show one primary row and let the detail pane expose variant comparison.
+
+Posts screen
+------------
+This is the evidence-layer cross-group feed.
+
+The screen should provide:
+
+- newest posts across all groups
+- author
+- posted time
+- source group
+- body preview
+- freshness
+- processing status
+- extracted listing count
+
+The detail pane should show:
+
+- full post text
+- linked extracted listings
+- key extraction summary
+- provenance to observation/job/run/debug views
+
+Review screen
+-------------
+This is where the operator focuses attention when something needs judgment.
+
+It should surface:
+
+- ambiguous listings
+- low-confidence listings
+- pending jobs
+- failed jobs
+- incomplete listings
+  - missing price
+  - missing location
+  - missing room counts
+- later: duplicate-suspect items
+
+This screen should make it easy to move from a problem case into the underlying post and then into debug if needed.
+
+Debug screen
+------------
+This preserves the current run-centric inspection surface, but explicitly demotes it behind an advanced/debug route.
+
+Debug includes:
+
+- runs
+- run detail
+- observations
+- jobs
+- listings by run
+- run steps
+- artifacts
+- validation
+- raw payload inspection
+
+Runs remain important for forensics and provenance, but they are not the primary browsing model.
+
+Layout spec
+-----------
+Global layout:
+
+- slim left navigation rail
+- top filter/search area
+- main center browsing surface
+- right detail pane
+
+Behavior:
+
+- nav rail should be collapsible
+- detail pane should be toggleable and persistent while browsing
+- narrow screens should collapse the rail and preserve the browsing surface as the priority
+- the app should not stack the old run rail above the main content on smaller widths
+
+Interaction rules
+-----------------
+- clicking a row updates the detail pane, not the entire page
+- filters should update the URL
+- search/filter state should be restorable from the URL
+- internal links should connect listing -> post -> review/debug context
+- advanced provenance should be available, but not visually dominant
+
+Visual and content rules
+------------------------
+- humanize timestamps everywhere
+- make source display names and listing summaries more prominent than IDs
+- reserve monospace for IDs, paths, and machine tokens only
+- replace slash-separated metrics with labeled stats
+- reduce badge count aggressively
+- use truncation and wrapping rules that prevent layout collisions
+- prefer dense rows over tall cards
+
+Accessibility and keyboard rules
+--------------------------------
+- keyboard navigation should work for main table/list, filters, tabs, and detail pane
+- selected row state should be clear
+- focus states must be visible
+- tab systems must use real semantics when applicable
+- status changes and loading states should not rely on visual cues alone
+
+Filtering model
+---------------
+Listings filters should eventually support:
+
+- free-text search
+- posted time window
+- source group
+- freshness
+- listing type
+- intent
+- borough
+- neighborhood
+- price min/max
+- beds min/max
+- baths min/max
+- availability
+- confidence threshold
+- has ambiguities
+- processing status
+
+The first implementation pass does not need every filter, but the query model should be designed with these in mind.
+
+Future alert model
+------------------
+Saved filters should later become saved searches and then push-notification rules.
+
+This means:
+
+- filter state should be URL-serializable
+- filter labels should be user-readable
+- the backend should be able to persist the same filter object later
+
+Non-goals for this redesign pass
+--------------------------------
+- no map-first browsing surface
+- no public sharing or auth work
+- no editing or moderation flows
+- no queue redesign
+- no dedupe system implementation
+- no backend alert delivery system yet
+
+Backend note: duplicate handling
+--------------------------------
+The backend/storage team should later add a light duplicate concept for same or near-same posts/listings across groups.
+
+The frontend should later be ready for fields like:
+
+- `duplicateClusterId`
+- `duplicateClusterSize`
+- `duplicateConfidence`
+
+This is not a blocker for the current frontend redesign.
+
+Acceptance criteria for the redesign
+------------------------------------
+The redesign is directionally successful when:
+
+- the app opens to newest listings across all groups
+- a user can scan rows quickly without deciphering run IDs or badge walls
+- a user can filter for the housing characteristics they care about
+- a user can inspect original post text and extracted listing details side by side
+- a user can move into debug/provenance only when necessary
+- the structure feels like a listings dashboard, not a run debugger

@@ -1,0 +1,71 @@
+Verdict And Goals
+=================
+
+Final call
+----------
+The next UI pass should be a shell reset and density pass.
+
+This is not another "integrator" pass. The remaining problems are mostly visual-system and layout problems:
+
+- the left rail is still expensive and confusing
+- the shell still reads like nested rounded cards
+- the filter action row wastes height
+- the detail header still behaves like a wrapped hero instead of a compact inspector
+- the table typography is too loud for dense scanning
+
+Accept now
+----------
+- Replace the fixed icon rail with a thin top nav using full text labels:
+  - `Listings`
+  - `Posts`
+  - `Review`
+  - `Debug`
+- Remove the `HS`, `LS`, `PS`, `RV`, `DB` code language from the main shell.
+- Flatten the shell so the UI reads as:
+  - top nav/header
+  - filter surface
+  - content surface
+  - detail surface
+- Introduce a smaller radius system instead of many one-off rounded values.
+- Use at most three radius tokens across the main dashboard surface system.
+  - for example: surface, control, pill
+- Reduce the default visual weight of cards and pills across the dashboard.
+- Fix the listings filter action layout so `More filters` and `Clear filters` do not stack awkwardly.
+- Rework the detail header so the close affordance is pinned top-right.
+- Reduce the detail title size and weight.
+- Separate meta/context styling from action styling so they no longer look like two similar rows of pills.
+- Quiet the table typography and restore a clearer hierarchy:
+  - quieter non-listing columns
+  - listing column remains strongest
+  - smaller primary and meta text
+
+Defer or reject for this pass
+-----------------------------
+- Do not start data-quality or correction UI here.
+- Do not revisit backend exact-record contracts unless a regression forces it.
+- Do not build a new card-first listings experience.
+- Do not spend time removing the table library.
+- Do not reintroduce a complex collapsible icon rail.
+
+Why this order is right
+-----------------------
+1. Width, density, and hierarchy are the biggest remaining usability problems in the actual browsing experience.
+2. These problems are shared across the shell and styles, so solving them first gives the biggest UX gain per line changed.
+3. The backend/data-quality track is still important, but it does not need to block this pass.
+4. Saved searches and alerts should still wait until the listings surface and key fields are stronger.
+
+Visual goals
+------------
+- more table width
+- less nested chrome
+- fewer large rounded surfaces
+- clearer clickable vs informational elements
+- denser, calmer table typography
+- a detail pane that feels like an inspector, not a hero card
+
+Practical goals
+---------------
+- keep Listings as the dominant route
+- keep Posts/Review/Debug visually aligned with the new shell
+- preserve the current route behavior simplifications
+- accomplish the UX cleanup with less CSS churn and fewer one-off styling rules where possible

@@ -11,6 +11,9 @@ import {
 } from '../processing/config.js';
 
 const DEFAULT_MIGRATIONS_DIR = fileURLToPath(new URL('./migrations', import.meta.url));
+const DEFAULT_DASHBOARD_PAGE_SIZE = 50;
+const MAX_DASHBOARD_PAGE_SIZE = 100;
+const DEFAULT_DASHBOARD_LOW_CONFIDENCE_THRESHOLD = 0.75;
 
 export class SqliteStorage {
   constructor({ dbFile, migrationsDir = DEFAULT_MIGRATIONS_DIR }) {
@@ -323,6 +326,494 @@ export class SqliteStorage {
 
       this.touchRun(run.id, now);
       return created;
+    });
+  }
+
+  recordEvidenceFragments(input = {}) {
+    const defaultCreatedAt = input.createdAt || new Date().toISOString();
+
+    return this.withTransaction(() => {
+      const entries = Array.isArray(input.entries) ? input.entries : [];
+      const created = [];
+
+      for (const entry of entries) {
+        const observation = this.requireObservation(entry.observationId);
+        const fragments = Array.isArray(entry.fragments) ? entry.fragments : [];
+
+        for (const fragment of fragments) {
+          const fragmentKind = String(fragment.fragmentKind || '').trim();
+          const fieldPath = String(fragment.fieldPath || '').trim();
+          const sourceSurface = String(fragment.sourceSurface || '').trim();
+          const producerKind = String(fragment.producerKind || '').trim();
+          const producerVersion = String(fragment.producerVersion || '').trim();
+
+          if (!fragmentKind) {
+            throw new Error('storage.recordEvidenceFragments requires fragmentKind');
+          }
+
+          if (!fieldPath) {
+            throw new Error('storage.recordEvidenceFragments requires fieldPath');
+          }
+
+          if (!sourceSurface) {
+            throw new Error('storage.recordEvidenceFragments requires sourceSurface');
+          }
+
+          if (!producerKind) {
+            throw new Error('storage.recordEvidenceFragments requires producerKind');
+          }
+
+          if (!producerVersion) {
+            throw new Error('storage.recordEvidenceFragments requires producerVersion');
+          }
+
+          const evidenceFragment = {
+            id: this.nextId('evidenceFragment', 'efg'),
+            sourceId: observation.sourceId,
+            observationId: observation.id,
+            stablePostId: observation.stablePostId ?? null,
+            runId: observation.runId,
+            fragmentKind,
+            fieldPath,
+            sourceSurface,
+            sourceRef: normalizeNullableText(fragment.sourceRef),
+            producerKind,
+            producerVersion,
+            rawText: fragment.rawText ?? null,
+            normalized: fragment.normalized === undefined ? null : fragment.normalized,
+            confidence: normalizeNullableNumber(fragment.confidence),
+            metadata: fragment.metadata || {},
+            createdAt: fragment.createdAt || defaultCreatedAt,
+          };
+
+          this.db.prepare(`
+            INSERT INTO evidence_fragments (
+              id, source_id, observation_id, stable_post_id, run_id, fragment_kind, field_path, source_surface,
+              source_ref, producer_kind, producer_version, raw_text, normalized_json, confidence, metadata_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            evidenceFragment.id,
+            evidenceFragment.sourceId,
+            evidenceFragment.observationId,
+            evidenceFragment.stablePostId,
+            evidenceFragment.runId,
+            evidenceFragment.fragmentKind,
+            evidenceFragment.fieldPath,
+            evidenceFragment.sourceSurface,
+            evidenceFragment.sourceRef,
+            evidenceFragment.producerKind,
+            evidenceFragment.producerVersion,
+            evidenceFragment.rawText,
+            toJson(evidenceFragment.normalized),
+            evidenceFragment.confidence,
+            toJson(evidenceFragment.metadata, {}),
+            evidenceFragment.createdAt,
+          );
+
+          created.push(evidenceFragment);
+        }
+      }
+
+      return created;
+    });
+  }
+
+  upsertResolvedField(input) {
+    const now = input.updatedAt || new Date().toISOString();
+    const target = this.resolveTargetScope(input);
+    const fieldPath = String(input.fieldPath || '').trim();
+    const status = String(input.status || '').trim();
+    const resolutionKind = String(input.resolutionKind || '').trim();
+    const resolverVersion = String(input.resolverVersion || '').trim();
+
+    if (!fieldPath) {
+      throw new Error('storage.upsertResolvedField requires fieldPath');
+    }
+
+    if (!status) {
+      throw new Error('storage.upsertResolvedField requires status');
+    }
+
+    if (!resolutionKind) {
+      throw new Error('storage.upsertResolvedField requires resolutionKind');
+    }
+
+    if (!resolverVersion) {
+      throw new Error('storage.upsertResolvedField requires resolverVersion');
+    }
+
+    return this.withTransaction(() => {
+      const existing = this.selectResolvedFieldByTargetField(target.targetKind, target.targetId, fieldPath);
+      const supportingFragmentIds = normalizeStringList(input.supportingFragmentIds);
+
+      if (existing) {
+        this.db.prepare(`
+          UPDATE resolved_fields
+          SET source_id = ?, observation_id = ?, status = ?, resolution_kind = ?, resolver_version = ?, value_json = ?,
+              confidence = ?, ambiguity_json = ?, supporting_fragment_ids_json = ?, metadata_json = ?, updated_at = ?
+          WHERE id = ?
+        `).run(
+          target.sourceId,
+          target.observationId,
+          status,
+          resolutionKind,
+          resolverVersion,
+          toJson(input.value),
+          normalizeNullableNumber(input.confidence),
+          toJson(input.ambiguity),
+          toJson(supportingFragmentIds, []),
+          toJson(input.metadata || {}, {}),
+          now,
+          existing.id,
+        );
+
+        return this.selectResolvedFieldByTargetField(target.targetKind, target.targetId, fieldPath);
+      }
+
+      const createdAt = input.createdAt || now;
+      const resolvedField = {
+        id: this.nextId('resolvedField', 'rfd'),
+        targetKind: target.targetKind,
+        targetId: target.targetId,
+        sourceId: target.sourceId,
+        observationId: target.observationId,
+        fieldPath,
+        status,
+        resolutionKind,
+        resolverVersion,
+        value: input.value,
+        confidence: normalizeNullableNumber(input.confidence),
+        ambiguity: input.ambiguity,
+        supportingFragmentIds,
+        metadata: input.metadata || {},
+        createdAt,
+        updatedAt: now,
+      };
+
+      this.db.prepare(`
+        INSERT INTO resolved_fields (
+          id, target_kind, target_id, source_id, observation_id, field_path, status, resolution_kind,
+          resolver_version, value_json, confidence, ambiguity_json, supporting_fragment_ids_json, metadata_json,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        resolvedField.id,
+        resolvedField.targetKind,
+        resolvedField.targetId,
+        resolvedField.sourceId,
+        resolvedField.observationId,
+        resolvedField.fieldPath,
+        resolvedField.status,
+        resolvedField.resolutionKind,
+        resolvedField.resolverVersion,
+        toJson(resolvedField.value),
+        resolvedField.confidence,
+        toJson(resolvedField.ambiguity),
+        toJson(resolvedField.supportingFragmentIds, []),
+        toJson(resolvedField.metadata, {}),
+        resolvedField.createdAt,
+        resolvedField.updatedAt,
+      );
+
+      return resolvedField;
+    });
+  }
+
+  setManualOverride(input) {
+    return this.withTransaction(() => this.writeManualOverrideRecord(input));
+  }
+
+  clearManualOverride(input) {
+    return this.withTransaction(() => this.writeClearedManualOverrideRecord(input));
+  }
+
+  appendAuditEvent(input) {
+    return this.withTransaction(() => this.writeAuditEventRecord(input));
+  }
+
+  applyManualOverrideAction(input = {}) {
+    const action = normalizeManualOverrideAction(input.action);
+    const targetKind = String(input.targetKind || '').trim();
+    const targetId = String(input.targetId || '').trim();
+    const fieldPath = String(input.fieldPath || '').trim();
+
+    if (!targetKind) {
+      throw new Error('storage.applyManualOverrideAction requires targetKind');
+    }
+
+    if (!targetId) {
+      throw new Error('storage.applyManualOverrideAction requires targetId');
+    }
+
+    if (!fieldPath) {
+      throw new Error('storage.applyManualOverrideAction requires fieldPath');
+    }
+
+    if (action === 'set' && !hasManualOverrideValue(input.value)) {
+      throw new Error('storage.applyManualOverrideAction requires value for set actions');
+    }
+
+    return this.withTransaction(() => {
+      const target = this.resolveTargetScope({ ...input, targetKind, targetId });
+      const previousManualOverride = this.selectManualOverrideByTargetField(targetKind, targetId, fieldPath);
+      const nextMetadata = {
+        surface: 'review',
+        ...(isPlainObject(input.metadata) ? input.metadata : {}),
+      };
+
+      if (normalizeNullableText(input.reviewId)) {
+        nextMetadata.reviewId = normalizeNullableText(input.reviewId);
+      }
+
+      let manualOverride = null;
+      let eventKind = 'manual_override_set';
+      let outcome = 'created';
+
+      if (action === 'clear') {
+        manualOverride = this.writeClearedManualOverrideRecord({
+          ...input,
+          targetKind,
+          targetId,
+          fieldPath,
+          metadata: nextMetadata,
+          resolvedTargetScope: target,
+        });
+        eventKind = 'manual_override_cleared';
+        outcome = 'cleared';
+      } else {
+        manualOverride = this.writeManualOverrideRecord({
+          ...input,
+          targetKind,
+          targetId,
+          fieldPath,
+          metadata: nextMetadata,
+          resolvedTargetScope: target,
+        });
+        if (isActiveManualOverride(previousManualOverride)) {
+          eventKind = 'manual_override_updated';
+          outcome = 'updated';
+        }
+      }
+
+      const auditEvent = this.writeAuditEventRecord({
+        ...input,
+        targetKind,
+        targetId,
+        actorKind: input.actorKind || 'operator',
+        actorId: normalizeNullableText(input.actorId) ?? normalizeNullableText(input.operatorId),
+        eventKind,
+        payload: buildManualOverrideAuditPayload({
+          action: outcome,
+          fieldPath,
+          reviewId: normalizeNullableText(input.reviewId),
+          reason: normalizeNullableText(input.reason),
+          previousManualOverride,
+          manualOverride,
+        }),
+        resolvedTargetScope: target,
+      });
+
+      return {
+        action: outcome,
+        targetKind,
+        targetId,
+        fieldPath,
+        previousManualOverride,
+        manualOverride,
+        auditEvent,
+      };
+    });
+  }
+
+  writeManualOverrideRecord(input) {
+    const now = input.updatedAt || new Date().toISOString();
+    const target = input.resolvedTargetScope || this.resolveTargetScope(input);
+    const fieldPath = String(input.fieldPath || '').trim();
+
+    if (!fieldPath) {
+      throw new Error('storage.setManualOverride requires fieldPath');
+    }
+
+    const existing = this.selectManualOverrideByTargetField(target.targetKind, target.targetId, fieldPath);
+    const nextOperatorId = normalizeNullableText(input.operatorId);
+    const nextReason = normalizeNullableText(input.reason);
+    const nextMetadata = input.metadata || {};
+
+    if (existing) {
+      this.db.prepare(`
+        UPDATE manual_overrides
+        SET source_id = ?, observation_id = ?, value_json = ?, reason = ?, operator_id = ?, status = ?,
+            metadata_json = ?, updated_at = ?, cleared_at = NULL
+        WHERE id = ?
+      `).run(
+        target.sourceId,
+        target.observationId,
+        toJson(input.value),
+        nextReason,
+        nextOperatorId,
+        'active',
+        toJson(nextMetadata, {}),
+        now,
+        existing.id,
+      );
+
+      return this.selectManualOverrideByTargetField(target.targetKind, target.targetId, fieldPath);
+    }
+
+    const createdAt = input.createdAt || now;
+    const manualOverride = {
+      id: this.nextId('manualOverride', 'mno'),
+      targetKind: target.targetKind,
+      targetId: target.targetId,
+      sourceId: target.sourceId,
+      observationId: target.observationId,
+      fieldPath,
+      value: input.value,
+      reason: nextReason,
+      operatorId: nextOperatorId,
+      status: 'active',
+      metadata: nextMetadata,
+      createdAt,
+      updatedAt: now,
+      clearedAt: null,
+    };
+
+    this.db.prepare(`
+      INSERT INTO manual_overrides (
+        id, target_kind, target_id, source_id, observation_id, field_path, value_json, reason, operator_id,
+        status, metadata_json, created_at, updated_at, cleared_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      manualOverride.id,
+      manualOverride.targetKind,
+      manualOverride.targetId,
+      manualOverride.sourceId,
+      manualOverride.observationId,
+      manualOverride.fieldPath,
+      toJson(manualOverride.value),
+      manualOverride.reason,
+      manualOverride.operatorId,
+      manualOverride.status,
+      toJson(manualOverride.metadata, {}),
+      manualOverride.createdAt,
+      manualOverride.updatedAt,
+      manualOverride.clearedAt,
+    );
+
+    return manualOverride;
+  }
+
+  writeClearedManualOverrideRecord(input) {
+    const now = input.clearedAt || input.updatedAt || new Date().toISOString();
+    const target = input.resolvedTargetScope || this.resolveTargetScope(input);
+    const fieldPath = String(input.fieldPath || '').trim();
+
+    if (!fieldPath) {
+      throw new Error('storage.clearManualOverride requires fieldPath');
+    }
+
+    const existing = this.selectManualOverrideByTargetField(target.targetKind, target.targetId, fieldPath);
+    if (!existing) {
+      throw new Error(`storage manual override not found: ${target.targetKind}:${target.targetId}:${fieldPath}`);
+    }
+
+    this.db.prepare(`
+      UPDATE manual_overrides
+      SET source_id = ?, observation_id = ?, reason = ?, operator_id = ?, status = ?, metadata_json = ?,
+          updated_at = ?, cleared_at = ?
+      WHERE id = ?
+    `).run(
+      target.sourceId,
+      target.observationId,
+      normalizeNullableText(input.reason) ?? existing.reason ?? null,
+      normalizeNullableText(input.operatorId) ?? existing.operatorId ?? null,
+      String(input.status || 'cleared').trim() || 'cleared',
+      toJson(input.metadata ?? existing.metadata ?? {}, {}),
+      now,
+      now,
+      existing.id,
+    );
+
+    return this.selectManualOverrideByTargetField(target.targetKind, target.targetId, fieldPath);
+  }
+
+  writeAuditEventRecord(input) {
+    const now = input.createdAt || new Date().toISOString();
+    const target = input.resolvedTargetScope || this.resolveTargetScope(input);
+    const eventKind = String(input.eventKind || '').trim();
+    const actorKind = String(input.actorKind || '').trim();
+
+    if (!eventKind) {
+      throw new Error('storage.appendAuditEvent requires eventKind');
+    }
+
+    if (!actorKind) {
+      throw new Error('storage.appendAuditEvent requires actorKind');
+    }
+
+    const auditEvent = {
+      id: this.nextId('auditEvent', 'evt'),
+      targetKind: target.targetKind,
+      targetId: target.targetId,
+      sourceId: target.sourceId,
+      observationId: target.observationId,
+      eventKind,
+      actorKind,
+      actorId: normalizeNullableText(input.actorId),
+      payload: input.payload || {},
+      createdAt: now,
+    };
+
+    this.db.prepare(`
+      INSERT INTO audit_events (
+        id, target_kind, target_id, source_id, observation_id, event_kind, actor_kind, actor_id, payload_json, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      auditEvent.id,
+      auditEvent.targetKind,
+      auditEvent.targetId,
+      auditEvent.sourceId,
+      auditEvent.observationId,
+      auditEvent.eventKind,
+      auditEvent.actorKind,
+      auditEvent.actorId,
+      toJson(auditEvent.payload, {}),
+      auditEvent.createdAt,
+    );
+
+    return auditEvent;
+  }
+
+  getEffectiveFieldValue(input = {}) {
+    const targetKind = String(input.targetKind || '').trim();
+    const targetId = String(input.targetId || '').trim();
+    const fieldPath = String(input.fieldPath || '').trim();
+
+    if (!targetKind) {
+      throw new Error('storage.getEffectiveFieldValue requires targetKind');
+    }
+
+    if (!targetId) {
+      throw new Error('storage.getEffectiveFieldValue requires targetId');
+    }
+
+    if (!fieldPath) {
+      throw new Error('storage.getEffectiveFieldValue requires fieldPath');
+    }
+
+    const manualOverride = this.selectManualOverrideByTargetField(targetKind, targetId, fieldPath);
+    const resolvedField = this.selectResolvedFieldByTargetField(targetKind, targetId, fieldPath);
+
+    return resolveEffectiveFieldValue({
+      targetKind,
+      targetId,
+      fieldPath,
+      manualOverride,
+      resolvedField,
+      rawExtractedValue: input.rawExtractedValue,
+      rawExtractedSource: input.rawExtractedSource || 'listing_record',
+      rawObservationValue: input.rawObservationValue,
+      rawObservationSource: input.rawObservationSource || 'observation',
     });
   }
 
@@ -1346,6 +1837,307 @@ export class SqliteStorage {
     return rows.map((row) => mapListingSummary(row, { includePayload }));
   }
 
+  listEvidenceFragments(input = {}) {
+    const limit = normalizeLimit(input.limit, 50);
+    const clauses = [];
+    const params = [];
+    const fragmentIds = normalizeStringList(input.fragmentIds || input.fragmentId);
+
+    if (fragmentIds.length) {
+      clauses.push(`f.id IN (${buildPlaceholders(fragmentIds.length)})`);
+      params.push(...fragmentIds);
+    }
+
+    if (input.runId) {
+      clauses.push('f.run_id = ?');
+      params.push(input.runId);
+    }
+
+    if (input.observationId) {
+      clauses.push('f.observation_id = ?');
+      params.push(input.observationId);
+    }
+
+    if (input.stablePostId) {
+      clauses.push('f.stable_post_id = ?');
+      params.push(input.stablePostId);
+    }
+
+    if (input.sourceId) {
+      clauses.push('f.source_id = ?');
+      params.push(input.sourceId);
+    }
+
+    if (input.sourceKey) {
+      clauses.push('s.source_key = ?');
+      params.push(input.sourceKey);
+    }
+
+    if (input.fieldPath) {
+      clauses.push('f.field_path = ?');
+      params.push(input.fieldPath);
+    }
+
+    if (input.fragmentKind) {
+      clauses.push('f.fragment_kind = ?');
+      params.push(input.fragmentKind);
+    }
+
+    if (input.sourceSurface) {
+      clauses.push('f.source_surface = ?');
+      params.push(input.sourceSurface);
+    }
+
+    if (input.producerKind) {
+      clauses.push('f.producer_kind = ?');
+      params.push(input.producerKind);
+    }
+
+    if (input.producerVersion) {
+      clauses.push('f.producer_version = ?');
+      params.push(input.producerVersion);
+    }
+
+    const rows = this.db.prepare(`
+      SELECT
+        f.*,
+        s.platform AS source_platform,
+        s.source_key AS source_key,
+        s.display_name AS source_display_name
+      FROM evidence_fragments f
+      JOIN sources s ON s.id = f.source_id
+      ${buildWhereClause(clauses)}
+      ORDER BY f.created_at ASC, f.id ASC
+      LIMIT ?
+    `).all(...params, limit);
+
+    return rows.map(mapEvidenceFragment);
+  }
+
+  listResolvedFields(input = {}) {
+    const limit = normalizeLimit(input.limit, 50);
+    const clauses = [];
+    const params = [];
+    const resolvedFieldIds = normalizeStringList(input.resolvedFieldIds || input.resolvedFieldId);
+    const targetIds = normalizeStringList(input.targetIds || input.targetId);
+    const fieldPaths = normalizeStringList(input.fieldPaths || input.fieldPath);
+
+    if (resolvedFieldIds.length) {
+      clauses.push(`rf.id IN (${buildPlaceholders(resolvedFieldIds.length)})`);
+      params.push(...resolvedFieldIds);
+    }
+
+    if (input.targetKind) {
+      clauses.push('rf.target_kind = ?');
+      params.push(input.targetKind);
+    }
+
+    if (targetIds.length) {
+      clauses.push(`rf.target_id IN (${buildPlaceholders(targetIds.length)})`);
+      params.push(...targetIds);
+    }
+
+    if (input.observationId) {
+      clauses.push('rf.observation_id = ?');
+      params.push(input.observationId);
+    }
+
+    if (input.runId) {
+      clauses.push('o.run_id = ?');
+      params.push(input.runId);
+    }
+
+    if (input.sourceId) {
+      clauses.push('rf.source_id = ?');
+      params.push(input.sourceId);
+    }
+
+    if (input.sourceKey) {
+      clauses.push('s.source_key = ?');
+      params.push(input.sourceKey);
+    }
+
+    if (fieldPaths.length) {
+      clauses.push(`rf.field_path IN (${buildPlaceholders(fieldPaths.length)})`);
+      params.push(...fieldPaths);
+    }
+
+    if (input.status) {
+      clauses.push('rf.status = ?');
+      params.push(input.status);
+    }
+
+    if (input.resolutionKind) {
+      clauses.push('rf.resolution_kind = ?');
+      params.push(input.resolutionKind);
+    }
+
+    if (input.resolverVersion) {
+      clauses.push('rf.resolver_version = ?');
+      params.push(input.resolverVersion);
+    }
+
+    const rows = this.db.prepare(`
+      SELECT
+        rf.*,
+        s.platform AS source_platform,
+        s.source_key AS source_key,
+        s.display_name AS source_display_name,
+        o.run_id AS run_id,
+        o.stable_post_id AS stable_post_id
+      FROM resolved_fields rf
+      JOIN sources s ON s.id = rf.source_id
+      JOIN post_observations o ON o.id = rf.observation_id
+      ${buildWhereClause(clauses)}
+      ORDER BY rf.updated_at DESC, rf.id DESC
+      LIMIT ?
+    `).all(...params, limit);
+
+    return rows.map(mapResolvedField);
+  }
+
+  listManualOverrides(input = {}) {
+    const limit = normalizeLimit(input.limit, 50);
+    const clauses = [];
+    const params = [];
+    const manualOverrideIds = normalizeStringList(input.manualOverrideIds || input.manualOverrideId);
+    const targetIds = normalizeStringList(input.targetIds || input.targetId);
+    const fieldPaths = normalizeStringList(input.fieldPaths || input.fieldPath);
+
+    if (manualOverrideIds.length) {
+      clauses.push(`mo.id IN (${buildPlaceholders(manualOverrideIds.length)})`);
+      params.push(...manualOverrideIds);
+    }
+
+    if (input.targetKind) {
+      clauses.push('mo.target_kind = ?');
+      params.push(input.targetKind);
+    }
+
+    if (targetIds.length) {
+      clauses.push(`mo.target_id IN (${buildPlaceholders(targetIds.length)})`);
+      params.push(...targetIds);
+    }
+
+    if (input.observationId) {
+      clauses.push('mo.observation_id = ?');
+      params.push(input.observationId);
+    }
+
+    if (input.runId) {
+      clauses.push('o.run_id = ?');
+      params.push(input.runId);
+    }
+
+    if (input.sourceId) {
+      clauses.push('mo.source_id = ?');
+      params.push(input.sourceId);
+    }
+
+    if (input.sourceKey) {
+      clauses.push('s.source_key = ?');
+      params.push(input.sourceKey);
+    }
+
+    if (fieldPaths.length) {
+      clauses.push(`mo.field_path IN (${buildPlaceholders(fieldPaths.length)})`);
+      params.push(...fieldPaths);
+    }
+
+    if (input.status) {
+      clauses.push('mo.status = ?');
+      params.push(input.status);
+    }
+
+    const rows = this.db.prepare(`
+      SELECT
+        mo.*,
+        s.platform AS source_platform,
+        s.source_key AS source_key,
+        s.display_name AS source_display_name,
+        o.run_id AS run_id,
+        o.stable_post_id AS stable_post_id
+      FROM manual_overrides mo
+      JOIN sources s ON s.id = mo.source_id
+      JOIN post_observations o ON o.id = mo.observation_id
+      ${buildWhereClause(clauses)}
+      ORDER BY mo.updated_at DESC, mo.id DESC
+      LIMIT ?
+    `).all(...params, limit);
+
+    return rows.map(mapManualOverride);
+  }
+
+  listAuditEvents(input = {}) {
+    const limit = normalizeLimit(input.limit, 100);
+    const clauses = [];
+    const params = [];
+    const auditEventIds = normalizeStringList(input.auditEventIds || input.auditEventId);
+
+    if (auditEventIds.length) {
+      clauses.push(`ae.id IN (${buildPlaceholders(auditEventIds.length)})`);
+      params.push(...auditEventIds);
+    }
+
+    if (input.targetKind) {
+      clauses.push('ae.target_kind = ?');
+      params.push(input.targetKind);
+    }
+
+    if (input.targetId) {
+      clauses.push('ae.target_id = ?');
+      params.push(input.targetId);
+    }
+
+    if (input.observationId) {
+      clauses.push('ae.observation_id = ?');
+      params.push(input.observationId);
+    }
+
+    if (input.runId) {
+      clauses.push('o.run_id = ?');
+      params.push(input.runId);
+    }
+
+    if (input.sourceId) {
+      clauses.push('ae.source_id = ?');
+      params.push(input.sourceId);
+    }
+
+    if (input.sourceKey) {
+      clauses.push('s.source_key = ?');
+      params.push(input.sourceKey);
+    }
+
+    if (input.eventKind) {
+      clauses.push('ae.event_kind = ?');
+      params.push(input.eventKind);
+    }
+
+    if (input.actorKind) {
+      clauses.push('ae.actor_kind = ?');
+      params.push(input.actorKind);
+    }
+
+    const rows = this.db.prepare(`
+      SELECT
+        ae.*,
+        s.platform AS source_platform,
+        s.source_key AS source_key,
+        s.display_name AS source_display_name,
+        o.run_id AS run_id,
+        o.stable_post_id AS stable_post_id
+      FROM audit_events ae
+      JOIN sources s ON s.id = ae.source_id
+      JOIN post_observations o ON o.id = ae.observation_id
+      ${buildWhereClause(clauses)}
+      ORDER BY ae.created_at DESC, ae.id DESC
+      LIMIT ?
+    `).all(...params, limit);
+
+    return rows.map(mapAuditEvent);
+  }
+
   listArtifactRefs(input = {}) {
     const limit = normalizeLimit(input.limit, 20);
     const clauses = [];
@@ -1395,6 +2187,636 @@ export class SqliteStorage {
     return rows.map(mapArtifactRefSummary);
   }
 
+  selectDashboardListingCandidates(input = {}) {
+    const clauses = [];
+    const params = [];
+
+    if (input.listingId) {
+      clauses.push('l.id = ?');
+      params.push(input.listingId);
+    }
+
+    if (input.runId) {
+      clauses.push('l.run_id = ?');
+      params.push(input.runId);
+    }
+
+    if (input.observationId) {
+      clauses.push('l.observation_id = ?');
+      params.push(input.observationId);
+    }
+
+    if (input.sourceId) {
+      clauses.push('l.source_id = ?');
+      params.push(input.sourceId);
+    }
+
+    if (input.sourceKey) {
+      clauses.push('s.source_key = ?');
+      params.push(input.sourceKey);
+    }
+
+    if (input.listingType) {
+      clauses.push('l.listing_type = ?');
+      params.push(input.listingType);
+    }
+
+    if (input.intent) {
+      clauses.push('l.post_intent = ?');
+      params.push(input.intent);
+    }
+
+    if (input.freshness) {
+      clauses.push('o.freshness = ?');
+      params.push(input.freshness);
+    }
+
+    const rows = this.db.prepare(`
+      SELECT
+        l.*,
+        s.platform AS source_platform,
+        s.source_key AS source_key,
+        s.source_type AS source_type,
+        s.display_name AS source_display_name,
+        o.stable_post_id AS stable_post_id,
+        o.freshness AS observation_freshness,
+        o.platform_post_id AS platform_post_id,
+        o.post_url AS post_url,
+        o.author_name AS author_name,
+        o.posted_at_text AS posted_at_text,
+        o.body_text AS observation_body_text,
+        o.captured_at AS observation_captured_at,
+        o.derived_location_json AS observation_derived_location_json,
+        o.raw_artifact_path AS observation_raw_artifact_path,
+        o.raw_artifact_id AS observation_raw_artifact_id,
+        sp.times_seen AS stable_post_times_seen
+      FROM listing_records l
+      JOIN sources s ON s.id = l.source_id
+      JOIN post_observations o ON o.id = l.observation_id
+      LEFT JOIN stable_posts sp ON sp.id = o.stable_post_id
+      ${buildWhereClause(clauses)}
+      ORDER BY o.captured_at DESC, l.created_at DESC, l.id DESC
+    `).all(...params);
+
+    return this.attachDashboardListingFieldStates(rows.map(mapDashboardListingCandidate));
+  }
+
+  attachDashboardListingFieldStates(listings = []) {
+    if (!Array.isArray(listings) || listings.length === 0) {
+      return [];
+    }
+
+    const targetIds = uniqueStrings(listings.map((listing) => listing.listingId));
+    const fieldPaths = DASHBOARD_LOCATION_FIELD_DEFINITIONS.map((definition) => definition.fieldPath);
+    const resolvedByKey = new Map(
+      this.selectResolvedFieldsByTargets('listing_record', targetIds, fieldPaths)
+        .map((row) => [buildTargetFieldKey(row.targetId, row.fieldPath), row]),
+    );
+    const manualByKey = new Map(
+      this.selectManualOverridesByTargets('listing_record', targetIds, fieldPaths)
+        .map((row) => [buildTargetFieldKey(row.targetId, row.fieldPath), row]),
+    );
+
+    return listings.map((listing) => {
+      const locationFieldStates = DASHBOARD_LOCATION_FIELD_DEFINITIONS.map((definition) => (
+        buildDashboardFieldState({
+          fieldDefinition: definition,
+          listing,
+          manualOverride: manualByKey.get(buildTargetFieldKey(listing.listingId, definition.fieldPath)) || null,
+          resolvedField: resolvedByKey.get(buildTargetFieldKey(listing.listingId, definition.fieldPath)) || null,
+        })
+      ));
+      const fieldStateByPath = indexDashboardFieldStates(locationFieldStates);
+
+      return applyDashboardListingFieldStates(listing, fieldStateByPath);
+    });
+  }
+
+  listDashboardListings(input = {}) {
+    const page = normalizeDashboardPage(input.page, 1);
+    const pageSize = normalizeDashboardPageSize(input.pageSize, DEFAULT_DASHBOARD_PAGE_SIZE);
+    const sort = normalizeDashboardSort(input.sort, [
+      'newest',
+      'oldest',
+      'price-asc',
+      'price-desc',
+      'confidence-desc',
+      'confidence-asc',
+    ], 'newest');
+    const now = input.now || new Date().toISOString();
+    const normalized = {
+      borough: normalizeQueryText(input.borough),
+      neighborhood: normalizeQueryText(input.neighborhood),
+      q: normalizeQueryText(input.q),
+      priceMin: normalizeNullableNumber(input.priceMin),
+      priceMax: normalizeNullableNumber(input.priceMax),
+      bedsMin: normalizeNullableNumber(input.bedsMin),
+      bedsMax: normalizeNullableNumber(input.bedsMax),
+      bathsMin: normalizeNullableNumber(input.bathsMin),
+      postedWithinHours: normalizeNullableNumber(input.postedWithinHours),
+      minConfidence: normalizeNullableNumber(input.minConfidence),
+      hasAmbiguities: normalizeOptionalBoolean(input.hasAmbiguities),
+    };
+
+    const primaryListings = collapseDashboardListingVariants(this.selectDashboardListingCandidates(input));
+    const filtered = primaryListings.filter((listing) => matchesDashboardListingFilters(listing, normalized, now));
+    const sorted = filtered.slice().sort((left, right) => compareDashboardListingRows(left, right, sort));
+    const paginated = paginateDashboardItems(sorted, page, pageSize);
+
+    return buildDashboardListResponse({
+      items: paginated.map(toDashboardListingListItem),
+      page,
+      pageSize,
+      totalItems: filtered.length,
+      sort,
+      filters: buildDashboardFilters({
+        q: normalized.q,
+        sourceKey: input.sourceKey,
+        freshness: input.freshness,
+        listingType: input.listingType,
+        intent: input.intent,
+        borough: input.borough,
+        neighborhood: input.neighborhood,
+        priceMin: normalized.priceMin,
+        priceMax: normalized.priceMax,
+        bedsMin: normalized.bedsMin,
+        bedsMax: normalized.bedsMax,
+        bathsMin: normalized.bathsMin,
+        postedWithinHours: normalized.postedWithinHours,
+        minConfidence: normalized.minConfidence,
+        hasAmbiguities: normalized.hasAmbiguities,
+        runId: input.runId,
+      }),
+    });
+  }
+
+  getDashboardListingDetail(input = {}) {
+    const listingId = String(input.listingId || '').trim();
+
+    if (!listingId) {
+      throw new Error('storage.getDashboardListingDetail requires listingId');
+    }
+
+    const [selectedVariant] = this.selectDashboardListingCandidates({ listingId });
+    if (!selectedVariant) {
+      return null;
+    }
+
+    const variants = this.selectDashboardListingCandidates({
+      observationId: selectedVariant.observationId,
+    }).filter((candidate) => candidate.ordinal === selectedVariant.ordinal);
+    const [primaryListing] = collapseDashboardListingVariants(variants);
+    const [observation] = this.listObservations({
+      observationId: selectedVariant.observationId,
+      includeFullText: true,
+      includeCollections: true,
+      includePayload: true,
+      limit: 1,
+    });
+    const [run] = this.listRecentRuns({ runId: selectedVariant.runId, limit: 1 });
+    const [source] = this.listSources({ sourceId: selectedVariant.sourceId, limit: 1 });
+    const jobs = this.listProcessingJobs({
+      observationId: selectedVariant.observationId,
+      limit: 500,
+      includeProcessedPayload: true,
+    }).map(toDashboardJobDetailItem);
+    const artifacts = this.listArtifactRefs({
+      observationId: selectedVariant.observationId,
+      limit: 500,
+    });
+
+    return {
+      listing: buildDashboardListingDetailItem(primaryListing),
+      selectedVariantId: selectedVariant.listingId,
+      selectedVariant: buildDashboardListingVariantDetailItem(selectedVariant),
+      variants: variants
+        .slice()
+        .sort(compareDashboardListingVariantPriority)
+        .map(buildDashboardListingVariantDetailItem),
+      observation: buildDashboardObservationDetailItem(observation),
+      source,
+      run,
+      provenance: {
+        listingId: primaryListing.listingId,
+        observationId: selectedVariant.observationId,
+        runId: selectedVariant.runId,
+        sourceId: selectedVariant.sourceId,
+        stablePostId: selectedVariant.stablePostId,
+        rawArtifactId: selectedVariant.rawArtifactId,
+        rawArtifactPath: selectedVariant.rawArtifactPath,
+        variantCount: primaryListing.variantCount,
+      },
+      jobs,
+      artifacts,
+    };
+  }
+
+  selectDashboardPostCandidates(input = {}) {
+    const clauses = [];
+    const params = [];
+
+    if (input.observationId) {
+      clauses.push('o.id = ?');
+      params.push(input.observationId);
+    }
+
+    if (input.runId) {
+      clauses.push('o.run_id = ?');
+      params.push(input.runId);
+    }
+
+    if (input.sourceId) {
+      clauses.push('o.source_id = ?');
+      params.push(input.sourceId);
+    }
+
+    if (input.sourceKey) {
+      clauses.push('s.source_key = ?');
+      params.push(input.sourceKey);
+    }
+
+    if (input.freshness) {
+      clauses.push('o.freshness = ?');
+      params.push(input.freshness);
+    }
+
+    const rows = this.db.prepare(`
+      SELECT
+        o.*,
+        s.platform AS source_platform,
+        s.source_type AS source_type,
+        s.display_name AS source_display_name,
+        sp.times_seen AS stable_post_times_seen,
+        (
+          SELECT COUNT(DISTINCT l.ordinal)
+          FROM listing_records l
+          WHERE l.observation_id = o.id
+        ) AS linked_listing_count,
+        (
+          SELECT j.id
+          FROM processing_jobs j
+          WHERE j.observation_id = o.id
+          ORDER BY j.created_at DESC, j.id DESC
+          LIMIT 1
+        ) AS latest_job_id,
+        (
+          SELECT j.status
+          FROM processing_jobs j
+          WHERE j.observation_id = o.id
+          ORDER BY j.created_at DESC, j.id DESC
+          LIMIT 1
+        ) AS latest_job_status,
+        (
+          SELECT j.updated_at
+          FROM processing_jobs j
+          WHERE j.observation_id = o.id
+          ORDER BY j.created_at DESC, j.id DESC
+          LIMIT 1
+        ) AS latest_job_updated_at
+      FROM post_observations o
+      JOIN sources s ON s.id = o.source_id
+      LEFT JOIN stable_posts sp ON sp.id = o.stable_post_id
+      ${buildWhereClause(clauses)}
+      ORDER BY o.captured_at DESC, o.id DESC
+    `).all(...params);
+
+    return rows.map(mapDashboardPostCandidate);
+  }
+
+  listDashboardPosts(input = {}) {
+    const page = normalizeDashboardPage(input.page, 1);
+    const pageSize = normalizeDashboardPageSize(input.pageSize, DEFAULT_DASHBOARD_PAGE_SIZE);
+    const sort = normalizeDashboardSort(input.sort, ['newest', 'oldest'], 'newest');
+    const now = input.now || new Date().toISOString();
+    const normalized = {
+      q: normalizeQueryText(input.q),
+      postedWithinHours: normalizeNullableNumber(input.postedWithinHours),
+      processingStatus: normalizeQueryText(input.processingStatus),
+    };
+
+    const filtered = this.selectDashboardPostCandidates(input)
+      .filter((post) => matchesDashboardPostFilters(post, normalized, now));
+    const sorted = filtered.slice().sort((left, right) => compareDashboardPostRows(left, right, sort));
+    const paginated = paginateDashboardItems(sorted, page, pageSize);
+
+    return buildDashboardListResponse({
+      items: paginated.map(toDashboardPostListItem),
+      page,
+      pageSize,
+      totalItems: filtered.length,
+      sort,
+      filters: buildDashboardFilters({
+        q: normalized.q,
+        sourceKey: input.sourceKey,
+        freshness: input.freshness,
+        processingStatus: normalized.processingStatus,
+        postedWithinHours: normalized.postedWithinHours,
+        runId: input.runId,
+      }),
+    });
+  }
+
+  getDashboardPostDetail(input = {}) {
+    const observationId = String(input.observationId || '').trim();
+
+    if (!observationId) {
+      throw new Error('storage.getDashboardPostDetail requires observationId');
+    }
+
+    const [observation] = this.listObservations({
+      observationId,
+      includeFullText: true,
+      includeCollections: true,
+      includePayload: true,
+      limit: 1,
+    });
+    if (!observation) {
+      return null;
+    }
+
+    const [source] = this.listSources({ sourceId: observation.sourceId, limit: 1 });
+    const [run] = this.listRecentRuns({ runId: observation.runId, limit: 1 });
+    const linkedListings = collapseDashboardListingVariants(
+      this.selectDashboardListingCandidates({ observationId }),
+    ).map(buildDashboardListingDetailItem);
+    const jobs = this.listProcessingJobs({
+      observationId,
+      limit: 500,
+      includeObservationPayload: true,
+      includeProcessedPayload: true,
+    }).map(toDashboardJobDetailItem);
+    const artifacts = this.listArtifactRefs({
+      observationId,
+      limit: 500,
+    });
+
+    return {
+      post: buildDashboardObservationDetailItem(observation),
+      linkedListings,
+      source,
+      run,
+      provenance: {
+        observationId: observation.id,
+        runId: observation.runId,
+        sourceId: observation.sourceId,
+        stablePostId: observation.stablePostId,
+        rawArtifactId: observation.rawArtifactId,
+        rawArtifactPath: observation.rawArtifactPath,
+        stablePostTimesSeen: observation.stablePostTimesSeen ?? null,
+      },
+      jobs,
+      artifacts,
+    };
+  }
+
+  selectDashboardLatestJobCandidates(input = {}) {
+    const clauses = [];
+    const params = [];
+
+    if (input.runId) {
+      clauses.push('o.run_id = ?');
+      params.push(input.runId);
+    }
+
+    if (input.observationId) {
+      clauses.push('j.observation_id = ?');
+      params.push(input.observationId);
+    }
+
+    if (input.sourceId) {
+      clauses.push('j.source_id = ?');
+      params.push(input.sourceId);
+    }
+
+    if (input.sourceKey) {
+      clauses.push('s.source_key = ?');
+      params.push(input.sourceKey);
+    }
+
+    const rows = this.db.prepare(`
+      SELECT
+        j.*,
+        s.platform AS source_platform,
+        s.source_key AS source_key,
+        s.source_type AS source_type,
+        s.display_name AS source_display_name,
+        o.run_id AS observation_run_id,
+        o.freshness AS observation_freshness,
+        o.platform_post_id AS platform_post_id,
+        o.post_url AS post_url,
+        o.author_name AS author_name,
+        o.posted_at_text AS posted_at_text,
+        o.captured_at AS observation_captured_at,
+        o.body_text AS observation_body_text,
+        p.id AS processed_payload_id,
+        p.listing_count AS processed_listing_count,
+        p.created_at AS processed_created_at
+      FROM processing_jobs j
+      JOIN post_observations o ON o.id = j.observation_id
+      JOIN sources s ON s.id = j.source_id
+      LEFT JOIN processed_payloads p ON p.job_id = j.id
+      ${buildWhereClause(clauses)}
+      ORDER BY j.created_at DESC, j.id DESC
+    `).all(...params);
+
+    const latestByObservation = new Map();
+
+    for (const row of rows) {
+      if (latestByObservation.has(row.observation_id)) {
+        continue;
+      }
+
+      latestByObservation.set(row.observation_id, mapDashboardLatestJobCandidate(row));
+    }
+
+    return Array.from(latestByObservation.values());
+  }
+
+  buildDashboardReviewCollection(input = {}) {
+    const sort = normalizeDashboardSort(input.sort, ['newest', 'oldest'], 'newest');
+    const queue = normalizeQueryText(input.queue);
+    const now = input.now || new Date().toISOString();
+    const postedWithinHours = normalizeNullableNumber(input.postedWithinHours);
+    const listings = collapseDashboardListingVariants(this.selectDashboardListingCandidates({
+      runId: input.runId,
+      sourceId: input.sourceId,
+      sourceKey: input.sourceKey,
+    })).filter((listing) => matchesDashboardTimeWindow(listing.postedAt, postedWithinHours, now));
+    const latestJobs = this.selectDashboardLatestJobCandidates({
+      runId: input.runId,
+      sourceId: input.sourceId,
+      sourceKey: input.sourceKey,
+    }).filter((job) => matchesDashboardTimeWindow(job.postedAt, postedWithinHours, now));
+    const latestJobByObservationId = new Map(
+      latestJobs.map((job) => [job.observationId, job]),
+    );
+    const primaryListingByObservationId = new Map();
+
+    for (const listing of listings) {
+      if (!primaryListingByObservationId.has(listing.observationId)) {
+        primaryListingByObservationId.set(listing.observationId, listing);
+      }
+    }
+
+    const reviewItems = [];
+
+    for (const listing of listings) {
+      const latestJob = latestJobByObservationId.get(listing.observationId) || null;
+      const reviewCandidates = collectDashboardListingReviewCandidates(listing);
+
+      for (const reviewCandidate of reviewCandidates) {
+        reviewItems.push(buildReviewItemFromListing(listing, latestJob, reviewCandidate));
+      }
+    }
+
+    for (const job of latestJobs) {
+      const relatedListing = primaryListingByObservationId.get(job.observationId) || null;
+
+      if (job.processingStatus === 'pending' || job.processingStatus === 'processing') {
+        reviewItems.push(buildReviewItemFromJob(job, relatedListing, {
+          reviewType: 'pending',
+          reasonSummary: job.processingStatus === 'processing'
+            ? 'Processing job is still in flight'
+            : 'Processing job is queued',
+          reasons: [
+            job.processingStatus === 'processing'
+              ? 'The latest processing job is currently leased by a worker.'
+              : 'The latest processing job has not completed yet.',
+          ],
+        }));
+      }
+
+      if (job.processingStatus === 'retryable' || job.processingStatus === 'failed') {
+        reviewItems.push(buildReviewItemFromJob(job, relatedListing, {
+          reviewType: 'failed',
+          reasonSummary: job.lastError || `Processing job is ${job.processingStatus}`,
+          reasons: job.lastError
+            ? [job.lastError]
+            : [`The latest processing job is ${job.processingStatus}.`],
+        }));
+      }
+    }
+
+    const queueCounts = countDashboardReviewItems(reviewItems);
+    const filtered = queue
+      ? reviewItems.filter((item) => item.reviewType === queue)
+      : reviewItems;
+    const items = filtered.slice().sort((left, right) => compareDashboardReviewRows(left, right, sort));
+
+    return {
+      filters: buildDashboardFilters({
+        queue,
+        sourceKey: input.sourceKey,
+        postedWithinHours,
+        runId: input.runId,
+      }),
+      items,
+      queueCounts,
+      sort,
+      thresholds: {
+        lowConfidence: DEFAULT_DASHBOARD_LOW_CONFIDENCE_THRESHOLD,
+      },
+    };
+  }
+
+  listDashboardReviewItems(input = {}) {
+    const page = normalizeDashboardPage(input.page, 1);
+    const pageSize = normalizeDashboardPageSize(input.pageSize, DEFAULT_DASHBOARD_PAGE_SIZE);
+    const reviewCollection = this.buildDashboardReviewCollection(input);
+    const paginated = paginateDashboardItems(reviewCollection.items, page, pageSize);
+
+    return {
+      ...buildDashboardListResponse({
+        items: paginated,
+        page,
+        pageSize,
+        totalItems: reviewCollection.items.length,
+        sort: reviewCollection.sort,
+        filters: reviewCollection.filters,
+      }),
+      queueCounts: reviewCollection.queueCounts,
+      thresholds: reviewCollection.thresholds,
+    };
+  }
+
+  getDashboardReviewItem(input = {}) {
+    const reviewId = String(input.reviewId || '').trim();
+
+    if (!reviewId) {
+      throw new Error('storage.getDashboardReviewItem requires reviewId');
+    }
+
+    const separatorIndex = reviewId.indexOf(':');
+    if (separatorIndex === -1) {
+      return null;
+    }
+
+    const reviewType = reviewId.slice(0, separatorIndex);
+    const primaryId = reviewId.slice(separatorIndex + 1);
+    const reviewCollection = this.buildDashboardReviewCollection({
+      ...input,
+      queue: input.queue ?? reviewType,
+    });
+    const item = reviewCollection.items.find((candidate) => (
+      candidate.reviewType === reviewType && candidate.primaryId === primaryId
+    )) || null;
+
+    if (!item) {
+      return null;
+    }
+
+    return {
+      actions: buildDashboardReviewActions(item),
+      item,
+      thresholds: reviewCollection.thresholds,
+    };
+  }
+
+  listDashboardDebugRuns(input = {}) {
+    const page = normalizeDashboardPage(input.page, 1);
+    const pageSize = normalizeDashboardPageSize(input.pageSize, DEFAULT_DASHBOARD_PAGE_SIZE);
+    const sort = 'newest';
+    const runs = this.listRecentRuns({
+      limit: 500,
+      sourceId: input.sourceId,
+      sourceKey: input.sourceKey,
+      status: input.status,
+      runKind: input.runKind,
+    }).slice().sort((left, right) => compareIsoDescending(left.startedAt, right.startedAt));
+    const paginated = paginateDashboardItems(runs, page, pageSize);
+
+    return buildDashboardListResponse({
+      items: paginated,
+      page,
+      pageSize,
+      totalItems: runs.length,
+      sort,
+      filters: buildDashboardFilters({
+        sourceKey: input.sourceKey,
+        status: input.status,
+        runKind: input.runKind,
+      }),
+    });
+  }
+
+  getDashboardDebugRun(input = {}) {
+    const runId = String(input.runId || '').trim();
+
+    if (!runId) {
+      throw new Error('storage.getDashboardDebugRun requires runId');
+    }
+
+    const [run] = this.listRecentRuns({ runId, limit: 1 });
+    if (!run) {
+      return null;
+    }
+
+    return {
+      run,
+      validation: this.validateRun({ runId }),
+    };
+  }
+
   validateRun(input) {
     const runId = String(input?.runId || '').trim();
 
@@ -1441,7 +2863,6 @@ export class SqliteStorage {
       freshCollected: compareExpectedCount(run.summary?.freshCollected, run.freshObservationCount),
       seenCollected: compareExpectedCount(run.summary?.seenCollected, run.seenObservationCount),
       unidentifiedCollected: compareExpectedCount(run.summary?.unidentifiedCollected, run.unidentifiedObservationCount),
-      extractedListings: compareExpectedCount(run.summary?.extractedListings, run.listingCount),
       withIds: compareExpectedCount(run.summary?.withIds, counts.identified_observation_count),
     };
     const issues = [];
@@ -1452,10 +2873,6 @@ export class SqliteStorage {
 
     if (run.status === 'completed' && !run.collectedExportPath) {
       issues.push('completed run is missing collectedExportPath');
-    }
-
-    if (run.status === 'completed' && !run.listingsExportPath) {
-      issues.push('completed run is missing listingsExportPath');
     }
 
     if (counts.collected_export_count > 1) {
@@ -1474,7 +2891,6 @@ export class SqliteStorage {
     appendMismatchIssue(issues, matches.freshCollected, 'summary.freshCollected does not match fresh observation count');
     appendMismatchIssue(issues, matches.seenCollected, 'summary.seenCollected does not match seen observation count');
     appendMismatchIssue(issues, matches.unidentifiedCollected, 'summary.unidentifiedCollected does not match unidentified observation count');
-    appendMismatchIssue(issues, matches.extractedListings, 'summary.extractedListings does not match listing count');
     appendMismatchIssue(issues, matches.withIds, 'summary.withIds does not match identified observation count');
 
     return {
@@ -1535,6 +2951,14 @@ export class SqliteStorage {
       throw new Error(`storage processing job not found: ${jobId}`);
     }
     return job;
+  }
+
+  requireListingRecord(listingId) {
+    const listing = this.selectListingRecordById(listingId);
+    if (!listing) {
+      throw new Error(`storage listing record not found: ${listingId}`);
+    }
+    return listing;
   }
 
   configureDatabase() {
@@ -1827,6 +3251,110 @@ export class SqliteStorage {
     return mapProcessedPayload(row);
   }
 
+  selectListingRecordById(listingId) {
+    const row = this.db.prepare(`
+      SELECT *
+      FROM listing_records
+      WHERE id = ?
+    `).get(listingId);
+
+    return mapListingRecord(row);
+  }
+
+  selectResolvedFieldByTargetField(targetKind, targetId, fieldPath) {
+    const row = this.db.prepare(`
+      SELECT *
+      FROM resolved_fields
+      WHERE target_kind = ? AND target_id = ? AND field_path = ?
+    `).get(targetKind, targetId, fieldPath);
+
+    return mapResolvedField(row);
+  }
+
+  selectResolvedFieldsByTargets(targetKind, targetIds = [], fieldPaths = []) {
+    const normalizedTargetIds = normalizeStringList(targetIds);
+    const normalizedFieldPaths = normalizeStringList(fieldPaths);
+
+    if (!normalizedTargetIds.length) {
+      return [];
+    }
+
+    const clauses = [
+      'rf.target_kind = ?',
+      `rf.target_id IN (${buildPlaceholders(normalizedTargetIds.length)})`,
+    ];
+    const params = [targetKind, ...normalizedTargetIds];
+
+    if (normalizedFieldPaths.length) {
+      clauses.push(`rf.field_path IN (${buildPlaceholders(normalizedFieldPaths.length)})`);
+      params.push(...normalizedFieldPaths);
+    }
+
+    const rows = this.db.prepare(`
+      SELECT
+        rf.*,
+        s.platform AS source_platform,
+        s.source_key AS source_key,
+        s.display_name AS source_display_name,
+        o.run_id AS run_id,
+        o.stable_post_id AS stable_post_id
+      FROM resolved_fields rf
+      JOIN sources s ON s.id = rf.source_id
+      JOIN post_observations o ON o.id = rf.observation_id
+      ${buildWhereClause(clauses)}
+      ORDER BY rf.updated_at DESC, rf.id DESC
+    `).all(...params);
+
+    return rows.map(mapResolvedField);
+  }
+
+  selectManualOverrideByTargetField(targetKind, targetId, fieldPath) {
+    const row = this.db.prepare(`
+      SELECT *
+      FROM manual_overrides
+      WHERE target_kind = ? AND target_id = ? AND field_path = ?
+    `).get(targetKind, targetId, fieldPath);
+
+    return mapManualOverride(row);
+  }
+
+  selectManualOverridesByTargets(targetKind, targetIds = [], fieldPaths = []) {
+    const normalizedTargetIds = normalizeStringList(targetIds);
+    const normalizedFieldPaths = normalizeStringList(fieldPaths);
+
+    if (!normalizedTargetIds.length) {
+      return [];
+    }
+
+    const clauses = [
+      'mo.target_kind = ?',
+      `mo.target_id IN (${buildPlaceholders(normalizedTargetIds.length)})`,
+    ];
+    const params = [targetKind, ...normalizedTargetIds];
+
+    if (normalizedFieldPaths.length) {
+      clauses.push(`mo.field_path IN (${buildPlaceholders(normalizedFieldPaths.length)})`);
+      params.push(...normalizedFieldPaths);
+    }
+
+    const rows = this.db.prepare(`
+      SELECT
+        mo.*,
+        s.platform AS source_platform,
+        s.source_key AS source_key,
+        s.display_name AS source_display_name,
+        o.run_id AS run_id,
+        o.stable_post_id AS stable_post_id
+      FROM manual_overrides mo
+      JOIN sources s ON s.id = mo.source_id
+      JOIN post_observations o ON o.id = mo.observation_id
+      ${buildWhereClause(clauses)}
+      ORDER BY mo.updated_at DESC, mo.id DESC
+    `).all(...params);
+
+    return rows.map(mapManualOverride);
+  }
+
   selectStablePostBySourceAndPlatformPostId(sourceId, platformPostId) {
     const row = this.db.prepare(`
       SELECT *
@@ -1917,6 +3445,49 @@ export class SqliteStorage {
       now,
       now,
     );
+  }
+
+  resolveTargetScope(input = {}) {
+    const targetKind = String(input.targetKind || '').trim();
+    const targetId = String(input.targetId || '').trim();
+
+    if (!targetKind) {
+      throw new Error('storage target scope requires targetKind');
+    }
+
+    if (!targetId) {
+      throw new Error('storage target scope requires targetId');
+    }
+
+    if (targetKind === 'listing_record') {
+      const listing = this.requireListingRecord(targetId);
+      return {
+        targetKind,
+        targetId,
+        sourceId: listing.sourceId,
+        observationId: listing.observationId,
+      };
+    }
+
+    const observationId = normalizeNullableText(input.observationId);
+    if (!observationId) {
+      throw new Error(`storage target scope requires observationId for targetKind ${targetKind}`);
+    }
+
+    const observation = this.requireObservation(observationId);
+    const sourceId = normalizeNullableText(input.sourceId) || observation.sourceId;
+    this.requireSource(sourceId);
+
+    if (observation.sourceId !== sourceId) {
+      throw new Error(`storage target scope source/observation mismatch for ${targetKind}:${targetId}`);
+    }
+
+    return {
+      targetKind,
+      targetId,
+      sourceId,
+      observationId: observation.id,
+    };
   }
 
   withTransaction(work) {
@@ -2260,6 +3831,130 @@ function mapListingSummary(row, options = {}) {
   return listing;
 }
 
+function mapListingRecord(row) {
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    runId: row.run_id,
+    sourceId: row.source_id,
+    observationId: row.observation_id,
+    ordinal: row.ordinal,
+    listingType: row.listing_type,
+    postIntent: row.post_intent,
+    borough: row.borough,
+    neighborhood: row.neighborhood,
+    priceAmount: row.price_amount,
+    pricePeriod: row.price_period,
+    confidenceOverall: row.confidence_overall,
+    extractorVersion: row.extractor_version,
+    payload: parseJson(row.payload_json, {}),
+    createdAt: row.created_at,
+  };
+}
+
+function mapEvidenceFragment(row) {
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    sourceId: row.source_id,
+    sourcePlatform: row.source_platform,
+    sourceKey: row.source_key,
+    sourceDisplayName: row.source_display_name,
+    observationId: row.observation_id,
+    stablePostId: row.stable_post_id,
+    runId: row.run_id,
+    fragmentKind: row.fragment_kind,
+    fieldPath: row.field_path,
+    sourceSurface: row.source_surface,
+    sourceRef: row.source_ref,
+    producerKind: row.producer_kind,
+    producerVersion: row.producer_version,
+    rawText: row.raw_text,
+    normalized: parseJson(row.normalized_json),
+    confidence: row.confidence,
+    metadata: parseJson(row.metadata_json, {}),
+    createdAt: row.created_at,
+  };
+}
+
+function mapResolvedField(row) {
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    targetKind: row.target_kind,
+    targetId: row.target_id,
+    sourceId: row.source_id,
+    sourcePlatform: row.source_platform,
+    sourceKey: row.source_key,
+    sourceDisplayName: row.source_display_name,
+    observationId: row.observation_id,
+    stablePostId: row.stable_post_id,
+    runId: row.run_id,
+    fieldPath: row.field_path,
+    status: row.status,
+    resolutionKind: row.resolution_kind,
+    resolverVersion: row.resolver_version,
+    value: parseJson(row.value_json),
+    confidence: row.confidence,
+    ambiguity: parseJson(row.ambiguity_json),
+    supportingFragmentIds: parseJson(row.supporting_fragment_ids_json, []),
+    metadata: parseJson(row.metadata_json, {}),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapManualOverride(row) {
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    targetKind: row.target_kind,
+    targetId: row.target_id,
+    sourceId: row.source_id,
+    sourcePlatform: row.source_platform,
+    sourceKey: row.source_key,
+    sourceDisplayName: row.source_display_name,
+    observationId: row.observation_id,
+    stablePostId: row.stable_post_id,
+    runId: row.run_id,
+    fieldPath: row.field_path,
+    value: parseJson(row.value_json),
+    reason: row.reason,
+    operatorId: row.operator_id,
+    status: row.status,
+    metadata: parseJson(row.metadata_json, {}),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    clearedAt: row.cleared_at,
+  };
+}
+
+function mapAuditEvent(row) {
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    targetKind: row.target_kind,
+    targetId: row.target_id,
+    sourceId: row.source_id,
+    sourcePlatform: row.source_platform,
+    sourceKey: row.source_key,
+    sourceDisplayName: row.source_display_name,
+    observationId: row.observation_id,
+    stablePostId: row.stable_post_id,
+    runId: row.run_id,
+    eventKind: row.event_kind,
+    actorKind: row.actor_kind,
+    actorId: row.actor_id,
+    payload: parseJson(row.payload_json, {}),
+    createdAt: row.created_at,
+  };
+}
+
 function mapArtifactRefSummary(row) {
   if (!row) return null;
 
@@ -2337,6 +4032,14 @@ function normalizeStringList(value) {
   return single ? [single] : [];
 }
 
+function uniqueStrings(values) {
+  return Array.from(new Set(
+    (Array.isArray(values) ? values : [values])
+      .map((value) => String(value || '').trim())
+      .filter(Boolean),
+  ));
+}
+
 function summarizeText(value, maxLength = 160) {
   const normalized = String(value || '').replace(/\s+/g, ' ').trim();
   if (!normalized) {
@@ -2363,6 +4066,1298 @@ function computeDurationSeconds(startedAt, finishedAt) {
   }
 
   return Math.max(0, Math.round((finished - started) / 1000));
+}
+
+const DASHBOARD_LOCATION_FIELD_DEFINITIONS = Object.freeze([
+  {
+    fieldPath: 'location.address',
+    label: 'Address',
+    reviewStatuses: Object.freeze({
+      ambiguous: true,
+      candidate: true,
+      unresolved: false,
+    }),
+    getRawExtracted(listing) {
+      return {
+        source: 'listing_record.payload.location.address',
+        value: listing.rawLocation?.address ?? null,
+      };
+    },
+    getRawObservation(listing) {
+      return {
+        source: 'post_observations.derivedLocation.address',
+        value: listing.observationDerivedLocation?.address ?? null,
+      };
+    },
+  },
+  {
+    fieldPath: 'location.neighborhood',
+    label: 'Neighborhood',
+    reviewStatuses: Object.freeze({
+      ambiguous: true,
+      candidate: true,
+      unresolved: true,
+    }),
+    getRawExtracted(listing) {
+      return {
+        source: listing.rawLocation?.neighborhoodSource || 'listing_record.payload.location.neighborhood',
+        value: listing.rawLocation?.neighborhood ?? null,
+      };
+    },
+    getRawObservation(listing) {
+      return {
+        source: 'post_observations.derivedLocation.neighborhood',
+        value: listing.observationDerivedLocation?.neighborhood ?? null,
+      };
+    },
+  },
+  {
+    fieldPath: 'location.borough',
+    label: 'Borough',
+    reviewStatuses: Object.freeze({
+      ambiguous: true,
+      candidate: true,
+      unresolved: true,
+    }),
+    getRawExtracted(listing) {
+      return {
+        source: listing.rawLocation?.boroughSource || 'listing_record.payload.location.borough',
+        value: listing.rawLocation?.borough ?? null,
+      };
+    },
+    getRawObservation(listing) {
+      return {
+        source: 'post_observations.derivedLocation.borough',
+        value: listing.observationDerivedLocation?.borough ?? null,
+      };
+    },
+  },
+  {
+    fieldPath: 'location.city',
+    label: 'City',
+    reviewStatuses: Object.freeze({
+      ambiguous: false,
+      candidate: false,
+      unresolved: false,
+    }),
+    getRawExtracted(listing) {
+      return {
+        source: 'listing_record.payload.location.city',
+        value: listing.rawLocation?.city ?? null,
+      };
+    },
+    getRawObservation(listing) {
+      return {
+        source: 'post_observations.derivedLocation.city',
+        value: listing.observationDerivedLocation?.city ?? null,
+      };
+    },
+  },
+  {
+    fieldPath: 'location.state',
+    label: 'State',
+    reviewStatuses: Object.freeze({
+      ambiguous: false,
+      candidate: false,
+      unresolved: false,
+    }),
+    getRawExtracted(listing) {
+      return {
+        source: 'listing_record.payload.location.state',
+        value: listing.rawLocation?.state ?? null,
+      };
+    },
+    getRawObservation(listing) {
+      return {
+        source: 'post_observations.derivedLocation.state',
+        value: listing.observationDerivedLocation?.state ?? null,
+      };
+    },
+  },
+]);
+
+const DASHBOARD_LOCATION_FIELD_DEFINITION_BY_PATH = new Map(
+  DASHBOARD_LOCATION_FIELD_DEFINITIONS.map((definition) => [definition.fieldPath, definition]),
+);
+
+function buildTargetFieldKey(targetId, fieldPath) {
+  return `${targetId}:${fieldPath}`;
+}
+
+function buildDashboardFieldState(input) {
+  const rawExtracted = input.fieldDefinition.getRawExtracted(input.listing);
+  const rawObservation = input.fieldDefinition.getRawObservation(input.listing);
+
+  return {
+    label: input.fieldDefinition.label,
+    ...resolveEffectiveFieldValue({
+      targetKind: 'listing_record',
+      targetId: input.listing.listingId,
+      fieldPath: input.fieldDefinition.fieldPath,
+      manualOverride: input.manualOverride,
+      resolvedField: input.resolvedField,
+      rawExtractedSource: rawExtracted.source,
+      rawExtractedValue: rawExtracted.value,
+      rawObservationSource: rawObservation.source,
+      rawObservationValue: rawObservation.value,
+    }),
+  };
+}
+
+function indexDashboardFieldStates(fieldStates) {
+  const byPath = new Map();
+
+  for (const fieldState of fieldStates) {
+    byPath.set(fieldState.fieldPath, fieldState);
+  }
+
+  return byPath;
+}
+
+function applyDashboardListingFieldStates(listing, fieldStateByPath) {
+  const locationFieldStates = Array.from(fieldStateByPath.values());
+  const locationResolutionSummary = summarizeDashboardLocationResolution(locationFieldStates);
+  const nextListing = {
+    ...listing,
+    address: fieldStateByPath.get('location.address')?.effectiveValue ?? null,
+    neighborhood: fieldStateByPath.get('location.neighborhood')?.effectiveValue ?? null,
+    borough: fieldStateByPath.get('location.borough')?.effectiveValue ?? null,
+    city: fieldStateByPath.get('location.city')?.effectiveValue ?? null,
+    state: fieldStateByPath.get('location.state')?.effectiveValue ?? null,
+    extractorAmbiguityCount: listing.ambiguityCount,
+    locationFieldStates,
+    locationResolutionSummary,
+    resolvedAmbiguityCount: locationResolutionSummary.ambiguousCount,
+    reviewAmbiguityCount: listing.ambiguityCount + locationResolutionSummary.ambiguousCount,
+  };
+
+  return {
+    ...nextListing,
+    reviewLinkTarget: buildDashboardListingReviewLinkTarget(nextListing),
+  };
+}
+
+function mapDashboardListingCandidate(row) {
+  if (!row) return null;
+
+  const payload = parseJson(row.payload_json, {}) || {};
+  const ambiguities = normalizeDashboardStringArray(payload?.notes?.ambiguities);
+  const postedAt = resolveDashboardPostedAt(row.observation_captured_at, row.posted_at_text);
+  const observationDerivedLocation = parseJson(row.observation_derived_location_json);
+  const listing = {
+    listingId: row.id,
+    runId: row.run_id,
+    sourceId: row.source_id,
+    observationId: row.observation_id,
+    sourceKey: row.source_key,
+    sourceDisplayName: row.source_display_name,
+    stablePostId: row.stable_post_id,
+    stablePostTimesSeen: row.stable_post_times_seen ?? null,
+    postUrl: row.post_url,
+    authorName: row.author_name,
+    postedAt,
+    postedAtText: row.posted_at_text,
+    capturedAt: row.observation_captured_at,
+    listingSummary: payload?.notes?.summary || summarizeText(row.observation_body_text, 240),
+    listingType: row.listing_type,
+    intent: row.post_intent,
+    borough: row.borough || payload?.location?.borough || null,
+    neighborhood: row.neighborhood || payload?.location?.neighborhood || null,
+    priceAmount: row.price_amount ?? payload?.pricing?.amount ?? null,
+    priceCurrency: payload?.pricing?.currency || 'USD',
+    pricePeriod: row.price_period || payload?.pricing?.period || null,
+    beds: payload?.rooms?.totalBedrooms ?? null,
+    roomsAvailable: payload?.rooms?.roomsAvailable ?? null,
+    baths: payload?.rooms?.bathrooms ?? null,
+    availableFrom: payload?.dates?.availableFrom ?? null,
+    freshness: row.observation_freshness,
+    confidenceOverall: row.confidence_overall ?? payload?.confidence?.overall ?? 0,
+    ambiguityCount: ambiguities.length,
+    ambiguities,
+    variantCount: 1,
+    extractorVersion: row.extractor_version,
+    ordinal: row.ordinal,
+    bodyTextPreview: summarizeText(row.observation_body_text, 240),
+    rawArtifactPath: row.observation_raw_artifact_path,
+    rawArtifactId: row.observation_raw_artifact_id,
+    observationDerivedLocation,
+    rawLocation: {
+      address: payload?.location?.address || null,
+      borough: row.borough || payload?.location?.borough || null,
+      boroughSource: row.borough ? 'listing_record.borough' : 'listing_record.payload.location.borough',
+      city: payload?.location?.city || null,
+      neighborhood: row.neighborhood || payload?.location?.neighborhood || null,
+      neighborhoodSource: row.neighborhood ? 'listing_record.neighborhood' : 'listing_record.payload.location.neighborhood',
+      state: payload?.location?.state || null,
+    },
+    payload,
+    createdAt: row.created_at,
+  };
+
+  return {
+    ...listing,
+    reviewLinkTarget: buildDashboardListingReviewLinkTarget(listing),
+  };
+}
+
+function mapDashboardPostCandidate(row) {
+  if (!row) return null;
+
+  const postedAt = resolveDashboardPostedAt(row.captured_at, row.posted_at_text);
+
+  return {
+    observationId: row.id,
+    runId: row.run_id,
+    sourceId: row.source_id,
+    sourceKey: row.source_key,
+    sourceDisplayName: row.source_display_name,
+    stablePostId: row.stable_post_id,
+    stablePostTimesSeen: row.stable_post_times_seen ?? null,
+    postUrl: row.post_url,
+    authorName: row.author_name,
+    postedAt,
+    postedAtText: row.posted_at_text,
+    capturedAt: row.captured_at,
+    freshness: row.freshness,
+    processingStatus: row.latest_job_status || 'unprocessed',
+    latestJobId: row.latest_job_id || null,
+    latestJobUpdatedAt: row.latest_job_updated_at || null,
+    bodyPreview: summarizeText(row.body_text, 240),
+    bodyText: row.body_text,
+    linkedListingCount: Number(row.linked_listing_count || 0),
+    rawArtifactPath: row.raw_artifact_path,
+    rawArtifactId: row.raw_artifact_id,
+  };
+}
+
+function mapDashboardLatestJobCandidate(row) {
+  if (!row) return null;
+
+  const summary = mapProcessingJobSummary(row, {});
+  const postedAt = resolveDashboardPostedAt(summary.capturedAt, summary.postedAtText);
+
+  return {
+    jobId: summary.id,
+    observationId: summary.observationId,
+    runId: summary.observationRunId,
+    sourceId: summary.sourceId,
+    sourceKey: summary.sourceKey,
+    sourceDisplayName: summary.sourceDisplayName,
+    postUrl: summary.postUrl,
+    authorName: summary.authorName,
+    postedAt,
+    postedAtText: summary.postedAtText,
+    capturedAt: summary.capturedAt,
+    processingStatus: summary.status,
+    processorVersion: summary.processorVersion,
+    schemaVersion: summary.schemaVersion,
+    modelName: summary.modelName,
+    lastError: summary.lastError,
+    attemptCount: summary.attemptCount,
+    maxAttempts: summary.maxAttempts,
+    processedPayloadId: summary.processedPayloadId || null,
+    processedListingCount: summary.processedListingCount ?? null,
+    processedAt: summary.processedAt || null,
+    updatedAt: summary.updatedAt,
+    bodyPreview: summarizeText(row.observation_body_text, 240),
+  };
+}
+
+function toDashboardListingListItem(listing) {
+  if (!listing) return null;
+
+  return {
+    address: listing.address ?? null,
+    city: listing.city ?? null,
+    state: listing.state ?? null,
+    listingId: listing.listingId,
+    observationId: listing.observationId,
+    runId: listing.runId,
+    sourceKey: listing.sourceKey,
+    sourceDisplayName: listing.sourceDisplayName,
+    postUrl: listing.postUrl,
+    authorName: listing.authorName,
+    postedAt: listing.postedAt,
+    postedAtText: listing.postedAtText,
+    capturedAt: listing.capturedAt,
+    listingSummary: listing.listingSummary,
+    listingType: listing.listingType,
+    intent: listing.intent,
+    borough: listing.borough,
+    neighborhood: listing.neighborhood,
+    priceAmount: listing.priceAmount,
+    priceCurrency: listing.priceCurrency,
+    pricePeriod: listing.pricePeriod,
+    beds: listing.beds,
+    roomsAvailable: listing.roomsAvailable,
+    baths: listing.baths,
+    availableFrom: listing.availableFrom,
+    freshness: listing.freshness,
+    confidenceOverall: listing.confidenceOverall,
+    ambiguityCount: listing.ambiguityCount,
+    extractorAmbiguityCount: listing.extractorAmbiguityCount ?? listing.ambiguityCount,
+    resolvedAmbiguityCount: listing.resolvedAmbiguityCount ?? 0,
+    reviewAmbiguityCount: listing.reviewAmbiguityCount ?? listing.ambiguityCount,
+    locationResolutionSummary: listing.locationResolutionSummary || null,
+    variantCount: listing.variantCount,
+    extractorVersion: listing.extractorVersion,
+    locationFieldStates: listing.locationFieldStates || [],
+    reviewLinkTarget: listing.reviewLinkTarget,
+  };
+}
+
+function buildDashboardListingDetailItem(listing) {
+  if (!listing) return null;
+
+  return {
+    ...toDashboardListingListItem(listing),
+    sourceId: listing.sourceId,
+    stablePostId: listing.stablePostId,
+    stablePostTimesSeen: listing.stablePostTimesSeen,
+    rawArtifactId: listing.rawArtifactId,
+    rawArtifactPath: listing.rawArtifactPath,
+    ordinal: listing.ordinal,
+    createdAt: listing.createdAt,
+    bodyTextPreview: listing.bodyTextPreview,
+    ambiguities: [...listing.ambiguities],
+    extractorAmbiguityCount: listing.extractorAmbiguityCount ?? listing.ambiguityCount,
+    resolvedAmbiguityCount: listing.resolvedAmbiguityCount ?? 0,
+    reviewAmbiguityCount: listing.reviewAmbiguityCount ?? listing.ambiguityCount,
+    locationResolutionSummary: listing.locationResolutionSummary || null,
+    locationFieldStates: listing.locationFieldStates || [],
+    payload: listing.payload,
+  };
+}
+
+function buildDashboardListingVariantDetailItem(listing) {
+  return buildDashboardListingDetailItem(listing);
+}
+
+function toDashboardPostListItem(post) {
+  if (!post) return null;
+
+  return {
+    observationId: post.observationId,
+    runId: post.runId,
+    sourceKey: post.sourceKey,
+    sourceDisplayName: post.sourceDisplayName,
+    postUrl: post.postUrl,
+    authorName: post.authorName,
+    postedAt: post.postedAt,
+    postedAtText: post.postedAtText,
+    capturedAt: post.capturedAt,
+    freshness: post.freshness,
+    processingStatus: post.processingStatus,
+    bodyPreview: post.bodyPreview,
+    linkedListingCount: post.linkedListingCount,
+  };
+}
+
+function buildDashboardObservationDetailItem(observation) {
+  if (!observation) return null;
+
+  const postedAt = resolveDashboardPostedAt(observation.capturedAt, observation.postedAtText);
+
+  return {
+    observationId: observation.id,
+    runId: observation.runId,
+    sourceId: observation.sourceId,
+    sourceKey: observation.sourceKey,
+    sourceDisplayName: observation.sourceDisplayName,
+    stablePostId: observation.stablePostId,
+    stablePostTimesSeen: observation.stablePostTimesSeen ?? null,
+    platformPostId: observation.platformPostId,
+    postUrl: observation.postUrl,
+    authorName: observation.authorName,
+    postedAt,
+    postedAtText: observation.postedAtText,
+    capturedAt: observation.capturedAt,
+    freshness: observation.freshness,
+    bodyPreview: observation.bodyTextPreview || summarizeText(observation.bodyText, 240),
+    bodyText: observation.bodyText || null,
+    commentCount: observation.commentCount ?? observation.comments?.length ?? 0,
+    mediaCount: observation.mediaCount ?? observation.media?.length ?? 0,
+    comments: observation.comments,
+    media: observation.media,
+    rawArtifactId: observation.rawArtifactId,
+    rawArtifactPath: observation.rawArtifactPath,
+    payload: observation.payload,
+  };
+}
+
+function toDashboardJobDetailItem(job) {
+  if (!job) return null;
+
+  return {
+    jobId: job.id || job.jobId,
+    observationId: job.observationId,
+    runId: job.observationRunId || job.runId,
+    sourceId: job.sourceId,
+    sourceKey: job.sourceKey,
+    sourceDisplayName: job.sourceDisplayName,
+    postUrl: job.postUrl,
+    authorName: job.authorName,
+    postedAt: resolveDashboardPostedAt(job.capturedAt, job.postedAtText),
+    postedAtText: job.postedAtText,
+    capturedAt: job.capturedAt,
+    processingStatus: job.status || job.processingStatus,
+    processorVersion: job.processorVersion,
+    schemaVersion: job.schemaVersion,
+    modelName: job.modelName,
+    attemptCount: job.attemptCount,
+    maxAttempts: job.maxAttempts,
+    lastError: job.lastError || null,
+    claimedAt: job.claimedAt || null,
+    claimedBy: job.claimedBy || null,
+    leaseExpiresAt: job.leaseExpiresAt || null,
+    processedPayloadId: job.processedPayloadId || null,
+    processedListingCount: job.processedListingCount ?? null,
+    processedAt: job.processedAt || null,
+    updatedAt: job.updatedAt,
+    observationPayload: job.observationPayload,
+    processedPayload: job.processedPayload,
+  };
+}
+
+function normalizeDashboardPage(value, fallback) {
+  return normalizePositiveInteger(value, fallback);
+}
+
+function normalizeDashboardPageSize(value, fallback) {
+  return normalizePositiveInteger(value, fallback, MAX_DASHBOARD_PAGE_SIZE);
+}
+
+function normalizeDashboardSort(value, allowed, fallback) {
+  const normalized = String(value || '').trim().toLowerCase();
+  return allowed.includes(normalized) ? normalized : fallback;
+}
+
+function normalizeQueryText(value) {
+  const normalized = String(value || '').trim();
+  return normalized || undefined;
+}
+
+function normalizeNullableNumber(value) {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeOptionalBoolean(value) {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  const normalized = String(value).trim().toLowerCase();
+  if (['1', 'true', 'yes'].includes(normalized)) {
+    return true;
+  }
+  if (['0', 'false', 'no'].includes(normalized)) {
+    return false;
+  }
+
+  return undefined;
+}
+
+function normalizeDashboardStringArray(value) {
+  return Array.isArray(value)
+    ? value.map((entry) => String(entry || '').trim()).filter(Boolean)
+    : [];
+}
+
+function buildDashboardFilters(filters) {
+  const result = {};
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') {
+      return;
+    }
+
+    result[key] = value;
+  });
+
+  return result;
+}
+
+function buildDashboardListResponse(input) {
+  const totalPages = input.totalItems === 0
+    ? 0
+    : Math.ceil(input.totalItems / input.pageSize);
+
+  return {
+    items: input.items,
+    count: input.items.length,
+    pagination: {
+      page: input.page,
+      pageSize: input.pageSize,
+      totalItems: input.totalItems,
+      totalPages,
+      hasNextPage: totalPages > 0 && input.page < totalPages,
+      hasPreviousPage: input.totalItems > 0 && input.page > 1,
+    },
+    sort: input.sort,
+    filters: input.filters,
+  };
+}
+
+function paginateDashboardItems(items, page, pageSize) {
+  const offset = Math.max(0, (page - 1) * pageSize);
+  return items.slice(offset, offset + pageSize);
+}
+
+function collapseDashboardListingVariants(items) {
+  const grouped = new Map();
+
+  for (const item of items) {
+    const key = `${item.observationId}:${item.ordinal}`;
+    if (!grouped.has(key)) {
+      grouped.set(key, []);
+    }
+
+    grouped.get(key).push(item);
+  }
+
+  return Array.from(grouped.values())
+    .map((variants) => {
+      const ordered = variants.slice().sort(compareDashboardListingVariantPriority);
+      return {
+        ...ordered[0],
+        variantCount: ordered.length,
+      };
+    })
+    .sort(compareDashboardListingRowsNewestFirst);
+}
+
+function compareDashboardListingVariantPriority(left, right) {
+  return compareIsoDescending(left.createdAt, right.createdAt)
+    || compareNullableNumbers(left.confidenceOverall, right.confidenceOverall, 'desc')
+    || compareBooleanDescending(
+      isDashboardProcessedExtractorVersion(left.extractorVersion),
+      isDashboardProcessedExtractorVersion(right.extractorVersion),
+    )
+    || compareStringDescending(left.listingId, right.listingId);
+}
+
+function matchesDashboardListingFilters(listing, filters, now) {
+  const reviewAmbiguityCount = Number(listing.reviewAmbiguityCount ?? listing.ambiguityCount ?? 0);
+
+  if (filters.q && !matchesDashboardTextQuery(filters.q, [
+    listing.address,
+    listing.city,
+    listing.state,
+    listing.listingSummary,
+    listing.sourceDisplayName,
+    listing.authorName,
+    listing.neighborhood,
+    listing.borough,
+    listing.listingType,
+    listing.intent,
+    listing.postUrl,
+    listing.bodyTextPreview,
+    ...listing.ambiguities,
+  ])) {
+    return false;
+  }
+
+  if (filters.priceMin !== null && !isNumberAtLeast(listing.priceAmount, filters.priceMin)) {
+    return false;
+  }
+
+  if (filters.borough && listing.borough !== filters.borough) {
+    return false;
+  }
+
+  if (filters.neighborhood && listing.neighborhood !== filters.neighborhood) {
+    return false;
+  }
+
+  if (filters.priceMax !== null && !isNumberAtMost(listing.priceAmount, filters.priceMax)) {
+    return false;
+  }
+
+  if (filters.bedsMin !== null && !isNumberAtLeast(resolveDashboardBeds(listing), filters.bedsMin)) {
+    return false;
+  }
+
+  if (filters.bedsMax !== null && !isNumberAtMost(resolveDashboardBeds(listing), filters.bedsMax)) {
+    return false;
+  }
+
+  if (filters.bathsMin !== null && !isNumberAtLeast(listing.baths, filters.bathsMin)) {
+    return false;
+  }
+
+  if (filters.minConfidence !== null && !isNumberAtLeast(listing.confidenceOverall, filters.minConfidence)) {
+    return false;
+  }
+
+  if (filters.hasAmbiguities === true && reviewAmbiguityCount === 0) {
+    return false;
+  }
+
+  if (filters.hasAmbiguities === false && reviewAmbiguityCount > 0) {
+    return false;
+  }
+
+  if (!matchesDashboardTimeWindow(listing.postedAt, filters.postedWithinHours, now)) {
+    return false;
+  }
+
+  return true;
+}
+
+function matchesDashboardPostFilters(post, filters, now) {
+  if (filters.q && !matchesDashboardTextQuery(filters.q, [
+    post.authorName,
+    post.sourceDisplayName,
+    post.postUrl,
+    post.bodyPreview,
+    post.bodyText,
+  ])) {
+    return false;
+  }
+
+  if (filters.processingStatus && post.processingStatus !== filters.processingStatus) {
+    return false;
+  }
+
+  if (!matchesDashboardTimeWindow(post.postedAt, filters.postedWithinHours, now)) {
+    return false;
+  }
+
+  return true;
+}
+
+function matchesDashboardTimeWindow(timestamp, postedWithinHours, now) {
+  if (postedWithinHours === null || postedWithinHours === undefined) {
+    return true;
+  }
+
+  const timestampMs = Date.parse(timestamp || '');
+  const nowMs = Date.parse(now || '');
+  if (Number.isNaN(timestampMs) || Number.isNaN(nowMs)) {
+    return false;
+  }
+
+  return timestampMs >= nowMs - (postedWithinHours * 60 * 60 * 1000);
+}
+
+function matchesDashboardTextQuery(query, values) {
+  const haystack = values
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase())
+    .join(' ');
+  return haystack.includes(String(query).toLowerCase());
+}
+
+function compareDashboardListingRows(left, right, sort) {
+  switch (sort) {
+    case 'oldest':
+      return compareIsoAscending(left.postedAt, right.postedAt)
+        || compareStringAscending(left.listingId, right.listingId);
+    case 'price-asc':
+      return compareNullableNumbers(left.priceAmount, right.priceAmount, 'asc')
+        || compareDashboardListingRowsNewestFirst(left, right);
+    case 'price-desc':
+      return compareNullableNumbers(left.priceAmount, right.priceAmount, 'desc')
+        || compareDashboardListingRowsNewestFirst(left, right);
+    case 'confidence-asc':
+      return compareNullableNumbers(left.confidenceOverall, right.confidenceOverall, 'asc')
+        || compareDashboardListingRowsNewestFirst(left, right);
+    case 'confidence-desc':
+      return compareNullableNumbers(left.confidenceOverall, right.confidenceOverall, 'desc')
+        || compareDashboardListingRowsNewestFirst(left, right);
+    case 'newest':
+    default:
+      return compareDashboardListingRowsNewestFirst(left, right);
+  }
+}
+
+function compareDashboardListingRowsNewestFirst(left, right) {
+  return compareIsoDescending(left.postedAt, right.postedAt)
+    || compareIsoDescending(left.capturedAt, right.capturedAt)
+    || compareStringDescending(left.listingId, right.listingId);
+}
+
+function compareDashboardPostRows(left, right, sort) {
+  if (sort === 'oldest') {
+    return compareIsoAscending(left.postedAt, right.postedAt)
+      || compareStringAscending(left.observationId, right.observationId);
+  }
+
+  return compareIsoDescending(left.postedAt, right.postedAt)
+    || compareIsoDescending(left.capturedAt, right.capturedAt)
+    || compareStringDescending(left.observationId, right.observationId);
+}
+
+function compareDashboardReviewRows(left, right, sort) {
+  if (sort === 'oldest') {
+    return compareIsoAscending(left.postedAt, right.postedAt)
+      || compareStringAscending(left.primaryId, right.primaryId);
+  }
+
+  return compareIsoDescending(left.postedAt, right.postedAt)
+    || compareIsoDescending(left.capturedAt, right.capturedAt)
+    || compareStringDescending(left.primaryId, right.primaryId);
+}
+
+function deriveListingIncompleteReasons(listing) {
+  const reasons = [];
+
+  if (listing.priceAmount === null || listing.priceAmount === undefined) {
+    reasons.push('Missing price');
+  }
+
+  if (!listing.neighborhood && !listing.borough) {
+    reasons.push('Missing location');
+  }
+
+  if (resolveDashboardBeds(listing) === null && listing.baths === null) {
+    reasons.push('Missing room counts');
+  }
+
+  return reasons;
+}
+
+function summarizeDashboardLocationResolution(fieldStates) {
+  return fieldStates.reduce((summary, fieldState) => {
+    const manualOverride = fieldState?.layers?.activeManualOverride || fieldState?.layers?.manualOverride;
+    const resolvedField = fieldState?.layers?.resolvedField;
+
+    if (isActiveManualOverride(manualOverride)) {
+      summary.manualCount += 1;
+    }
+
+    if (!resolvedField) {
+      return summary;
+    }
+
+    if (resolvedField.status === 'accepted') {
+      summary.acceptedCount += 1;
+    }
+    if (resolvedField.status === 'ambiguous') {
+      summary.ambiguousCount += 1;
+    }
+    if (resolvedField.status === 'candidate') {
+      summary.candidateCount += 1;
+    }
+    if (resolvedField.status === 'unresolved') {
+      summary.unresolvedCount += 1;
+    }
+
+    return summary;
+  }, {
+    acceptedCount: 0,
+    ambiguousCount: 0,
+    candidateCount: 0,
+    manualCount: 0,
+    unresolvedCount: 0,
+  });
+}
+
+function collectDashboardResolvedFieldReviewSignals(listing) {
+  const ambiguousReasons = [];
+  const incompleteReasons = [];
+  const fieldStates = Array.isArray(listing.locationFieldStates) ? listing.locationFieldStates : [];
+
+  for (const fieldState of fieldStates) {
+    if (isActiveManualOverride(fieldState?.layers?.activeManualOverride || fieldState?.layers?.manualOverride)) {
+      continue;
+    }
+
+    const resolvedField = fieldState?.layers?.resolvedField;
+    const fieldDefinition = DASHBOARD_LOCATION_FIELD_DEFINITION_BY_PATH.get(fieldState?.fieldPath);
+
+    if (!resolvedField || !fieldDefinition) {
+      continue;
+    }
+
+    if (resolvedField.status === 'ambiguous' && fieldDefinition.reviewStatuses.ambiguous) {
+      ambiguousReasons.push(buildDashboardResolvedReviewReason(fieldState, resolvedField, 'ambiguous'));
+      continue;
+    }
+
+    if (resolvedField.status === 'candidate' && fieldDefinition.reviewStatuses.candidate) {
+      incompleteReasons.push(buildDashboardResolvedReviewReason(fieldState, resolvedField, 'candidate'));
+      continue;
+    }
+
+    if (resolvedField.status === 'unresolved' && fieldDefinition.reviewStatuses.unresolved) {
+      incompleteReasons.push(buildDashboardResolvedReviewReason(fieldState, resolvedField, 'unresolved'));
+    }
+  }
+
+  return {
+    ambiguousReasons: uniqueStrings(ambiguousReasons),
+    incompleteReasons: uniqueStrings(incompleteReasons),
+  };
+}
+
+function buildDashboardResolvedReviewReason(fieldState, resolvedField, status) {
+  const label = fieldState?.label || fieldState?.fieldPath || 'Field';
+  const reasonLabel = humanizeDashboardReason(
+    resolvedField?.metadata?.reason
+    || resolvedField?.ambiguity?.reason
+    || resolvedField?.status,
+  );
+  const valuePreview = formatDashboardReviewValue(resolvedField?.value);
+
+  if (status === 'ambiguous') {
+    return valuePreview
+      ? `${label} resolution is ambiguous around ${valuePreview} (${reasonLabel}).`
+      : `${label} resolution is ambiguous (${reasonLabel}).`;
+  }
+
+  if (status === 'candidate') {
+    return valuePreview
+      ? `${label} has a candidate value ${valuePreview} that is not accepted yet (${reasonLabel}).`
+      : `${label} has a candidate value that is not accepted yet (${reasonLabel}).`;
+  }
+
+  return `${label} could not be resolved yet (${reasonLabel}).`;
+}
+
+function humanizeDashboardReason(value) {
+  const normalized = String(value || '').trim();
+  if (!normalized) {
+    return 'no reason recorded';
+  }
+
+  return normalized.replace(/_/gu, ' ');
+}
+
+function formatDashboardReviewValue(value) {
+  if (!hasEffectiveFallbackValue(value)) {
+    return '';
+  }
+
+  if (typeof value === 'string') {
+    return `"${summarizeText(value, 48)}"`;
+  }
+
+  return summarizeText(JSON.stringify(value), 48);
+}
+
+function collectDashboardListingReviewCandidates(listing) {
+  if (!listing) {
+    return [];
+  }
+
+  const reviewCandidates = [];
+  const resolvedSignals = collectDashboardResolvedFieldReviewSignals(listing);
+  const ambiguityReasons = uniqueStrings([
+    ...listing.ambiguities,
+    ...resolvedSignals.ambiguousReasons,
+  ]);
+
+  if (ambiguityReasons.length > 0) {
+    reviewCandidates.push({
+      reviewType: 'ambiguous',
+      reasonSummary: ambiguityReasons.length === 1
+        ? '1 ambiguity needs review'
+        : `${ambiguityReasons.length} ambiguities need review`,
+      reasons: ambiguityReasons,
+    });
+  }
+
+  if (Number(listing.confidenceOverall ?? 0) < DEFAULT_DASHBOARD_LOW_CONFIDENCE_THRESHOLD) {
+    reviewCandidates.push({
+      reviewType: 'low-confidence',
+      reasonSummary: `Confidence ${formatDashboardConfidence(listing.confidenceOverall)} is below ${formatDashboardConfidence(DEFAULT_DASHBOARD_LOW_CONFIDENCE_THRESHOLD)}`,
+      reasons: [
+        `Confidence ${formatDashboardConfidence(listing.confidenceOverall)} is below the review threshold ${formatDashboardConfidence(DEFAULT_DASHBOARD_LOW_CONFIDENCE_THRESHOLD)}`,
+      ],
+    });
+  }
+
+  const incompleteReasons = uniqueStrings([
+    ...deriveListingIncompleteReasons(listing),
+    ...resolvedSignals.incompleteReasons,
+  ]);
+  if (incompleteReasons.length) {
+    reviewCandidates.push({
+      reviewType: 'incomplete',
+      reasonSummary: incompleteReasons.join(', '),
+      reasons: incompleteReasons,
+    });
+  }
+
+  return reviewCandidates;
+}
+
+function buildDashboardListingReviewLinkTarget(listing) {
+  const [primaryReviewCandidate] = collectDashboardListingReviewCandidates(listing);
+
+  if (!primaryReviewCandidate) {
+    return null;
+  }
+
+  return {
+    queue: primaryReviewCandidate.reviewType,
+    reviewId: `${primaryReviewCandidate.reviewType}:${listing.listingId}`,
+  };
+}
+
+function buildDashboardReviewActions(item) {
+  const fieldStates = Array.isArray(item?.locationFieldStates) ? item.locationFieldStates : [];
+  const fieldPaths = fieldStates
+    .map((fieldState) => String(fieldState?.fieldPath || '').trim())
+    .filter(Boolean);
+
+  if (!item?.listingId || !fieldPaths.length) {
+    return {
+      manualOverride: {
+        supported: false,
+      },
+    };
+  }
+
+  return {
+    manualOverride: {
+      supported: true,
+      targetKind: 'listing_record',
+      targetId: item.listingId,
+      fieldPaths,
+      endpoints: {
+        clear: '/api/dashboard/review/manual-overrides/clear',
+        set: '/api/dashboard/review/manual-overrides',
+      },
+    },
+  };
+}
+
+function buildReviewItemFromListing(listing, latestJob, input) {
+  return {
+    address: listing.address ?? null,
+    borough: listing.borough ?? null,
+    city: listing.city ?? null,
+    extractorAmbiguityCount: listing.extractorAmbiguityCount ?? listing.ambiguityCount,
+    locationFieldStates: listing.locationFieldStates || [],
+    locationResolutionSummary: listing.locationResolutionSummary || null,
+    neighborhood: listing.neighborhood ?? null,
+    reviewType: input.reviewType,
+    primaryId: listing.listingId,
+    jobId: latestJob?.jobId || null,
+    listingId: listing.listingId,
+    observationId: listing.observationId,
+    runId: listing.runId,
+    sourceKey: listing.sourceKey,
+    sourceDisplayName: listing.sourceDisplayName,
+    state: listing.state ?? null,
+    postUrl: listing.postUrl,
+    authorName: listing.authorName,
+    postedAt: listing.postedAt,
+    postedAtText: listing.postedAtText,
+    capturedAt: listing.capturedAt,
+    summaryText: listing.listingSummary,
+    reasonSummary: input.reasonSummary,
+    reasons: input.reasons,
+    confidenceOverall: listing.confidenceOverall,
+    ambiguityCount: listing.reviewAmbiguityCount ?? listing.ambiguityCount,
+    resolvedAmbiguityCount: listing.resolvedAmbiguityCount ?? 0,
+    processingStatus: latestJob?.processingStatus || 'unprocessed',
+    linkTargets: {
+      listingId: listing.listingId,
+      observationId: listing.observationId,
+      runId: listing.runId,
+      jobId: latestJob?.jobId || null,
+    },
+  };
+}
+
+function buildReviewItemFromJob(job, relatedListing, input) {
+  return {
+    address: relatedListing?.address ?? null,
+    borough: relatedListing?.borough ?? null,
+    city: relatedListing?.city ?? null,
+    extractorAmbiguityCount: relatedListing?.extractorAmbiguityCount ?? relatedListing?.ambiguityCount ?? 0,
+    locationFieldStates: relatedListing?.locationFieldStates || [],
+    locationResolutionSummary: relatedListing?.locationResolutionSummary || null,
+    neighborhood: relatedListing?.neighborhood ?? null,
+    reviewType: input.reviewType,
+    primaryId: job.jobId,
+    jobId: job.jobId,
+    listingId: relatedListing?.listingId || null,
+    observationId: job.observationId,
+    runId: job.runId,
+    sourceKey: job.sourceKey,
+    sourceDisplayName: job.sourceDisplayName,
+    state: relatedListing?.state ?? null,
+    postUrl: job.postUrl,
+    authorName: job.authorName,
+    postedAt: job.postedAt,
+    postedAtText: job.postedAtText,
+    capturedAt: job.capturedAt,
+    summaryText: relatedListing?.listingSummary || job.bodyPreview || job.postUrl || job.jobId,
+    reasonSummary: input.reasonSummary,
+    reasons: input.reasons,
+    confidenceOverall: relatedListing?.confidenceOverall ?? null,
+    ambiguityCount: relatedListing?.reviewAmbiguityCount ?? relatedListing?.ambiguityCount ?? 0,
+    resolvedAmbiguityCount: relatedListing?.resolvedAmbiguityCount ?? 0,
+    processingStatus: job.processingStatus,
+    linkTargets: {
+      listingId: relatedListing?.listingId || null,
+      observationId: job.observationId,
+      runId: job.runId,
+      jobId: job.jobId,
+    },
+  };
+}
+
+function countDashboardReviewItems(items) {
+  return items.reduce((counts, item) => {
+    counts[item.reviewType] = (counts[item.reviewType] || 0) + 1;
+    return counts;
+  }, {
+    ambiguous: 0,
+    'low-confidence': 0,
+    incomplete: 0,
+    pending: 0,
+    failed: 0,
+  });
+}
+
+function resolveDashboardBeds(listing) {
+  if (listing.beds !== null && listing.beds !== undefined) {
+    return listing.beds;
+  }
+
+  if (listing.roomsAvailable !== null && listing.roomsAvailable !== undefined) {
+    return listing.roomsAvailable;
+  }
+
+  return null;
+}
+
+function isDashboardProcessedExtractorVersion(value) {
+  return String(value || '').includes('|');
+}
+
+function compareNullableNumbers(left, right, direction = 'asc') {
+  const leftNull = left === null || left === undefined || Number.isNaN(Number(left));
+  const rightNull = right === null || right === undefined || Number.isNaN(Number(right));
+
+  if (leftNull && rightNull) {
+    return 0;
+  }
+
+  if (leftNull) {
+    return 1;
+  }
+
+  if (rightNull) {
+    return -1;
+  }
+
+  return direction === 'asc'
+    ? Number(left) - Number(right)
+    : Number(right) - Number(left);
+}
+
+function compareBooleanDescending(left, right) {
+  return Number(Boolean(right)) - Number(Boolean(left));
+}
+
+function compareIsoDescending(left, right) {
+  const leftMs = Date.parse(left || '');
+  const rightMs = Date.parse(right || '');
+
+  if (Number.isNaN(leftMs) && Number.isNaN(rightMs)) {
+    return 0;
+  }
+
+  if (Number.isNaN(leftMs)) {
+    return 1;
+  }
+
+  if (Number.isNaN(rightMs)) {
+    return -1;
+  }
+
+  return rightMs - leftMs;
+}
+
+function compareIsoAscending(left, right) {
+  return compareIsoDescending(right, left);
+}
+
+function compareStringDescending(left, right) {
+  return String(right || '').localeCompare(String(left || ''));
+}
+
+function compareStringAscending(left, right) {
+  return String(left || '').localeCompare(String(right || ''));
+}
+
+function isNumberAtLeast(value, minimum) {
+  return value !== null && value !== undefined && Number(value) >= Number(minimum);
+}
+
+function isNumberAtMost(value, maximum) {
+  return value !== null && value !== undefined && Number(value) <= Number(maximum);
+}
+
+function formatDashboardConfidence(value) {
+  return Number(value ?? 0).toFixed(2);
+}
+
+function resolveDashboardPostedAt(capturedAt, postedAtText) {
+  const capturedMs = Date.parse(capturedAt || '');
+
+  if (Number.isNaN(capturedMs)) {
+    return null;
+  }
+
+  const normalized = String(postedAtText || '').trim();
+  if (!normalized) {
+    return capturedAt || null;
+  }
+
+  const relativeMs = parseDashboardRelativePostedAt(capturedMs, normalized);
+  if (relativeMs !== null) {
+    return new Date(relativeMs).toISOString();
+  }
+
+  const weekdayMs = parseDashboardWeekdayPostedAt(capturedMs, normalized);
+  if (weekdayMs !== null) {
+    return new Date(weekdayMs).toISOString();
+  }
+
+  const absoluteMs = parseDashboardAbsolutePostedAt(capturedMs, normalized);
+  if (absoluteMs !== null) {
+    return new Date(absoluteMs).toISOString();
+  }
+
+  return capturedAt || null;
+}
+
+function parseDashboardRelativePostedAt(capturedMs, value) {
+  const normalized = value.toLowerCase().replace(/\./g, '').trim();
+  if (normalized === 'just now') {
+    return capturedMs;
+  }
+
+  const relativeMatch = normalized.match(/^(\d+)\s*(m|min|mins|minute|minutes|h|hr|hrs|hour|hours|d|day|days|w|wk|wks|week|weeks)$/u);
+  if (relativeMatch) {
+    const amount = Number(relativeMatch[1]);
+    const unit = relativeMatch[2];
+
+    if (unit.startsWith('m')) {
+      return capturedMs - (amount * 60 * 1000);
+    }
+    if (unit.startsWith('h')) {
+      return capturedMs - (amount * 60 * 60 * 1000);
+    }
+    if (unit.startsWith('d')) {
+      return capturedMs - (amount * 24 * 60 * 60 * 1000);
+    }
+    if (unit.startsWith('w')) {
+      return capturedMs - (amount * 7 * 24 * 60 * 60 * 1000);
+    }
+  }
+
+  const yesterdayMatch = value.match(/^yesterday(?: at (.+))?$/iu);
+  if (yesterdayMatch) {
+    const base = new Date(capturedMs);
+    base.setDate(base.getDate() - 1);
+    applyDashboardTimeOfDay(base, yesterdayMatch[1]);
+    return base.getTime();
+  }
+
+  return null;
+}
+
+function parseDashboardWeekdayPostedAt(capturedMs, value) {
+  const weekdayMatch = value.match(/^(monday|mon|tuesday|tue|wednesday|wed|thursday|thu|friday|fri|saturday|sat|sunday|sun)(?: at (.+))?$/iu);
+  if (!weekdayMatch) {
+    return null;
+  }
+
+  const weekdayIndex = resolveDashboardWeekdayIndex(weekdayMatch[1]);
+  if (weekdayIndex === null) {
+    return null;
+  }
+
+  const base = new Date(capturedMs);
+  const diff = (base.getDay() - weekdayIndex + 7) % 7;
+  base.setDate(base.getDate() - diff);
+  applyDashboardTimeOfDay(base, weekdayMatch[2]);
+  return base.getTime();
+}
+
+function parseDashboardAbsolutePostedAt(capturedMs, value) {
+  const captureDate = new Date(capturedMs);
+  const captureYear = captureDate.getFullYear();
+  const cleaned = value
+    .replace(/\b(\d{1,2})(st|nd|rd|th)\b/giu, '$1')
+    .replace(/\s+at\s+/iu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const hasYear = /\b\d{4}\b/u.test(cleaned);
+  const withYear = hasYear ? cleaned : `${cleaned}, ${captureYear}`;
+  let parsedMs = Date.parse(withYear);
+
+  if (Number.isNaN(parsedMs)) {
+    return null;
+  }
+
+  if (!hasYear && parsedMs > capturedMs + (36 * 60 * 60 * 1000)) {
+    parsedMs = Date.parse(withYear.replace(String(captureYear), String(captureYear - 1)));
+  }
+
+  return Number.isNaN(parsedMs) ? null : parsedMs;
+}
+
+function applyDashboardTimeOfDay(date, value) {
+  if (!value) {
+    return;
+  }
+
+  const match = String(value).trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/iu);
+  if (!match) {
+    return;
+  }
+
+  let hours = Number(match[1]) % 12;
+  const minutes = Number(match[2] || 0);
+  const meridiem = match[3].toUpperCase();
+
+  if (meridiem === 'PM') {
+    hours += 12;
+  }
+
+  date.setHours(hours, minutes, 0, 0);
+}
+
+function resolveDashboardWeekdayIndex(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  const day = normalized.slice(0, 3);
+
+  switch (day) {
+    case 'sun':
+      return 0;
+    case 'mon':
+      return 1;
+    case 'tue':
+      return 2;
+    case 'wed':
+      return 3;
+    case 'thu':
+      return 4;
+    case 'fri':
+      return 5;
+    case 'sat':
+      return 6;
+    default:
+      return null;
+  }
 }
 
 function addMillisecondsToIso(input, milliseconds) {
@@ -2442,6 +5437,90 @@ function formatProcessingExtractorVersion(input) {
   ].join('|');
 }
 
+function resolveEffectiveFieldValue(input) {
+  const currentManualOverride = input.manualOverride || null;
+  const activeManualOverride = currentManualOverride
+    && currentManualOverride.status === 'active'
+    && !currentManualOverride.clearedAt
+      ? currentManualOverride
+      : null;
+  const currentResolvedField = input.resolvedField || null;
+  const acceptedResolvedField = currentResolvedField?.status === 'accepted'
+    ? currentResolvedField
+    : null;
+  const rawExtracted = {
+    layer: 'raw_extracted',
+    source: input.rawExtractedSource || 'listing_record',
+    value: input.rawExtractedValue ?? null,
+    isPresent: hasEffectiveFallbackValue(input.rawExtractedValue),
+  };
+  const rawObservation = {
+    layer: 'raw_observation',
+    source: input.rawObservationSource || 'observation',
+    value: input.rawObservationValue ?? null,
+    isPresent: hasEffectiveFallbackValue(input.rawObservationValue),
+  };
+
+  let selected = {
+    layer: 'missing',
+    precedenceRank: 5,
+    value: null,
+    recordId: null,
+    reason: 'No manual, resolved, raw extracted, or raw observation-derived value is present.',
+  };
+
+  if (activeManualOverride) {
+    selected = {
+      layer: 'manual_override',
+      precedenceRank: 1,
+      value: activeManualOverride.value,
+      recordId: activeManualOverride.id,
+      reason: 'Active manual override wins over all lower layers.',
+    };
+  } else if (acceptedResolvedField) {
+    selected = {
+      layer: 'resolved_field',
+      precedenceRank: 2,
+      value: acceptedResolvedField.value,
+      recordId: acceptedResolvedField.id,
+      reason: 'Accepted resolved field wins when no active manual override exists.',
+    };
+  } else if (rawExtracted.isPresent) {
+    selected = {
+      layer: 'raw_extracted',
+      precedenceRank: 3,
+      value: rawExtracted.value,
+      recordId: null,
+      reason: 'Raw extracted value wins when no higher layer is active.',
+    };
+  } else if (rawObservation.isPresent) {
+    selected = {
+      layer: 'raw_observation',
+      precedenceRank: 4,
+      value: rawObservation.value,
+      recordId: null,
+      reason: 'Observation-derived fallback wins only when extracted and higher layers are absent.',
+    };
+  }
+
+  return {
+    targetKind: input.targetKind,
+    targetId: input.targetId,
+    fieldPath: input.fieldPath,
+    effectiveValue: selected.value,
+    effectiveLayer: selected.layer,
+    selected,
+    layers: {
+      manualOverride: currentManualOverride,
+      activeManualOverride,
+      resolvedField: currentResolvedField,
+      acceptedResolvedField,
+      rawExtracted,
+      rawObservation,
+    },
+  };
+}
+
 function buildObservationScopeFilters(input, observationAlias = 'o', sourceAlias = 's') {
   const clauses = [];
   const params = [];
@@ -2481,6 +5560,82 @@ function buildNonEmptyTextClause(columnName) {
 
 function buildEmptyTextClause(columnName) {
   return `COALESCE(NULLIF(TRIM(${columnName}), ''), '') = ''`;
+}
+
+function normalizeManualOverrideAction(value) {
+  const normalized = String(value || 'set').trim().toLowerCase();
+  return normalized === 'clear' ? 'clear' : 'set';
+}
+
+function hasManualOverrideValue(value) {
+  if (value === undefined || value === null) {
+    return false;
+  }
+
+  if (typeof value === 'string') {
+    return value.trim().length > 0;
+  }
+
+  return true;
+}
+
+function isActiveManualOverride(value) {
+  return Boolean(value && value.status === 'active' && !value.clearedAt);
+}
+
+function hasEffectiveFallbackValue(value) {
+  if (value === null || value === undefined) {
+    return false;
+  }
+
+  if (typeof value === 'string') {
+    return value.trim().length > 0;
+  }
+
+  return true;
+}
+
+function normalizeNullableText(value) {
+  const normalized = String(value || '').trim();
+  return normalized || null;
+}
+
+function buildManualOverrideAuditPayload(input) {
+  return compactObject({
+    action: input.action,
+    fieldPath: input.fieldPath,
+    manualOverrideId: input.manualOverride?.id || null,
+    reviewId: input.reviewId || null,
+    reason: input.reason || null,
+    previous: input.previousManualOverride ? {
+      id: input.previousManualOverride.id,
+      status: input.previousManualOverride.status,
+      value: input.previousManualOverride.value,
+      reason: input.previousManualOverride.reason,
+      operatorId: input.previousManualOverride.operatorId,
+      clearedAt: input.previousManualOverride.clearedAt,
+      updatedAt: input.previousManualOverride.updatedAt,
+    } : null,
+    next: input.manualOverride ? {
+      id: input.manualOverride.id,
+      status: input.manualOverride.status,
+      value: input.manualOverride.value,
+      reason: input.manualOverride.reason,
+      operatorId: input.manualOverride.operatorId,
+      clearedAt: input.manualOverride.clearedAt,
+      updatedAt: input.manualOverride.updatedAt,
+    } : null,
+  });
+}
+
+function compactObject(value) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entry]) => entry !== undefined),
+  );
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 function toJson(value, fallback = null) {

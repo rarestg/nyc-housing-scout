@@ -58,7 +58,7 @@ test('network normalizer recovers the Alison case from a reduced multi-document 
   assert.equal(result.documents.length, 2);
   assert.equal(result.warnings.length, 0);
   assert.equal(candidate.postId, '24405637689134137');
-  assert.equal(candidate.postUrl, 'https://www.facebook.com/groups/williamsburggreenpointhousing/posts/24405637689134137/');
+  assert.equal(candidate.postUrl, 'https://www.facebook.com/groups/2664056243718928/posts/24405637689134137/');
   assert.equal(candidate.storyId, 'UzpfSTEzNjE1MjQ5NzY6Vks6MjQ0MDU2Mzc2ODkxMzQxMzc=');
   assert.equal(candidate.storyIdDecoded, 'S:_I1361524976:VK:24405637689134137');
   assert.equal(candidate.feedbackId, 'ZmVlZGJhY2s6MjQ0MDU2Mzc2ODkxMzQxMzc=');
@@ -119,7 +119,7 @@ test('fragment normalizer recovers identity-grade fields from reduced matched fr
   const [candidate] = extractFacebookPostCandidatesFromEnvelopeItem(envelopeItem);
 
   assert.equal(candidate.postId, '24387553734275866');
-  assert.equal(candidate.postUrl, 'https://www.facebook.com/groups/williamsburggreenpointhousing/posts/24387553734275866/');
+  assert.equal(candidate.postUrl, 'https://www.facebook.com/groups/2664056243718928/posts/24387553734275866/');
   assert.equal(candidate.storyId, 'UzpfSTEwMDAwNjI2NzA0MDk4MzpWSzoyNDM4NzU1MzczNDI3NTg2Ng==');
   assert.equal(candidate.feedbackId, 'ZmVlZGJhY2s6MjQzODc1NTM3MzQyNzU4NjY=');
   assert.equal(candidate.authorName, 'Jiadai He');

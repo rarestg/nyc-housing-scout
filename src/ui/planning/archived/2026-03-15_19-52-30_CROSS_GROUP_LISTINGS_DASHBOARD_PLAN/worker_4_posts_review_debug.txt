@@ -1,0 +1,136 @@
+Worker 4 Task: Posts, Review, And Debug
+=======================================
+
+Mission
+-------
+Build the evidence-layer and action-layer routes around the listings workspace, while preserving the current run inspector under an explicitly secondary Debug surface.
+
+Read first
+----------
+1. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/README.txt`
+2. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/01_REVIEW_SYNTHESIS.txt`
+3. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/02_REDESIGN_SPEC.txt`
+4. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/03_PHASED_IMPLEMENTATION_PLAN.txt`
+5. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/04_SHARED_CONTRACTS_AND_BOUNDARIES.txt`
+6. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_1_status.txt`
+7. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_2_status.txt`
+8. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_4_status.txt`
+
+Dependency note
+---------------
+Stage A is complete. Use the concrete shell and API seams that now exist:
+
+- the app shell already exists under `src/ui/dashboard/app/`
+- the posts API now exists at:
+  - `GET /api/dashboard/posts`
+  - `GET /api/dashboard/posts/:observationId`
+- the review API now exists at:
+  - `GET /api/dashboard/review`
+- the debug API now exists at:
+  - `GET /api/dashboard/debug/runs`
+  - `GET /api/dashboard/debug/runs/:runId`
+- list endpoints now return the paginated dashboard envelope:
+  - `items`
+  - `count`
+  - `pagination`
+  - `sort`
+  - `filters`
+
+Ownership
+---------
+You own:
+
+- `src/ui/dashboard/routes/posts/`
+- `src/ui/dashboard/routes/review/`
+- `src/ui/dashboard/routes/debug/`
+- minimal import wiring in `src/ui/dashboard/app/DashboardApp.jsx` needed to replace the route placeholders
+
+You do not own:
+
+- shared shell/routing
+- storage queries/API contracts
+- listings route implementation
+- `src/ui/inspection-server.js` except for a clearly coordinated import seam fix if absolutely required
+
+Core deliverables
+-----------------
+1. `Posts` route:
+   - cross-group chronological feed/table
+   - body preview
+   - author
+   - source group
+   - freshness
+   - processing status
+   - linked listing count
+   - detail pane support
+2. `Review` route:
+   - ambiguous items
+   - low-confidence items
+   - pending jobs
+   - failed jobs
+   - incomplete items
+   - later room for duplicate-suspect queues
+3. `Debug` route:
+   - preserve the current run-centric inspection power
+   - clearly demote it from the primary home flow
+   - keep provenance, artifacts, validation, and raw payload access available
+4. Replace the existing placeholder routes with route-owned modules and wire them into `DashboardApp.jsx`.
+
+Requirements
+------------
+- Make it easy to move from a listing to the raw post evidence and then into debug only if needed.
+- Do not let Debug reclaim visual dominance over the product.
+- Keep JSON and artifacts available, but not as the primary browsing surface.
+- Use the same table/list plus detail-pane philosophy where it makes sense.
+- Reuse the shared shell primitives instead of rebuilding them:
+  - `useDashboardShellSlots(...)`
+  - `DataTable`
+  - `RouteScaffold`
+  - `FilterBar`, `FilterField`, `FilterInput`, `FilterSelect`
+  - `useUrlQueryState`
+- Consume the new paginated API envelope instead of assuming the legacy inspector `{ count, items }` shape.
+
+Important product framing
+-------------------------
+The user cares most about actual listings. `Posts` exists because the raw Facebook post is still the evidence layer. `Debug` exists because provenance matters. Neither should overpower the main listings experience.
+
+Concrete Stage A seams
+----------------------
+- existing placeholders to replace:
+  - `src/ui/dashboard/app/placeholders/PostsRoutePlaceholder.jsx`
+  - `src/ui/dashboard/app/placeholders/ReviewRoutePlaceholder.jsx`
+  - `src/ui/dashboard/app/placeholders/DebugRoutePlaceholder.jsx`
+- generated build artifact:
+  - `src/ui/dashboard/dist/app.js`
+  - do not hand-edit this file; only let the dashboard build regenerate it during validation if needed
+- the legacy inspector remains reachable at:
+  - `/inspector`
+- for `Debug`, prefer a shell-native route that links to `/inspector` as a fallback rather than pushing users directly out of the dashboard immediately
+- review responses include queue metadata such as `queueCounts` and `thresholds.lowConfidence`
+- posts are observation-centric for now, so repeated seen observations may still appear; do not try to solve stable-post collapse in this pass
+
+Validation
+----------
+- verify routes against real Williamsburg data
+- confirm links between listings, posts, review, and debug contexts work
+- confirm debug still covers runs, observations, jobs, listings, steps, artifacts, and validation
+- confirm the routes read the new dashboard envelope correctly
+- confirm `/posts`, `/review`, and `/debug` render inside the shared shell rather than bypassing it
+
+Handoff requirements
+--------------------
+Update `handoffs/worker_4_status.txt`:
+
+- when you start
+- if route/API blockers appear
+- when you finish
+
+Include:
+- files changed
+- commands run
+- unresolved debug integration seams
+- any routes intentionally deferred
+
+Success criteria
+----------------
+The app gains strong evidence and review workflows without falling back into the old run-first product shape, and the existing debug power remains available behind a clearly secondary route.

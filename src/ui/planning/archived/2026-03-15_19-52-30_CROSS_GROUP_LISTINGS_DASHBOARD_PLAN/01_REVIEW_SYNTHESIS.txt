@@ -1,0 +1,90 @@
+Review Synthesis
+================
+
+Source material
+---------------
+This synthesis combines:
+
+- the live UI review
+- the code-only UI/UX review
+- the follow-up discussion about cards vs tables vs map
+
+What both reviews agreed on
+---------------------------
+1. The current local read-only architecture is correct.
+   - Keep the thin Node server.
+   - Keep SQLite as canonical.
+   - Do not replace this with a heavier hosted-style stack right now.
+
+2. The frontend is aimed at the wrong primary job.
+   - It currently optimizes for run-by-run inspection.
+   - The broader product should optimize for cross-group listing awareness.
+
+3. The interface is too debug-first.
+   - raw run IDs are too prominent
+   - provenance/debug surfaces compete with user-facing listing information
+   - badges and slash-separated metrics add noise
+
+4. The best primary browsing primitive is a dense table/list plus a detail pane.
+   - not a card grid
+   - not a map-first UI
+
+5. Runs should survive, but as a secondary Debug surface.
+
+What matters most for the product
+---------------------------------
+The main question is not:
+
+- which run completed
+- which source is most active
+- how many artifacts were written
+
+The main question is:
+
+- what are the newest listings across all groups
+- which ones match what I care about
+- what changed since I last checked
+- what raw post text supports the extracted listing
+- what needs review versus what is already trustworthy
+
+Specific problems to fix
+------------------------
+- Inverted hierarchy: machine IDs and debug metadata dominate.
+- Weak scanability: slash-compressed stats and badge noise slow reading.
+- Fragile layout: long source keys, artifact paths, URLs, and timestamps collide.
+- Wrong default entry point: the UI opens as a run picker instead of a listings workspace.
+- Overexposed debug affordances: validation, artifacts, and run steps get equal weight with listings and posts.
+- Client-side-only browsing model: too much full-payload rendering and too little server-backed filtering.
+
+Implications for redesign
+-------------------------
+The redesign should:
+
+- make `Listings` the default/home screen
+- make `Posts` the evidence companion screen
+- make `Review` the place for ambiguous, low-confidence, pending, failed, and incomplete items
+- keep `Debug` for runs, artifacts, validation, and provenance-heavy forensics
+- favor newest-first browsing and strong filters over decorative dashboard cards
+
+Cards vs table vs map
+---------------------
+Recommended shape:
+
+- use cards sparingly for small summary modules only
+- use a table/list as the main listings and posts browsing surface
+- use a right-side detail pane for context and provenance
+- treat map as later-stage optional enrichment, not a core view
+
+Why map is not primary
+----------------------
+- location is often missing or vague
+- neighborhood-level signals are more honest than exact pins today
+- a map would imply precision the data often does not have
+
+Backend note carried forward
+----------------------------
+Duplicate or nearly identical posts across groups are real and important, but the first implementation note belongs to the backend/storage team:
+
+- eventually cluster or flag duplicate-suspect posts/listings across groups
+- later expose duplicate-cluster metadata to the frontend
+- do not block the frontend redesign on duplicate resolution

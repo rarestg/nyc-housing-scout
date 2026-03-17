@@ -1,0 +1,102 @@
+Worker 2 Task: App Shell And Shared Primitives
+==============================================
+
+Mission
+-------
+Build the new listing-first dashboard shell and the shared frontend primitives the route workers will build on top of.
+
+Read first
+----------
+1. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/README.txt`
+2. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/01_REVIEW_SYNTHESIS.txt`
+3. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/02_REDESIGN_SPEC.txt`
+4. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/03_PHASED_IMPLEMENTATION_PLAN.txt`
+5. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/04_SHARED_CONTRACTS_AND_BOUNDARIES.txt`
+6. `src/ui/planning/archived/2026-03-15_19-52-30_CROSS_GROUP_LISTINGS_DASHBOARD_PLAN/handoffs/worker_2_status.txt`
+
+Ownership
+---------
+You own:
+
+- frontend stack additions in `package.json`
+- `src/ui/dashboard/app/`
+- `src/ui/dashboard/components/` shared primitives
+- `src/ui/dashboard/lib/`
+- `src/ui/dashboard/styles/`
+- app structure/shared UI contract updates in `04_SHARED_CONTRACTS_AND_BOUNDARIES.txt`
+
+You do not own:
+
+- storage query helpers
+- API contract logic
+- listings route implementation
+- posts/review/debug route implementation
+
+Core deliverables
+-----------------
+1. New dashboard app bootstrapping.
+2. App shell with:
+   - left navigation rail
+   - top filter/search area
+   - main route outlet
+   - right detail pane shell
+3. Shared route scaffolding for:
+   - `Listings`
+   - `Posts`
+   - `Review`
+   - `Debug`
+4. Shared frontend primitives:
+   - table wrapper
+   - loading/empty/error states
+   - timestamp and formatting utilities
+   - query-state helpers tied to the URL
+   - minimal badge/stat primitives that avoid the old clutter patterns
+5. Baseline responsive and accessibility behavior.
+
+Requirements
+------------
+- `Listings` must be the default route.
+- Build for dense operator/dashboard browsing, not tall card stacks.
+- Humanized time must be a first-class formatter.
+- Avoid reintroducing slash-separated metrics and badge walls.
+- Keep debug/provenance surfaces possible, but not visually dominant in the shell.
+
+Constraints
+-----------
+- You are not alone in the codebase. Do not revert or overwrite work from others.
+- Do not own route-specific business logic beyond stubs/placeholders and shared hooks.
+- If you need a server/static asset integration seam, note it clearly for the integrator or Worker 1 instead of taking over API ownership.
+
+Recommended stack
+-----------------
+- small React app
+- TanStack Table for dense list surfaces
+- minimal routing
+- URL-driven filter state
+
+If you believe a lighter or better variant is needed, document the reason before changing direction.
+
+Validation
+----------
+- the new app shell boots locally
+- routes render inside the shell
+- filter state can round-trip through the URL
+- responsive behavior does not collapse into the old stacked run-rail layout problem
+
+Handoff requirements
+--------------------
+Update `handoffs/worker_2_status.txt`:
+
+- when you start
+- if app structure changes or blockers appear
+- when you finish
+
+Include:
+- files changed
+- commands run
+- package/tooling changes
+- unresolved seams for Workers 3 and 4
+
+Success criteria
+----------------
+Workers 3 and 4 should be able to plug route-level features into a stable, listing-first dashboard shell without rebuilding formatting, routing, layout, or detail-pane primitives themselves.

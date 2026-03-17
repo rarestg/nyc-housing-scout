@@ -1,0 +1,72 @@
+Phase 1 Status
+==============
+
+Status
+------
+complete
+
+Started at
+----------
+2026-03-16 10:54 EDT
+
+Finished at
+-----------
+2026-03-16 11:19 EDT
+
+Owned paths
+-----------
+- `src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `src/ui/dashboard/routes/review/ReviewRoute.jsx`
+- `src/ui/dashboard/routes/debug/DebugRoute.jsx`
+- `src/ui/dashboard/routes/shared/route-support.jsx`
+- `src/ui/dashboard/styles/dashboard.css`
+
+Files changed
+-------------
+- `src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `src/ui/dashboard/routes/review/ReviewRoute.jsx`
+- `src/ui/dashboard/routes/debug/DebugRoute.jsx`
+- `src/ui/dashboard/routes/shared/route-support.jsx`
+- `src/ui/dashboard/styles/dashboard.css`
+- `test/dashboard-api.test.js`
+- `src/ui/planning/archived/2026-03-16_10-48-20_FRONTEND_SIMPLIFICATION_EXECUTION_PLAN/handoffs/phase_1_status.txt`
+
+Commands run
+------------
+- `npm test`
+- `npm run build:dashboard`
+- `npm run inspect:ui`
+- `node -e 'fetch("http://127.0.0.1:4310/api/dashboard/posts?page=2") ...'`
+- `node -e 'fetch("http://127.0.0.1:4310/api/dashboard/review?page=2") ...'`
+- `node -e 'fetch("http://127.0.0.1:4310/api/dashboard/debug/runs") ...'`
+- `agent-browser open 'http://127.0.0.1:4310/posts?detail=open&observationId=obs_001102' && agent-browser wait --load networkidle && agent-browser wait --text 'Outside current page' && agent-browser wait --text 'obs_001102' && agent-browser wait --text 'Page 1 of 24'`
+- `agent-browser open 'http://127.0.0.1:4310/review?detail=open&reviewId=incomplete%3Alst_000211' && agent-browser wait --load networkidle && agent-browser wait --text 'Outside current page' && agent-browser wait --text 'Missing price' && agent-browser wait --text 'Page 1 of 6'`
+- `agent-browser open 'http://127.0.0.1:4310/review?queue=failed&detail=open&reviewId=incomplete%3Alst_000211' && agent-browser wait --load networkidle && agent-browser wait --text 'Outside current page' && agent-browser wait --text 'Missing price' && agent-browser wait --text 'Page 1 of 1'`
+- `agent-browser open 'http://127.0.0.1:4310/debug/runs/2026-03-16T14-58-58-454Z?detail=open' && agent-browser wait --load networkidle && agent-browser wait --text '2026-03-16T14-58-58-454Z' && agent-browser wait --text 'Page 1 of 1' && agent-browser wait --fn \"!document.body.innerText.includes('Outside current page')\"`
+- `agent-browser open 'http://127.0.0.1:4310/debug/runs/2026-03-16T14-58-58-454Z?detail=open' && agent-browser wait --load networkidle && agent-browser snapshot -i`
+- fresh-context review rerun after the follow-up fix confirmed the stale-detail and review deep-link findings were resolved
+
+Blockers
+--------
+- none
+
+Open questions
+--------------
+- Current data only returns one page of debug runs, so the required `/debug/runs/<real-run-id>?detail=open` smoke check verified deep-linked detail and the normal paginated table, but not an off-page debug selection state.
+
+Deleted focused-mode code
+-------------------------
+- `PostsRoute.jsx`: deleted `buildFocusedPostRow`, `focusedPostRow`, `isFocusedPostMode`, `isFocusedPostPending`, `isFocusedPostError`, `visiblePostItems`, focused summary/footer branches, focused caption branch, and the focused-only notice/loading/error render path.
+- `ReviewRoute.jsx`: deleted `isFocusedReviewMode`, `isFocusedReviewPending`, `isFocusedReviewError`, `visibleReviewItems`, focused summary/footer branches, focused caption branch, and the focused-only notice/loading/error render path.
+- `DebugRoute.jsx`: deleted `buildFocusedRunRow`, `focusedRunRow`, `isFocusedRunMode`, `isFocusedRunPending`, `isFocusedRunError`, `visibleRunItems`, `handleClearRunFocus`, focused summary/footer branches, focused caption branch, and the focused-only notice/loading/error render path.
+- `route-support.jsx`: deleted `FocusedTableNotice`.
+- `dashboard.css`: deleted `.route-focus-banner`, `.route-focus-copy-block`, `.route-focus-title`, `.route-focus-copy`, and the related responsive banner rules.
+
+Handoff summary
+---------------
+- Posts, Review, and Debug now always render their normal paginated tables.
+- Deep-linked detail still opens on all three routes.
+- Posts and Review now expose off-page selection honestly with the existing detail-meta warning chip plus `Open detail is outside this page.` footer text instead of rebuilding a one-row table.
+- Posts, Review, and Debug now reject stale detail payloads unless the fetched record still matches the active selection ID, so selection changes and failed deep links no longer reuse the previous drawer payload.
+- Review deep links now resolve through the canonical unfiltered `GET /api/dashboard/review/:reviewId` path, so a mismatched queue filter still opens the selected detail with honest off-page messaging.
+- Debug keeps the normal table and deep-linked detail path; with the current live data set, the selected run still sits on page 1 so no off-page warning appears for the required smoke-check URL.

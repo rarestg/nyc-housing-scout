@@ -1,0 +1,139 @@
+PR-Sized Phase Breakdown
+========================
+
+Execution model
+---------------
+This bundle is intentionally split into mergeable, low-to-medium sized PRs with a clear dependency chain.
+
+Phase 1: Remove Secondary-Route Focused Mode
+--------------------------------------------
+Goal
+- delete the focused single-record table behavior from Posts, Review, and Debug
+
+Main files
+- `src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `src/ui/dashboard/routes/review/ReviewRoute.jsx`
+- `src/ui/dashboard/routes/debug/DebugRoute.jsx`
+- `src/ui/dashboard/routes/shared/route-support.jsx`
+- `src/ui/dashboard/styles/dashboard.css`
+
+Expected result
+- no focused-row adapters
+- no focused-row loading/error branches
+- no focused banner
+- deep-linked detail still works
+- off-page state is explicit
+
+Validation
+- `npm test`
+- `npm run build:dashboard`
+- `npm run inspect:ui`
+
+Phase 2: Trim Secondary-Route Chrome And Actions
+------------------------------------------------
+Goal
+- simplify Posts, Review, and Debug after focused mode is gone
+
+Main files
+- `src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `src/ui/dashboard/routes/review/ReviewRoute.jsx`
+- `src/ui/dashboard/routes/debug/DebugRoute.jsx`
+
+Expected result
+- no summary strips on secondary routes
+- no narrative footers on secondary routes
+- one action cluster per route, preferably in the drawer header
+- Posts and Review stop duplicating debug/JSON affordances
+
+Validation
+- `npm test`
+- `npm run build:dashboard`
+
+Phase 3: Backend Review Link Targets
+------------------------------------
+Goal
+- move review navigation semantics out of frontend heuristics and into the backend read model
+
+Main files
+- `src/storage/sqlite-storage.js`
+- `src/ui/inspection-server.js` if payload wiring changes are needed
+- `src/ui/dashboard/routes/listings/ListingsRoute.jsx`
+- `src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `test/dashboard-api.test.js`
+
+Expected result
+- listing payloads provide canonical review navigation info
+- post linked-listing payloads provide canonical review navigation info
+- frontend derivation helpers are deleted
+
+Validation
+- `npm test`
+- endpoint and UI smoke checks for listing-to-review and post-to-review flows
+
+Phase 4: Shell And CSS Cleanup
+------------------------------
+Goal
+- remove low-value shell branching and collapse duplicated style paths
+
+Main files
+- `src/ui/dashboard/app/AppShell.jsx`
+- `src/ui/dashboard/routes/debug/DebugRoute.jsx`
+- `src/ui/dashboard/styles/dashboard.css`
+
+Expected result
+- nav rail is permanently compact
+- nav expand/collapse branch is gone
+- Debug uses route-param selection only
+- duplicate compact-table and related action styles are merged
+
+Validation
+- `npm test`
+- `npm run build:dashboard`
+- `npm run inspect:ui`
+
+Phase 5: Route-Support And Query-State Cleanup
+----------------------------------------------
+Goal
+- reduce boilerplate without pushing more route logic into another dumping ground
+
+Main files
+- `src/ui/dashboard/routes/shared/route-support.jsx`
+- `src/ui/dashboard/routes/listings/ListingsRoute.jsx`
+- `src/ui/dashboard/routes/posts/PostsRoute.jsx`
+- `src/ui/dashboard/routes/review/ReviewRoute.jsx`
+- `src/ui/dashboard/routes/debug/DebugRoute.jsx`
+
+Expected result
+- each route has a small local helper for filter/query updates
+- repeated patch objects are reduced
+- dead or over-bundled route-support code is removed or relocated
+
+Validation
+- `npm test`
+- targeted URL/query-state smoke checks
+
+Phase 6: Listings Chrome Trim
+-----------------------------
+Goal
+- optionally remove the last low-value chrome on Listings after the rest of the app is stable
+
+Main files
+- `src/ui/dashboard/routes/listings/ListingsRoute.jsx`
+- `src/ui/dashboard/components/RouteScaffold.jsx` if needed
+- `src/ui/dashboard/styles/dashboard.css`
+
+Expected result
+- summary strip and low-value explanatory copy are reduced or removed
+- extra fetches that only feed removed chrome are deleted
+- Listings remains the strongest route in the app
+
+Validation
+- `npm test`
+- `npm run build:dashboard`
+- `npm run inspect:ui`
+
+Do not split further unless needed
+----------------------------------
+- Phase 1 and Phase 2 touch the same routes, but the behavioral deletion should land before the presentation cleanup.
+- Phase 3 should stay separate because it crosses storage, server, tests, and UI consumers.
+- Phase 6 is intentionally optional and should not block the earlier simplification work.

@@ -1,0 +1,38 @@
+Whiteboard And Notes
+====================
+
+How to use this file
+--------------------
+- Append short dated notes.
+- Use this file for cross-phase blockers, decisions, caveats, and ideas for the next worker.
+- Keep notes terse and factual.
+
+Seeded decisions
+----------------
+- 2026-03-16 10:48 EDT: Do not remove `@tanstack/react-table` in this execution plan.
+- 2026-03-16 10:48 EDT: Do not build a shared focused-row primitive unless product insists on keeping focused-row tables.
+- 2026-03-16 10:48 EDT: Listings remains the primary route; secondary-route simplification lands first.
+- 2026-03-16 10:48 EDT: Listings chrome trim is optional and comes last.
+
+Open note area
+--------------
+- Add new notes below this line.
+
+Template
+--------
+- YYYY-MM-DD HH:MM EDT: short note
+
+Notes
+-----
+- 2026-03-16 10:48 EDT: If any worker finds that an off-page notice is insufficient for a required deep-link workflow, escalate before rebuilding route-local focused-row state.
+- 2026-03-16 10:48 EDT: If Phase 3 adds a backend field, prefer a canonical `reviewLinkTarget` or equivalent stable payload field instead of more queue-threshold duplication in the UI.
+- 2026-03-16 10:48 EDT: Preserve Debug's forensic depth even while cutting chrome; simplification should not erase provenance access.
+- 2026-03-16 11:19 EDT: Phase 1 follow-up fix landed a stale-detail mismatch guard on Posts, Review, and Debug so cached fetch payloads only render when they still match the active selection ID.
+- 2026-03-16 11:19 EDT: Phase 1 follow-up fix switched Review off-page detail loading to the canonical unfiltered `GET /api/dashboard/review/:reviewId` path so mismatched queue filters still open the selected item with honest off-page messaging.
+- 2026-03-16 11:19 EDT: Live smoke testing still did not produce a real multi-page off-page Debug example; required Debug deep-link validation covered normal paginated-table plus detail behavior, but not an off-page warning state.
+- 2026-03-16 11:54 EDT: Phase 2 landed the secondary-route chrome trim: summary strips are gone from Posts, Review, and Debug; duplicate body-level action rows were removed; Debug kept its forensic/export/inspector handoff role; Posts and Review intentionally dropped raw JSON and extra debug-heavy affordances.
+- 2026-03-16 12:12 EDT: Phase 3 closed with canonical backend review navigation as `reviewLinkTarget: { queue, reviewId } | null`; Listings and Posts now consume backend review navigation semantics only, route-local frontend review-link heuristics were deleted, and the Posts linked-listing click caveat observed during smoke testing was an `agent-browser` limitation rather than a confirmed app bug.
+- 2026-03-16 12:26 EDT: Phase 4 closed with the nav rail permanently compact, Debug using the route param as the only canonical selection path, stale `?runId=` params stripped so `/debug` and `/debug/runs/:runId` stay canonical, compact-table plus detail action/link-pill CSS duplication merged, and the shell-slot pattern plus `detail` query-param drawer behavior intentionally kept.
+- 2026-03-16 13:22 EDT: Phase 5 closed with `route-support.jsx` reduced to the durable shared layer; `RoutePagination` and `JsonDetails` moved into shared components; each route now owns a small route-local query/update helper; intentional route-local differences stayed in place for Listings and Debug; the limited `agent-browser` URL-assertion stall was a tooling caveat, not a confirmed regression.
+- 2026-03-16 13:37 EDT: Phase 6 closed with a narrow Listings-only trim: the summary strip, its extra listings-summary fetch, and the default extra-filters explainer were removed; the results bar, filter chips, off-page warning/footer, and detail workflow were intentionally kept so Listings stays the strongest route.
+- 2026-03-16 13:56 EDT: Simplification execution is fully closed; no further dispatches are required, and the bundle was moved under `src/ui/planning/archived/` as a completed record.
