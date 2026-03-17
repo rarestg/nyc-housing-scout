@@ -52,9 +52,13 @@ Only treat `src/ui/planning/` as working context when you are actively changing 
 - Any new doc, note, pass log, or scratch writeup should use a New York timestamp prefix in `YYYY-MM-DD_HH-MM-SS_*` form when the filename is not otherwise fixed by convention.
 - If you use `agent-browser`, always pass a unique named session on every command, for example `--session <task-name>`, instead of relying on the default session.
 - When browser automation is done or looks wedged, close that named `agent-browser` session first and check `agent-browser session list` plus running processes before killing Chrome/Chromium trees that may belong to the user.
+- Assume the worktree may contain concurrent collaborator edits. Do not revert, overwrite, or repackage changes you did not make unless the user explicitly tells you to do so.
 - If you dispatch a worker/coding agent, start it with fresh context rather than inheriting the full conversation when that option exists. Write a self-contained task brief with the exact scope, constraints, references, write ownership, and success criteria.
 - If you dispatch a worker/coding agent, give it at least 30 minutes before treating it as stalled.
 - Do not interrupt, close, cancel, or otherwise kill a dispatched worker/coding agent before that 30 minute mark just because you no longer need it. If you would not let it run, do not dispatch it in the first place.
+- When you are working directly and own a self-contained change, prefer small scoped commits with descriptive messages as you go rather than one large end-of-session dump.
+- Keep commits limited to the files and behavior you actually changed. Do not bundle unrelated cleanup or neighboring collaborator edits into the same commit.
+- If a PM/operator is coordinating multiple agents or parallel slices, assume they own the final commit packaging unless they explicitly ask you to commit your slice yourself.
 - When the schema or storage shape needs to change, change it directly and update the current docs. Do not add compatibility shims for stale local state unless explicitly asked.
 
 ## Validation / Definition Of Done
