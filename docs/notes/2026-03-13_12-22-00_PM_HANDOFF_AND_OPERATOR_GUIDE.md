@@ -1,5 +1,9 @@
 # PM Handoff and Operator Guide
 
+Historical note.
+
+The durable heuristics from this handoff have been promoted into `docs/VISION_AND_ARCHITECTURE.md`. Treat `docs/ROADMAP.md` and `docs/PIPELINE.md` as the current source of truth for project status and operator behavior.
+
 As of commit `7d11a21` (`harden Gemini queue processing and fix same-batch reclaim`).
 
 ## Why this exists

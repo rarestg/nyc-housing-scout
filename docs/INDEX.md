@@ -1,27 +1,61 @@
 # Documentation Index
 
-## Living Docs
+This is the doc map. Use it to find the canonical guidance first, then the supporting indexes.
 
-These are the current, maintained references. Start here.
+## Canonical Docs
+
+Read these in order:
 
 | Doc | Role |
 |-----|------|
-| [VISION_AND_ARCHITECTURE](VISION_AND_ARCHITECTURE.md) | North star — system shape, guiding principles, stage definitions, data model |
-| [ROADMAP](ROADMAP.md) | What's done, what's next, what's later |
-| [WORKLOG](WORKLOG.md) | Terse running log of major decisions |
-| [PIPELINE](PIPELINE.md) | Ops manual — commands, artifact layers, crawl semantics, storage inspection |
-| [LISTING_SCHEMA](LISTING_SCHEMA.md) | Canonical data contract for extracted listings |
-| [FACEBOOK_CAPTURE_NOTES](FACEBOOK_CAPTURE_NOTES.md) | What to capture from Facebook DOM and what to ignore |
-| [notes/2026-03-13_12-22-00_PM_HANDOFF_AND_OPERATOR_GUIDE](notes/2026-03-13_12-22-00_PM_HANDOFF_AND_OPERATOR_GUIDE.md) | PM/operator bootstrap — current state, heuristics, and next steps |
-| [notes/2026-03-13_13-16-00_BROWSER_RELAY_INGESTION_SOP](notes/2026-03-13_13-16-00_BROWSER_RELAY_INGESTION_SOP.md) | Browser-relay Facebook ingestion SOP — tested operator flow, callbacks, and quirks |
-| [notes/2026-03-13_13-37-00_INGEST_LOOP_SPEC](notes/2026-03-13_13-37-00_INGEST_LOOP_SPEC.md) | Spec for the next `ingest:loop` controller pass using the existing Chrome relay path |
+| [../README.md](../README.md) | Repo orientation |
+| [VISION_AND_ARCHITECTURE](VISION_AND_ARCHITECTURE.md) | North star: product shape, stage boundaries, data model, working practices |
+| [ROADMAP](ROADMAP.md) | Current status, next milestones, and later work |
+| [SHIP_PLAN](SHIP_PLAN.md) | Definitive path from the current local pipeline to a shipped multi-source product with a hosted public frontend |
+| [PIPELINE](PIPELINE.md) | Operational guide: commands, runtime behavior, queue stages, inspection surfaces |
+| [LISTING_SCHEMA](LISTING_SCHEMA.md) | Canonical normalized listing contract |
+| [../data/README.md](../data/README.md) | Local artifact layout and active-vs-legacy disk paths |
 
-## Historical Records
+## Sub-Indexes And Maps
 
-Detailed logs from past implementation work, organized by type. Each folder has its own README.
+These are the best entry points once you know which area you are touching.
 
-| Folder | Contents | When to read |
-|--------|----------|-------------|
-| [reviews/](reviews/) | Architectural assessments (3 docs) | Understanding past design decisions and trade-offs |
-| [passes/](passes/) | Implementation work logs (11 docs) | Debugging a regression or understanding why something was built a certain way |
-| [notes/](notes/) | Field notes, strategy ideas, superseded docs (6 docs) | Deep context on specific investigations or early project direction |
+| Path | Role |
+|------|------|
+| [passes/README.md](passes/README.md) | Implementation log index |
+| [reviews/README.md](reviews/README.md) | Architecture review index |
+| [notes/README.md](notes/README.md) | Historical notes and superseded planning docs |
+| [../src/cli/README.md](../src/cli/README.md) | CLI entrypoint map by stage |
+| [../src/ui/ARCHITECTURE.md](../src/ui/ARCHITECTURE.md) | Operator UI architecture and route/API map |
+| [../src/ui/planning/README.md](../src/ui/planning/README.md) | Temporary dashboard planning bundles and handoffs |
+
+## Suggested Reading Paths
+
+### Product / PM
+
+1. [../README.md](../README.md)
+2. [VISION_AND_ARCHITECTURE](VISION_AND_ARCHITECTURE.md)
+3. [ROADMAP](ROADMAP.md)
+4. [SHIP_PLAN](SHIP_PLAN.md)
+5. [PIPELINE](PIPELINE.md)
+6. [reviews/2026-03-16_00-40-29_CLOUDFLARE_DEPLOYMENT_READINESS_REVIEW.md](reviews/2026-03-16_00-40-29_CLOUDFLARE_DEPLOYMENT_READINESS_REVIEW.md)
+
+### Operator
+
+1. [PIPELINE](PIPELINE.md)
+2. [../src/cli/README.md](../src/cli/README.md)
+3. [../data/README.md](../data/README.md)
+4. [../src/ui/ARCHITECTURE.md](../src/ui/ARCHITECTURE.md)
+
+### Archaeology
+
+1. [passes/README.md](passes/README.md)
+2. [reviews/README.md](reviews/README.md)
+3. [notes/README.md](notes/README.md)
+
+## Historical Single Docs
+
+These remain in the repo for context, but they are not canonical guidance:
+
+- [WORKLOG](WORKLOG.md) — retired status log
+- [FACEBOOK_CAPTURE_NOTES](FACEBOOK_CAPTURE_NOTES.md) — early capture heuristics and product observations

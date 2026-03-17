@@ -12,7 +12,7 @@
 - `src/extractors/` — heuristic listing extraction
 - `src/processing/` — processing queue and processor logic
 - `src/storage/` — SQLite-backed storage and migrations
-- `src/ui/` — local inspection server, dashboard app, and UI planning artifacts
+- `src/ui/` — local inspection server, dashboard app, and UI planning artifacts (see `src/ui/ARCHITECTURE.md`)
 - `docs/` — living architecture docs, roadmap, pipeline guide, passes, reviews, notes
 - `data/` — local artifact layout, SQLite database, cache/env conventions, and legacy-vs-active paths
 - `test/` — contract and storage/CLI tests
@@ -25,11 +25,12 @@ Start here, in order:
 2. `docs/INDEX.md` — doc map
 3. `docs/VISION_AND_ARCHITECTURE.md` — north star and stage definitions
 4. `docs/ROADMAP.md` — what is next
-5. `docs/WORKLOG.md` — terse recent decisions and progress
+5. `docs/SHIP_PLAN.md` — definitive plan for shipping the multi-source local collector plus hosted public product
 6. `docs/PIPELINE.md` — operational commands, crawl semantics, queue validation, and inspection surfaces
 7. `docs/LISTING_SCHEMA.md` — normalized listing contract
 8. `data/README.md` — local artifact layout, active vs legacy data paths, and how disk artifacts relate to SQLite
-9. `docs/FACEBOOK_CAPTURE_NOTES.md` — Facebook DOM capture priorities, noise patterns, and collector assumptions
+9. `src/cli/README.md` — quick map of stage CLIs and their roles
+10. `src/ui/ARCHITECTURE.md` — operator UI architecture and route/API map
 
 For recent implementation context, use `docs/passes/README.md` to find and then read the latest relevant file in `docs/passes/`.
 For older tradeoffs and investigations, use `docs/reviews/` and `docs/notes/`.
@@ -49,6 +50,8 @@ Only treat `src/ui/planning/` as working context when you are actively changing 
 ## Workflow Rules
 
 - Any new doc, note, pass log, or scratch writeup should use a New York timestamp prefix in `YYYY-MM-DD_HH-MM-SS_*` form when the filename is not otherwise fixed by convention.
+- If you use `agent-browser`, always pass a unique named session on every command, for example `--session <task-name>`, instead of relying on the default session.
+- When browser automation is done or looks wedged, close that named `agent-browser` session first and check `agent-browser session list` plus running processes before killing Chrome/Chromium trees that may belong to the user.
 - If you dispatch a worker/coding agent, start it with fresh context rather than inheriting the full conversation when that option exists. Write a self-contained task brief with the exact scope, constraints, references, write ownership, and success criteria.
 - If you dispatch a worker/coding agent, give it at least 30 minutes before treating it as stalled.
 - Do not interrupt, close, cancel, or otherwise kill a dispatched worker/coding agent before that 30 minute mark just because you no longer need it. If you would not let it run, do not dispatch it in the first place.

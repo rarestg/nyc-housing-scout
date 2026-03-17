@@ -1,5 +1,9 @@
 # Facebook Capture Notes
 
+Historical note.
+
+This file captures early DOM/capture priorities and product observations from the first collector passes. Treat `docs/PIPELINE.md`, `docs/VISION_AND_ARCHITECTURE.md`, and `data/README.md` as the current source of truth for the active collector contract and collection boundary.
+
 ## Immediate Goal
 
 Extract useful listing data from Facebook housing group posts while ignoring the mountains of wrapper HTML, duplicated chrome, reactions, comments, and UI junk.

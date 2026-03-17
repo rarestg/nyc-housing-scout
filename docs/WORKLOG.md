@@ -1,21 +1,11 @@
 # Worklog
 
-Short running notes for important decisions and progress. Keep terse.
+This file is retired.
 
-## 2026-03-12
+Use these instead:
 
-- Moved from ad-hoc scraping toward a staged pipeline model.
-- Chose SQLite as the system of record, with raw artifacts on disk.
-- Chose a storage interface first, then implemented SQLite behind it.
-- Improved collector metadata and listing extraction via targeted passes.
-- Confirmed the main remaining bottleneck is crawl strategy / traversal policy, not storage.
-- Agreed that structured LLM extraction should be a core pipeline stage.
-- Agreed that each stage should be independently operable and testable via its own CLI surface.
+- `docs/ROADMAP.md` for current status and next milestones
+- `docs/PIPELINE.md` for the live operational surface
+- `docs/passes/README.md` for dated implementation history
 
-## 2026-03-13
-
-- Added an observation-scoped queue validator that exercises enqueue, process, and processed-payload inspection on real stored crawl data.
-- Made missing `postUrl` explicit as a queue coverage metric rather than an implicit enqueue side effect only.
-- Landed Gemini operational hardening: abortable timeouts, lease-aware sequential processing, and inline timeout/retry/token/latency metrics.
-- Fixed the same-batch re-claim bug so one timed-out job cannot burn multiple attempts within a single `process:jobs` invocation when `retryDelayMs=0`.
-- Added a PM/operator handoff guide so a replacement project lead can bootstrap from the repo instead of tribal context.
+Older worklog entries remain in git history if you need them, but this file is no longer maintained as a canonical source.
