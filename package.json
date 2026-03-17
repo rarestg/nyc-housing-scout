@@ -17,6 +17,7 @@
     "inspect:storage": "node src/cli/inspect-storage.js",
     "inspect:ui": "node src/cli/inspect-ui.js",
     "build:dashboard": "node src/ui/dashboard/app/build-dashboard.js",
+    "backup:db": "bash scripts/backup-db.sh",
     "enqueue:processing": "node src/cli/enqueue-processing.js",
     "inspect:jobs": "node src/cli/inspect-jobs.js",
     "process:jobs": "node src/cli/process-jobs.js",

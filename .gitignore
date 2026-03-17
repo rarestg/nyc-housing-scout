@@ -6,6 +6,7 @@ data/collected/
 data/listings/
 data/normalized/
 data/storage/
+data/backups/
 data/*.sqlite
 data/*.sqlite-*
 data/cache/

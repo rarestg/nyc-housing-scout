@@ -49,6 +49,13 @@ There is intentionally no active `data/processed/` directory and no active colle
   - legacy freshness cache from older collectors
   - not the active freshness mechanism for the DOM + SQLite path
 
+### `backups/`
+
+- `backups/nyc-housing-scout-<timestamp>.sqlite`
+  - local SQLite snapshots created by `npm run backup:db`
+  - for machine/backups only, not canonical state
+  - ignored by git
+
 ### `raw/`
 
 Current active path:
@@ -232,6 +239,7 @@ Because listings are derived later by the queue and processing stages. `process:
 
 ## Useful Commands
 
+- `npm run backup:db`
 - `npm run inspect:storage -- runs --limit 5`
 - `npm run inspect:storage -- observations --run-id <runId> --full`
 - `npm run inspect:storage -- listings --run-id <runId> --full`
