@@ -6,6 +6,8 @@ data/collected/
 data/listings/
 data/normalized/
 data/storage/
+data/*.sqlite
+data/*.sqlite-*
 data/cache/
 data/state/
 .DS_Store
