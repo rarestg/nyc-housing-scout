@@ -131,18 +131,35 @@ test('runEvidenceEnrichment persists observation-scoped fragments without rewrit
     producerVersion: EVIDENCE_ENRICHMENT_PRODUCER_VERSION,
     limit: 100,
   });
+  const firstAuditRows = storage.listAuditEvents({
+    targetKind: 'post_observation',
+    targetId: observationId,
+    eventKind: 'evidence_enrichment_recorded',
+    limit: 10,
+  });
 
   assert.equal(firstPass.enrichedCount, 1);
   assert.equal(firstPass.fragmentCount, storedFragments.length);
   assert.ok(storedFragments.length >= 8);
+  assert.equal(firstAuditRows.length, 1);
+  assert.equal(firstAuditRows[0].actorKind, 'system');
+  assert.equal(firstAuditRows[0].payload.fragmentCount, storedFragments.length);
+  assert.equal(firstAuditRows[0].payload.producerVersion, EVIDENCE_ENRICHMENT_PRODUCER_VERSION);
 
   const secondPass = runEvidenceEnrichment(storage, {
     runId: run.id,
     limit: 1,
   });
+  const secondAuditRows = storage.listAuditEvents({
+    targetKind: 'post_observation',
+    targetId: observationId,
+    eventKind: 'evidence_enrichment_recorded',
+    limit: 10,
+  });
 
   assert.equal(secondPass.enrichedCount, 0);
   assert.equal(secondPass.skippedExistingCount, 1);
+  assert.equal(secondAuditRows.length, 1);
 
   const afterObservation = storage.listObservations({
     observationId,
@@ -154,6 +171,70 @@ test('runEvidenceEnrichment persists observation-scoped fragments without rewrit
   assert.equal(afterObservation.bodyText, beforeObservation.bodyText);
   assert.deepEqual(afterObservation.comments, beforeObservation.comments);
   assert.deepEqual(afterObservation.payload, beforeObservation.payload);
+
+  storage.close();
+});
+
+test('recordEvidenceFragmentsWithAudit skips stale duplicate producer writes inside the transaction', () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nyc-housing-scout-evidence-race-'));
+  const fixture = seedEvidenceEnrichmentFixture(dataDir);
+  const { storage, observationId } = fixture;
+  const observation = storage.listObservations({
+    observationId,
+    includeFullText: true,
+    includeCollections: true,
+    includePayload: true,
+  })[0];
+  const fragments = buildObservationEvidenceFragments(observation, {
+    producerKind: EVIDENCE_ENRICHMENT_PRODUCER_KIND,
+    producerVersion: EVIDENCE_ENRICHMENT_PRODUCER_VERSION,
+  });
+
+  const firstWrite = storage.recordEvidenceFragmentsWithAudit({
+    actorId: `${EVIDENCE_ENRICHMENT_PRODUCER_KIND}:${EVIDENCE_ENRICHMENT_PRODUCER_VERSION}`,
+    actorKind: 'system',
+    createdAt: '2026-03-17T16:10:00.000Z',
+    eventKind: 'evidence_enrichment_recorded',
+    observationId,
+    fragments,
+    payload: {
+      fragmentCount: fragments.length,
+      producerKind: EVIDENCE_ENRICHMENT_PRODUCER_KIND,
+      producerVersion: EVIDENCE_ENRICHMENT_PRODUCER_VERSION,
+    },
+  });
+  const staleDuplicateWrite = storage.recordEvidenceFragmentsWithAudit({
+    actorId: `${EVIDENCE_ENRICHMENT_PRODUCER_KIND}:${EVIDENCE_ENRICHMENT_PRODUCER_VERSION}`,
+    actorKind: 'system',
+    createdAt: '2026-03-17T16:10:01.000Z',
+    eventKind: 'evidence_enrichment_recorded',
+    observationId,
+    fragments,
+    payload: {
+      fragmentCount: fragments.length,
+      producerKind: EVIDENCE_ENRICHMENT_PRODUCER_KIND,
+      producerVersion: EVIDENCE_ENRICHMENT_PRODUCER_VERSION,
+    },
+  });
+
+  const storedFragments = storage.listEvidenceFragments({
+    observationId,
+    producerKind: EVIDENCE_ENRICHMENT_PRODUCER_KIND,
+    producerVersion: EVIDENCE_ENRICHMENT_PRODUCER_VERSION,
+    limit: 100,
+  });
+  const auditRows = storage.listAuditEvents({
+    targetKind: 'post_observation',
+    targetId: observationId,
+    eventKind: 'evidence_enrichment_recorded',
+    limit: 10,
+  });
+
+  assert.equal(firstWrite.created.length, fragments.length);
+  assert.equal(staleDuplicateWrite.created.length, 0);
+  assert.equal(staleDuplicateWrite.auditEvent, null);
+  assert.equal(storedFragments.length, fragments.length);
+  assert.equal(auditRows.length, 1);
 
   storage.close();
 });
@@ -184,6 +265,19 @@ test('enrich-evidence CLI writes fragments and inspect-storage evidence returns 
     '--limit',
     '100',
   ]);
+  const auditResult = runCli('src/cli/inspect-storage.js', [
+    'audit',
+    '--data-dir',
+    dataDir,
+    '--target-kind',
+    'post_observation',
+    '--target-id',
+    fixture.observationId,
+    '--event-kind',
+    'evidence_enrichment_recorded',
+    '--limit',
+    '10',
+  ]);
 
   assert.equal(enrichResult.command, 'enrich:evidence');
   assert.equal(enrichResult.result.enrichedCount, 1);
@@ -192,6 +286,10 @@ test('enrich-evidence CLI writes fragments and inspect-storage evidence returns 
   assert.equal(inspectResult.command, 'evidence');
   assert.ok(inspectResult.count >= 8);
   assert.equal(inspectResult.results.every((row) => row.observationId === fixture.observationId), true);
+  assert.equal(auditResult.command, 'audit');
+  assert.equal(auditResult.count, 1);
+  assert.equal(auditResult.results[0].eventKind, 'evidence_enrichment_recorded');
+  assert.equal(auditResult.results[0].targetId, fixture.observationId);
 });
 
 function seedEvidenceEnrichmentFixture(dataDir) {

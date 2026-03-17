@@ -330,192 +330,143 @@ export class SqliteStorage {
   }
 
   recordEvidenceFragments(input = {}) {
-    const defaultCreatedAt = input.createdAt || new Date().toISOString();
+    return this.withTransaction(() => this.writeEvidenceFragmentRecords(input));
+  }
+
+  recordEvidenceFragmentsWithAudit(input = {}) {
+    const observationId = String(input.observationId || '').trim();
+    const actorKind = String(input.actorKind || 'system').trim() || 'system';
+    const eventKind = String(input.eventKind || '').trim();
+    const fragments = Array.isArray(input.fragments) ? input.fragments : [];
+
+    if (!observationId) {
+      throw new Error('storage.recordEvidenceFragmentsWithAudit requires observationId');
+    }
+
+    if (!eventKind) {
+      throw new Error('storage.recordEvidenceFragmentsWithAudit requires eventKind');
+    }
 
     return this.withTransaction(() => {
-      const entries = Array.isArray(input.entries) ? input.entries : [];
-      const created = [];
+      const producerIdentity = readEvidenceProducerIdentity(fragments);
 
-      for (const entry of entries) {
-        const observation = this.requireObservation(entry.observationId);
-        const fragments = Array.isArray(entry.fragments) ? entry.fragments : [];
-
-        for (const fragment of fragments) {
-          const fragmentKind = String(fragment.fragmentKind || '').trim();
-          const fieldPath = String(fragment.fieldPath || '').trim();
-          const sourceSurface = String(fragment.sourceSurface || '').trim();
-          const producerKind = String(fragment.producerKind || '').trim();
-          const producerVersion = String(fragment.producerVersion || '').trim();
-
-          if (!fragmentKind) {
-            throw new Error('storage.recordEvidenceFragments requires fragmentKind');
-          }
-
-          if (!fieldPath) {
-            throw new Error('storage.recordEvidenceFragments requires fieldPath');
-          }
-
-          if (!sourceSurface) {
-            throw new Error('storage.recordEvidenceFragments requires sourceSurface');
-          }
-
-          if (!producerKind) {
-            throw new Error('storage.recordEvidenceFragments requires producerKind');
-          }
-
-          if (!producerVersion) {
-            throw new Error('storage.recordEvidenceFragments requires producerVersion');
-          }
-
-          const evidenceFragment = {
-            id: this.nextId('evidenceFragment', 'efg'),
-            sourceId: observation.sourceId,
-            observationId: observation.id,
-            stablePostId: observation.stablePostId ?? null,
-            runId: observation.runId,
-            fragmentKind,
-            fieldPath,
-            sourceSurface,
-            sourceRef: normalizeNullableText(fragment.sourceRef),
-            producerKind,
-            producerVersion,
-            rawText: fragment.rawText ?? null,
-            normalized: fragment.normalized === undefined ? null : fragment.normalized,
-            confidence: normalizeNullableNumber(fragment.confidence),
-            metadata: fragment.metadata || {},
-            createdAt: fragment.createdAt || defaultCreatedAt,
-          };
-
-          this.db.prepare(`
-            INSERT INTO evidence_fragments (
-              id, source_id, observation_id, stable_post_id, run_id, fragment_kind, field_path, source_surface,
-              source_ref, producer_kind, producer_version, raw_text, normalized_json, confidence, metadata_json, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(
-            evidenceFragment.id,
-            evidenceFragment.sourceId,
-            evidenceFragment.observationId,
-            evidenceFragment.stablePostId,
-            evidenceFragment.runId,
-            evidenceFragment.fragmentKind,
-            evidenceFragment.fieldPath,
-            evidenceFragment.sourceSurface,
-            evidenceFragment.sourceRef,
-            evidenceFragment.producerKind,
-            evidenceFragment.producerVersion,
-            evidenceFragment.rawText,
-            toJson(evidenceFragment.normalized),
-            evidenceFragment.confidence,
-            toJson(evidenceFragment.metadata, {}),
-            evidenceFragment.createdAt,
-          );
-
-          created.push(evidenceFragment);
-        }
+      if (producerIdentity && this.selectEvidenceFragmentExistsByObservationProducer(
+        observationId,
+        producerIdentity.producerKind,
+        producerIdentity.producerVersion,
+      )) {
+        return {
+          created: [],
+          auditEvent: null,
+        };
       }
 
-      return created;
+      const created = this.writeEvidenceFragmentRecords({
+        createdAt: input.createdAt,
+        entries: [{
+          observationId,
+          fragments,
+        }],
+      });
+
+      let auditEvent = null;
+      if (created.length) {
+        auditEvent = this.writeAuditEventRecord({
+          actorId: normalizeNullableText(input.actorId),
+          actorKind,
+          eventKind,
+          payload: {
+            ...(isPlainObject(input.payload) ? input.payload : {}),
+            fragmentCount: created.length,
+          },
+          resolvedTargetScope: {
+            targetKind: 'post_observation',
+            targetId: observationId,
+            sourceId: created[0].sourceId,
+            observationId,
+          },
+          createdAt: input.createdAt,
+        });
+      }
+
+      return {
+        created,
+        auditEvent,
+      };
     });
   }
 
   upsertResolvedField(input) {
-    const now = input.updatedAt || new Date().toISOString();
-    const target = this.resolveTargetScope(input);
-    const fieldPath = String(input.fieldPath || '').trim();
-    const status = String(input.status || '').trim();
-    const resolutionKind = String(input.resolutionKind || '').trim();
-    const resolverVersion = String(input.resolverVersion || '').trim();
+    return this.withTransaction(() => this.writeResolvedFieldRecord(input));
+  }
 
-    if (!fieldPath) {
-      throw new Error('storage.upsertResolvedField requires fieldPath');
+  upsertResolvedFieldsWithAudit(input = {}) {
+    const targetKind = String(input.targetKind || '').trim();
+    const targetId = String(input.targetId || '').trim();
+    const fields = Array.isArray(input.fields) ? input.fields : [];
+    const actorKind = String(input.actorKind || 'system').trim() || 'system';
+    const eventKind = String(input.eventKind || '').trim();
+
+    if (!targetKind) {
+      throw new Error('storage.upsertResolvedFieldsWithAudit requires targetKind');
     }
 
-    if (!status) {
-      throw new Error('storage.upsertResolvedField requires status');
+    if (!targetId) {
+      throw new Error('storage.upsertResolvedFieldsWithAudit requires targetId');
     }
 
-    if (!resolutionKind) {
-      throw new Error('storage.upsertResolvedField requires resolutionKind');
-    }
-
-    if (!resolverVersion) {
-      throw new Error('storage.upsertResolvedField requires resolverVersion');
+    if (!eventKind) {
+      throw new Error('storage.upsertResolvedFieldsWithAudit requires eventKind');
     }
 
     return this.withTransaction(() => {
-      const existing = this.selectResolvedFieldByTargetField(target.targetKind, target.targetId, fieldPath);
-      const supportingFragmentIds = normalizeStringList(input.supportingFragmentIds);
+      const target = this.resolveTargetScope({ ...input, targetKind, targetId });
+      const writtenFields = [];
+      const skippedFieldPaths = [];
 
-      if (existing) {
-        this.db.prepare(`
-          UPDATE resolved_fields
-          SET source_id = ?, observation_id = ?, status = ?, resolution_kind = ?, resolver_version = ?, value_json = ?,
-              confidence = ?, ambiguity_json = ?, supporting_fragment_ids_json = ?, metadata_json = ?, updated_at = ?
-          WHERE id = ?
-        `).run(
-          target.sourceId,
-          target.observationId,
-          status,
-          resolutionKind,
-          resolverVersion,
-          toJson(input.value),
-          normalizeNullableNumber(input.confidence),
-          toJson(input.ambiguity),
-          toJson(supportingFragmentIds, []),
-          toJson(input.metadata || {}, {}),
-          now,
-          existing.id,
-        );
+      for (const field of fields) {
+        const fieldInput = {
+          ...field,
+          targetKind,
+          targetId,
+          resolvedTargetScope: target,
+        };
+        const existing = this.selectResolvedFieldByTargetField(targetKind, targetId, fieldInput.fieldPath);
 
-        return this.selectResolvedFieldByTargetField(target.targetKind, target.targetId, fieldPath);
+        if (resolvedFieldRecordMatches(existing, fieldInput, target)) {
+          skippedFieldPaths.push(fieldInput.fieldPath);
+          continue;
+        }
+
+        writtenFields.push(this.writeResolvedFieldRecord(fieldInput));
       }
 
-      const createdAt = input.createdAt || now;
-      const resolvedField = {
-        id: this.nextId('resolvedField', 'rfd'),
-        targetKind: target.targetKind,
-        targetId: target.targetId,
-        sourceId: target.sourceId,
-        observationId: target.observationId,
-        fieldPath,
-        status,
-        resolutionKind,
-        resolverVersion,
-        value: input.value,
-        confidence: normalizeNullableNumber(input.confidence),
-        ambiguity: input.ambiguity,
-        supportingFragmentIds,
-        metadata: input.metadata || {},
-        createdAt,
-        updatedAt: now,
+      let auditEvent = null;
+      if (writtenFields.length) {
+        auditEvent = this.writeAuditEventRecord({
+          actorId: normalizeNullableText(input.actorId),
+          actorKind,
+          eventKind,
+          payload: {
+            ...(isPlainObject(input.payload) ? input.payload : {}),
+            fieldCount: writtenFields.length,
+            fields: writtenFields.map((field) => ({
+              confidence: field.confidence,
+              fieldPath: field.fieldPath,
+              status: field.status,
+              value: field.value,
+            })),
+          },
+          resolvedTargetScope: target,
+          createdAt: input.createdAt || input.updatedAt,
+        });
+      }
+
+      return {
+        fields: writtenFields,
+        auditEvent,
+        skippedFieldPaths,
       };
-
-      this.db.prepare(`
-        INSERT INTO resolved_fields (
-          id, target_kind, target_id, source_id, observation_id, field_path, status, resolution_kind,
-          resolver_version, value_json, confidence, ambiguity_json, supporting_fragment_ids_json, metadata_json,
-          created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        resolvedField.id,
-        resolvedField.targetKind,
-        resolvedField.targetId,
-        resolvedField.sourceId,
-        resolvedField.observationId,
-        resolvedField.fieldPath,
-        resolvedField.status,
-        resolvedField.resolutionKind,
-        resolvedField.resolverVersion,
-        toJson(resolvedField.value),
-        resolvedField.confidence,
-        toJson(resolvedField.ambiguity),
-        toJson(resolvedField.supportingFragmentIds, []),
-        toJson(resolvedField.metadata, {}),
-        resolvedField.createdAt,
-        resolvedField.updatedAt,
-      );
-
-      return resolvedField;
     });
   }
 
@@ -3157,6 +3108,17 @@ export class SqliteStorage {
     return mapObservation(row);
   }
 
+  selectEvidenceFragmentExistsByObservationProducer(observationId, producerKind, producerVersion) {
+    const row = this.db.prepare(`
+      SELECT 1
+      FROM evidence_fragments
+      WHERE observation_id = ? AND producer_kind = ? AND producer_version = ?
+      LIMIT 1
+    `).get(observationId, producerKind, producerVersion);
+
+    return Boolean(row);
+  }
+
   selectObservationCandidatesForProcessing(input = {}) {
     const limit = normalizeLimit(input.limit, 100);
     const clauses = [];
@@ -3445,6 +3407,197 @@ export class SqliteStorage {
       now,
       now,
     );
+  }
+
+  writeEvidenceFragmentRecords(input = {}) {
+    const defaultCreatedAt = input.createdAt || new Date().toISOString();
+    const entries = Array.isArray(input.entries) ? input.entries : [];
+    const created = [];
+
+    for (const entry of entries) {
+      const observationId = String(entry?.observationId || '').trim();
+
+      if (!observationId) {
+        throw new Error('storage.recordEvidenceFragments requires observationId');
+      }
+
+      const observation = this.requireObservation(observationId);
+      const fragments = Array.isArray(entry?.fragments) ? entry.fragments : [];
+
+      for (const fragment of fragments) {
+        const fragmentKind = String(fragment?.fragmentKind || '').trim();
+        const fieldPath = String(fragment?.fieldPath || '').trim();
+        const sourceSurface = String(fragment?.sourceSurface || '').trim();
+        const producerKind = String(fragment?.producerKind || '').trim();
+        const producerVersion = String(fragment?.producerVersion || '').trim();
+
+        if (!fragmentKind) {
+          throw new Error('storage.recordEvidenceFragments requires fragmentKind');
+        }
+
+        if (!fieldPath) {
+          throw new Error('storage.recordEvidenceFragments requires fieldPath');
+        }
+
+        if (!sourceSurface) {
+          throw new Error('storage.recordEvidenceFragments requires sourceSurface');
+        }
+
+        if (!producerKind) {
+          throw new Error('storage.recordEvidenceFragments requires producerKind');
+        }
+
+        if (!producerVersion) {
+          throw new Error('storage.recordEvidenceFragments requires producerVersion');
+        }
+
+        const evidenceFragment = {
+          id: this.nextId('evidenceFragment', 'efg'),
+          sourceId: observation.sourceId,
+          observationId: observation.id,
+          stablePostId: observation.stablePostId ?? null,
+          runId: observation.runId,
+          fragmentKind,
+          fieldPath,
+          sourceSurface,
+          sourceRef: normalizeNullableText(fragment.sourceRef),
+          producerKind,
+          producerVersion,
+          rawText: fragment.rawText ?? null,
+          normalized: fragment.normalized === undefined ? null : fragment.normalized,
+          confidence: normalizeNullableNumber(fragment.confidence),
+          metadata: fragment.metadata || {},
+          createdAt: fragment.createdAt || defaultCreatedAt,
+        };
+
+        this.db.prepare(`
+          INSERT INTO evidence_fragments (
+            id, source_id, observation_id, stable_post_id, run_id, fragment_kind, field_path, source_surface,
+            source_ref, producer_kind, producer_version, raw_text, normalized_json, confidence, metadata_json, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          evidenceFragment.id,
+          evidenceFragment.sourceId,
+          evidenceFragment.observationId,
+          evidenceFragment.stablePostId,
+          evidenceFragment.runId,
+          evidenceFragment.fragmentKind,
+          evidenceFragment.fieldPath,
+          evidenceFragment.sourceSurface,
+          evidenceFragment.sourceRef,
+          evidenceFragment.producerKind,
+          evidenceFragment.producerVersion,
+          evidenceFragment.rawText,
+          toJson(evidenceFragment.normalized),
+          evidenceFragment.confidence,
+          toJson(evidenceFragment.metadata, {}),
+          evidenceFragment.createdAt,
+        );
+
+        created.push(evidenceFragment);
+      }
+    }
+
+    return created;
+  }
+
+  writeResolvedFieldRecord(input = {}) {
+    const now = input.updatedAt || new Date().toISOString();
+    const target = input.resolvedTargetScope || this.resolveTargetScope(input);
+    const fieldPath = String(input.fieldPath || '').trim();
+    const status = String(input.status || '').trim();
+    const resolutionKind = String(input.resolutionKind || '').trim();
+    const resolverVersion = String(input.resolverVersion || '').trim();
+
+    if (!fieldPath) {
+      throw new Error('storage.upsertResolvedField requires fieldPath');
+    }
+
+    if (!status) {
+      throw new Error('storage.upsertResolvedField requires status');
+    }
+
+    if (!resolutionKind) {
+      throw new Error('storage.upsertResolvedField requires resolutionKind');
+    }
+
+    if (!resolverVersion) {
+      throw new Error('storage.upsertResolvedField requires resolverVersion');
+    }
+
+    const existing = this.selectResolvedFieldByTargetField(target.targetKind, target.targetId, fieldPath);
+    const supportingFragmentIds = normalizeStringList(input.supportingFragmentIds);
+
+    if (existing) {
+      this.db.prepare(`
+        UPDATE resolved_fields
+        SET source_id = ?, observation_id = ?, status = ?, resolution_kind = ?, resolver_version = ?, value_json = ?,
+            confidence = ?, ambiguity_json = ?, supporting_fragment_ids_json = ?, metadata_json = ?, updated_at = ?
+        WHERE id = ?
+      `).run(
+        target.sourceId,
+        target.observationId,
+        status,
+        resolutionKind,
+        resolverVersion,
+        toJson(input.value),
+        normalizeNullableNumber(input.confidence),
+        toJson(input.ambiguity),
+        toJson(supportingFragmentIds, []),
+        toJson(input.metadata || {}, {}),
+        now,
+        existing.id,
+      );
+
+      return this.selectResolvedFieldByTargetField(target.targetKind, target.targetId, fieldPath);
+    }
+
+    const createdAt = input.createdAt || now;
+    const resolvedField = {
+      id: this.nextId('resolvedField', 'rfd'),
+      targetKind: target.targetKind,
+      targetId: target.targetId,
+      sourceId: target.sourceId,
+      observationId: target.observationId,
+      fieldPath,
+      status,
+      resolutionKind,
+      resolverVersion,
+      value: input.value,
+      confidence: normalizeNullableNumber(input.confidence),
+      ambiguity: input.ambiguity,
+      supportingFragmentIds,
+      metadata: input.metadata || {},
+      createdAt,
+      updatedAt: now,
+    };
+
+    this.db.prepare(`
+      INSERT INTO resolved_fields (
+        id, target_kind, target_id, source_id, observation_id, field_path, status, resolution_kind,
+        resolver_version, value_json, confidence, ambiguity_json, supporting_fragment_ids_json, metadata_json,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      resolvedField.id,
+      resolvedField.targetKind,
+      resolvedField.targetId,
+      resolvedField.sourceId,
+      resolvedField.observationId,
+      resolvedField.fieldPath,
+      resolvedField.status,
+      resolvedField.resolutionKind,
+      resolvedField.resolverVersion,
+      toJson(resolvedField.value),
+      resolvedField.confidence,
+      toJson(resolvedField.ambiguity),
+      toJson(resolvedField.supportingFragmentIds, []),
+      toJson(resolvedField.metadata, {}),
+      resolvedField.createdAt,
+      resolvedField.updatedAt,
+    );
+
+    return resolvedField;
   }
 
   resolveTargetScope(input = {}) {
@@ -5583,6 +5736,66 @@ function isActiveManualOverride(value) {
   return Boolean(value && value.status === 'active' && !value.clearedAt);
 }
 
+function readEvidenceProducerIdentity(fragments = []) {
+  const normalizedFragments = Array.isArray(fragments) ? fragments : [];
+  const firstFragment = normalizedFragments[0];
+  const producerKind = String(firstFragment?.producerKind || '').trim();
+  const producerVersion = String(firstFragment?.producerVersion || '').trim();
+
+  if (!producerKind || !producerVersion) {
+    return null;
+  }
+
+  const hasMixedProducerIdentity = normalizedFragments.some((fragment) => (
+    String(fragment?.producerKind || '').trim() !== producerKind
+      || String(fragment?.producerVersion || '').trim() !== producerVersion
+  ));
+
+  if (hasMixedProducerIdentity) {
+    return null;
+  }
+
+  return {
+    producerKind,
+    producerVersion,
+  };
+}
+
+function resolvedFieldRecordMatches(existing, input = {}, resolvedTargetScope = null) {
+  if (!existing) {
+    return false;
+  }
+
+  const target = resolvedTargetScope || input.resolvedTargetScope || null;
+  const fieldPath = String(input.fieldPath || '').trim();
+  const status = String(input.status || '').trim();
+  const resolutionKind = String(input.resolutionKind || '').trim();
+  const resolverVersion = String(input.resolverVersion || '').trim();
+  const confidence = normalizeNullableNumber(input.confidence);
+  const supportingFragmentIds = normalizeStringList(input.supportingFragmentIds);
+  const metadata = input.metadata || {};
+
+  if (target) {
+    if (existing.targetKind !== target.targetKind || existing.targetId !== target.targetId) {
+      return false;
+    }
+
+    if (existing.sourceId !== target.sourceId || existing.observationId !== target.observationId) {
+      return false;
+    }
+  }
+
+  return existing.fieldPath === fieldPath
+    && existing.status === status
+    && existing.resolutionKind === resolutionKind
+    && existing.resolverVersion === resolverVersion
+    && existing.confidence === confidence
+    && stableStringify(existing.value) === stableStringify(input.value)
+    && stableStringify(existing.ambiguity) === stableStringify(input.ambiguity)
+    && stableStringify(existing.supportingFragmentIds) === stableStringify(supportingFragmentIds)
+    && stableStringify(existing.metadata) === stableStringify(metadata);
+}
+
 function hasEffectiveFallbackValue(value) {
   if (value === null || value === undefined) {
     return false;
@@ -5636,6 +5849,14 @@ function compactObject(value) {
 
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function stableStringify(value) {
+  if (value === null || value === undefined) return String(value);
+  if (typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+
+  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
 }
 
 function toJson(value, fallback = null) {

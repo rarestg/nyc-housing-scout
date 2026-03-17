@@ -65,14 +65,34 @@ export function runEvidenceEnrichment(storage, input = {}) {
       continue;
     }
 
-    const created = storage.recordEvidenceFragments({
+    const writeResult = storage.recordEvidenceFragmentsWithAudit({
+      actorId: `${producerKind}:${producerVersion}`,
+      actorKind: 'system',
       createdAt,
-      entries: [{
-        observationId: observation.id,
-        fragments,
-      }],
+      eventKind: 'evidence_enrichment_recorded',
+      observationId: observation.id,
+      fragments,
+      payload: {
+        fragmentCount: fragments.length,
+        fragmentKinds: summarizeCounts(fragments, 'fragmentKind'),
+        fieldPaths: summarizeDistinctValues(fragments, 'fieldPath'),
+        producerKind,
+        producerVersion,
+        sourceSurfaces: summarizeCounts(fragments, 'sourceSurface'),
+      },
     });
 
+    if (!writeResult.created.length) {
+      skippedExistingCount += 1;
+      results.push({
+        observationId: observation.id,
+        status: 'skipped_existing',
+        createdCount: 0,
+      });
+      continue;
+    }
+
+    const { created } = writeResult;
     enrichedCount += 1;
     fragmentCount += created.length;
     results.push({

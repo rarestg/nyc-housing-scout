@@ -43,7 +43,7 @@ export function runAddressResolution(storage, input = {}) {
       }).map((row) => [row.fieldPath, row]),
     );
 
-    let listingWrittenCount = 0;
+    const changedFields = [];
     let listingUnchangedCount = 0;
 
     for (const nextField of nextFields) {
@@ -55,24 +55,56 @@ export function runAddressResolution(storage, input = {}) {
         continue;
       }
 
-      storage.upsertResolvedField({
-        targetKind: 'listing_record',
-        targetId: listing.id,
-        fieldPath: nextField.fieldPath,
-        status: nextField.status,
-        resolutionKind,
-        resolverVersion,
-        value: nextField.value,
-        confidence: nextField.confidence,
-        ambiguity: nextField.ambiguity,
-        supportingFragmentIds: nextField.supportingFragmentIds,
-        metadata: nextField.metadata,
+      changedFields.push(nextField);
+    }
+
+    let listingWrittenCount = 0;
+
+    if (changedFields.length) {
+      const writeResult = storage.upsertResolvedFieldsWithAudit({
+        actorId: `${resolutionKind}:${resolverVersion}`,
+        actorKind: 'system',
         createdAt,
-        updatedAt: createdAt,
+        eventKind: 'address_resolution_recorded',
+        fields: changedFields.map((field) => ({
+          ambiguity: field.ambiguity,
+          confidence: field.confidence,
+          createdAt,
+          fieldPath: field.fieldPath,
+          metadata: field.metadata,
+          resolutionKind,
+          resolverVersion,
+          status: field.status,
+          supportingFragmentIds: field.supportingFragmentIds,
+          updatedAt: createdAt,
+          value: field.value,
+        })),
+        payload: {
+          fieldCount: changedFields.length,
+          fields: changedFields.map((field) => ({
+            confidence: field.confidence,
+            fieldPath: field.fieldPath,
+            status: field.status,
+            value: field.value,
+          })),
+          resolutionKind,
+          resolverVersion,
+        },
+        targetId: listing.id,
+        targetKind: 'listing_record',
       });
 
-      listingWrittenCount += 1;
-      writtenCount += 1;
+      listingWrittenCount = writeResult.fields.length;
+      const skippedFieldCount = Array.isArray(writeResult.skippedFieldPaths)
+        ? writeResult.skippedFieldPaths.length
+        : 0;
+
+      if (skippedFieldCount) {
+        listingUnchangedCount += skippedFieldCount;
+        unchangedCount += skippedFieldCount;
+      }
+
+      writtenCount += listingWrittenCount;
     }
 
     resolvedCount += 1;

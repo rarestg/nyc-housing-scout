@@ -259,6 +259,8 @@ Completion gate:
 
 The work should land in this order.
 
+For PM planning purposes, the current roadmap item `multi-source collector runtime / ingest hardening` spans the first part of this ship sequence, especially Milestones 1 through 3 below. The roadmap is using a broader near-term milestone label, not a competing sequencing model.
+
 ### Milestone 1: Own The Browser Boundary
 
 Deliver:

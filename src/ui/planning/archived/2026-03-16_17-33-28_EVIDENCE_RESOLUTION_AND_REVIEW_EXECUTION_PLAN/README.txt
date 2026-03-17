@@ -1,6 +1,10 @@
 Evidence Resolution And Review Execution Plan
 =============================================
 
+Status
+------
+Archived completed bundle. Keep for historical reference; do not treat as an active dispatch board.
+
 Purpose
 -------
 This bundle turns the repo-state assessment into a dispatch-ready plan for the next milestone:
@@ -61,7 +65,7 @@ The storage and precedence contract for this milestone lives here:
 Relationship to other active planning
 -------------------------------------
 - The UI shell-reset bundle is complete enough that it should not block this work.
-- The earlier UI Sprint 2 / data-quality bundle remains useful as product context, but this bundle is now the execution source of truth for the backend-first milestone.
+- The earlier UI Sprint 2 / data-quality bundle remains useful as product context, and this bundle records the backend-first execution plan that shipped this milestone.
 
 Recommended dispatch order
 --------------------------

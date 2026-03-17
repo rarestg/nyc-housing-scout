@@ -28,6 +28,8 @@ We are transitioning from a working local operator pipeline into a robust multi-
 - [ ] remove the hard dependency on external browser-control tooling by owning a narrow browser bridge
 - [ ] support continuous ingest across multiple Facebook groups on one machine without source collisions
 
+This is the current recommended next milestone. For the rationale and handoff context, see `docs/notes/2026-03-17_16-40-27_PM_HANDOFF_AND_NEXT_MILESTONE.md`.
+
 ### 2. Crawl strategy hardening
 - [ ] deterministic source preflight
 - [ ] top-of-feed reset / latest-anchor behavior
