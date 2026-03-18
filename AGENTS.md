@@ -57,6 +57,7 @@ Only treat `src/ui/planning/` as working context when you are actively changing 
 
 - Any new doc, note, pass log, or scratch writeup should use a New York timestamp prefix in `YYYY-MM-DD_HH-MM-SS_*` form when the filename is not otherwise fixed by convention.
 - Before reading a file, run a line count first and then read the full range so you do not miss trailing content.
+- When writing docs, task files, or handoffs, prefer repo-root-relative paths like `docs/passes/...` instead of absolute machine-specific paths, unless a tool explicitly requires an absolute path.
 - If you use `agent-browser`, always pass a unique named session on every command, for example `--session <task-name>`, instead of relying on the default session.
 - When browser automation is done or looks wedged, close that named `agent-browser` session first and check `agent-browser session list` plus running processes before killing Chrome/Chromium trees that may belong to the user.
 - Assume the worktree may contain concurrent collaborator edits. Do not revert, overwrite, or repackage changes you did not make unless the user explicitly tells you to do so.

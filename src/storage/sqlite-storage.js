@@ -3,7 +3,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { ensureDir } from '../core/file-utils.js';
-import { buildResolvedFieldStorageShape, resolvedFieldRecordMatches } from '../core/resolved-field-storage.js';
+import {
+  buildResolvedFieldStorageShape,
+  normalizeFieldPath,
+  normalizeFieldPathList,
+  normalizeSupportingFragmentIds,
+  resolvedFieldRecordMatches,
+} from '../core/resolved-field-storage.js';
 import {
   buildProcessingDedupeKey,
   DEFAULT_LEASE_MS,
@@ -428,6 +434,7 @@ export class SqliteStorage {
       for (const field of fields) {
         const fieldInput = {
           ...field,
+          fieldPath: normalizeFieldPath(field.fieldPath),
           targetKind,
           targetId,
           resolvedTargetScope: target,
@@ -487,7 +494,7 @@ export class SqliteStorage {
     const action = normalizeManualOverrideAction(input.action);
     const targetKind = String(input.targetKind || '').trim();
     const targetId = String(input.targetId || '').trim();
-    const fieldPath = String(input.fieldPath || '').trim();
+    const fieldPath = normalizeFieldPath(input.fieldPath);
 
     if (!targetKind) {
       throw new Error('storage.applyManualOverrideAction requires targetKind');
@@ -580,7 +587,7 @@ export class SqliteStorage {
   writeManualOverrideRecord(input) {
     const now = input.updatedAt || new Date().toISOString();
     const target = input.resolvedTargetScope || this.resolveTargetScope(input);
-    const fieldPath = String(input.fieldPath || '').trim();
+    const fieldPath = normalizeFieldPath(input.fieldPath);
 
     if (!fieldPath) {
       throw new Error('storage.setManualOverride requires fieldPath');
@@ -658,7 +665,7 @@ export class SqliteStorage {
   writeClearedManualOverrideRecord(input) {
     const now = input.clearedAt || input.updatedAt || new Date().toISOString();
     const target = input.resolvedTargetScope || this.resolveTargetScope(input);
-    const fieldPath = String(input.fieldPath || '').trim();
+    const fieldPath = normalizeFieldPath(input.fieldPath);
 
     if (!fieldPath) {
       throw new Error('storage.clearManualOverride requires fieldPath');
@@ -739,7 +746,7 @@ export class SqliteStorage {
   getEffectiveFieldValue(input = {}) {
     const targetKind = String(input.targetKind || '').trim();
     const targetId = String(input.targetId || '').trim();
-    const fieldPath = String(input.fieldPath || '').trim();
+    const fieldPath = normalizeFieldPath(input.fieldPath);
 
     if (!targetKind) {
       throw new Error('storage.getEffectiveFieldValue requires targetKind');
@@ -1825,9 +1832,10 @@ export class SqliteStorage {
       params.push(input.sourceKey);
     }
 
-    if (input.fieldPath) {
+    const fieldPath = normalizeFieldPath(input.fieldPath);
+    if (fieldPath) {
       clauses.push('f.field_path = ?');
-      params.push(input.fieldPath);
+      params.push(fieldPath);
     }
 
     if (input.fragmentKind) {
@@ -1872,7 +1880,7 @@ export class SqliteStorage {
     const params = [];
     const resolvedFieldIds = normalizeStringList(input.resolvedFieldIds || input.resolvedFieldId);
     const targetIds = normalizeStringList(input.targetIds || input.targetId);
-    const fieldPaths = normalizeStringList(input.fieldPaths || input.fieldPath);
+    const fieldPaths = normalizeFieldPathList(input.fieldPaths || input.fieldPath);
 
     if (resolvedFieldIds.length) {
       clauses.push(`rf.id IN (${buildPlaceholders(resolvedFieldIds.length)})`);
@@ -1954,7 +1962,7 @@ export class SqliteStorage {
     const params = [];
     const manualOverrideIds = normalizeStringList(input.manualOverrideIds || input.manualOverrideId);
     const targetIds = normalizeStringList(input.targetIds || input.targetId);
-    const fieldPaths = normalizeStringList(input.fieldPaths || input.fieldPath);
+    const fieldPaths = normalizeFieldPathList(input.fieldPaths || input.fieldPath);
 
     if (manualOverrideIds.length) {
       clauses.push(`mo.id IN (${buildPlaceholders(manualOverrideIds.length)})`);
@@ -3225,18 +3233,23 @@ export class SqliteStorage {
   }
 
   selectResolvedFieldByTargetField(targetKind, targetId, fieldPath) {
+    const normalizedFieldPath = normalizeFieldPath(fieldPath);
+    if (!normalizedFieldPath) {
+      return null;
+    }
+
     const row = this.db.prepare(`
       SELECT *
       FROM resolved_fields
       WHERE target_kind = ? AND target_id = ? AND field_path = ?
-    `).get(targetKind, targetId, fieldPath);
+    `).get(targetKind, targetId, normalizedFieldPath);
 
     return mapResolvedField(row);
   }
 
   selectResolvedFieldsByTargets(targetKind, targetIds = [], fieldPaths = []) {
     const normalizedTargetIds = normalizeStringList(targetIds);
-    const normalizedFieldPaths = normalizeStringList(fieldPaths);
+    const normalizedFieldPaths = normalizeFieldPathList(fieldPaths);
 
     if (!normalizedTargetIds.length) {
       return [];
@@ -3272,18 +3285,23 @@ export class SqliteStorage {
   }
 
   selectManualOverrideByTargetField(targetKind, targetId, fieldPath) {
+    const normalizedFieldPath = normalizeFieldPath(fieldPath);
+    if (!normalizedFieldPath) {
+      return null;
+    }
+
     const row = this.db.prepare(`
       SELECT *
       FROM manual_overrides
       WHERE target_kind = ? AND target_id = ? AND field_path = ?
-    `).get(targetKind, targetId, fieldPath);
+    `).get(targetKind, targetId, normalizedFieldPath);
 
     return mapManualOverride(row);
   }
 
   selectManualOverridesByTargets(targetKind, targetIds = [], fieldPaths = []) {
     const normalizedTargetIds = normalizeStringList(targetIds);
-    const normalizedFieldPaths = normalizeStringList(fieldPaths);
+    const normalizedFieldPaths = normalizeFieldPathList(fieldPaths);
 
     if (!normalizedTargetIds.length) {
       return [];
@@ -3427,7 +3445,7 @@ export class SqliteStorage {
 
       for (const fragment of fragments) {
         const fragmentKind = String(fragment?.fragmentKind || '').trim();
-        const fieldPath = String(fragment?.fieldPath || '').trim();
+        const fieldPath = normalizeFieldPath(fragment?.fieldPath);
         const sourceSurface = String(fragment?.sourceSurface || '').trim();
         const producerKind = String(fragment?.producerKind || '').trim();
         const producerVersion = String(fragment?.producerVersion || '').trim();
@@ -4042,7 +4060,7 @@ function mapResolvedField(row) {
     value: parseJson(row.value_json),
     confidence: row.confidence,
     ambiguity: parseJson(row.ambiguity_json),
-    supportingFragmentIds: parseJson(row.supporting_fragment_ids_json, []),
+    supportingFragmentIds: normalizeSupportingFragmentIds(parseJson(row.supporting_fragment_ids_json, [])),
     metadata: parseJson(row.metadata_json, {}),
     createdAt: row.created_at,
     updatedAt: row.updated_at,

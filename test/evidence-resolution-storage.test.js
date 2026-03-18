@@ -130,7 +130,7 @@ test('sqlite storage layers evidence, resolved fields, manual overrides, audit e
   const effectiveManual = storage.getEffectiveFieldValue({
     targetKind: 'listing_record',
     targetId: listingId,
-    fieldPath: 'location.address',
+    fieldPath: ' location.address ',
     rawExtractedValue: 'Williamsburg',
     rawObservationValue: 'North Brooklyn',
   });
@@ -229,12 +229,12 @@ test('sqlite storage layers evidence, resolved fields, manual overrides, audit e
   const resolvedRows = storage.listResolvedFields({
     targetKind: 'listing_record',
     targetId: listingId,
-    fieldPath: 'location.address',
+    fieldPath: ' location.address ',
   });
   const overrideRows = storage.listManualOverrides({
     targetKind: 'listing_record',
     targetId: listingId,
-    fieldPath: 'location.address',
+    fieldPath: ' location.address ',
   });
   const auditRows = storage.listAuditEvents({
     targetKind: 'listing_record',
@@ -270,6 +270,128 @@ test('sqlite storage layers evidence, resolved fields, manual overrides, audit e
   assert.equal(afterListing.payload.location.neighborhood, beforeListing.payload.location.neighborhood);
   assert.equal(afterObservation.bodyText, beforeObservation.bodyText);
   assert.deepEqual(afterObservation.payload, beforeObservation.payload);
+
+  storage.close();
+});
+
+test('upsertResolvedField treats supportingFragmentIds as a canonical set for comparison and reads', () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nyc-housing-scout-evidence-support-ids-'));
+  const fixture = seedEvidenceFixture(dataDir);
+  const {
+    storage,
+    listingId,
+  } = fixture;
+
+  const firstWrite = storage.upsertResolvedFieldsWithAudit({
+    actorId: 'address_resolution:address-resolver-v1',
+    actorKind: 'system',
+    createdAt: '2026-03-18T10:00:00.000Z',
+    eventKind: 'resolved_field_upserted',
+    fields: [{
+      confidence: 0.81,
+      createdAt: '2026-03-18T10:00:00.000Z',
+      fieldPath: 'location.address',
+      metadata: {
+        source: 'test',
+      },
+      resolutionKind: 'address_resolution',
+      resolverVersion: 'address-resolver-v1',
+      status: 'accepted',
+      supportingFragmentIds: ['efg_b', ' efg_a ', 'efg_b'],
+      updatedAt: '2026-03-18T10:00:00.000Z',
+      value: '123 Bedford Ave, Brooklyn, NY',
+    }],
+    payload: {
+      fieldCount: 1,
+    },
+    targetId: listingId,
+    targetKind: 'listing_record',
+  });
+
+  const secondWrite = storage.upsertResolvedFieldsWithAudit({
+    actorId: 'address_resolution:address-resolver-v1',
+    actorKind: 'system',
+    createdAt: '2026-03-18T10:00:01.000Z',
+    eventKind: 'resolved_field_upserted',
+    fields: [{
+      confidence: 0.81,
+      createdAt: '2026-03-18T10:00:01.000Z',
+      fieldPath: 'location.address',
+      metadata: {
+        source: 'test',
+      },
+      resolutionKind: 'address_resolution',
+      resolverVersion: 'address-resolver-v1',
+      status: 'accepted',
+      supportingFragmentIds: ['efg_a', 'efg_b', 'efg_a'],
+      updatedAt: '2026-03-18T10:00:01.000Z',
+      value: '123 Bedford Ave, Brooklyn, NY',
+    }],
+    payload: {
+      fieldCount: 1,
+    },
+    targetId: listingId,
+    targetKind: 'listing_record',
+  });
+
+  const resolvedRows = storage.listResolvedFields({
+    targetKind: 'listing_record',
+    targetId: listingId,
+    fieldPath: 'location.address',
+  });
+  const auditRows = storage.listAuditEvents({
+    targetKind: 'listing_record',
+    targetId: listingId,
+    eventKind: 'resolved_field_upserted',
+  });
+
+  assert.equal(firstWrite.fields.length, 1);
+  assert.equal(secondWrite.fields.length, 0);
+  assert.deepEqual(secondWrite.skippedFieldPaths, ['location.address']);
+  assert.equal(secondWrite.auditEvent, null);
+  assert.equal(resolvedRows.length, 1);
+  assert.deepEqual(resolvedRows[0].supportingFragmentIds, ['efg_a', 'efg_b']);
+  assert.equal(auditRows.length, 1);
+
+  storage.close();
+});
+
+test('sqlite storage rejects non-canonical resolved field paths at the database boundary', () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nyc-housing-scout-evidence-field-path-guard-'));
+  const fixture = seedEvidenceFixture(dataDir);
+  const {
+    storage,
+    source,
+    observationId,
+    listingId,
+  } = fixture;
+
+  assert.throws(() => {
+    storage.db.prepare(`
+      INSERT INTO resolved_fields (
+        id, target_kind, target_id, source_id, observation_id, field_path, status, resolution_kind,
+        resolver_version, value_json, confidence, ambiguity_json, supporting_fragment_ids_json, metadata_json,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      'rfd_bad_field_path',
+      'listing_record',
+      listingId,
+      source.id,
+      observationId,
+      ' location.address ',
+      'accepted',
+      'address_resolution',
+      'address-resolver-v1',
+      JSON.stringify('123 Bedford Ave, Brooklyn, NY'),
+      0.81,
+      null,
+      '[]',
+      '{}',
+      '2026-03-17T00:00:00.000Z',
+      '2026-03-17T00:00:00.000Z',
+    );
+  }, /resolved_fields\.field_path must be trimmed and non-empty/i);
 
   storage.close();
 });
