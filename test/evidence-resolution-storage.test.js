@@ -4,7 +4,10 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { createCollectedPost } from '../src/core/collected-post.js';
+import { SqliteStorage } from '../src/storage/sqlite-storage.js';
 import { createStorage } from '../src/storage/storage.js';
+
+const STORAGE_MIGRATIONS_DIR = path.resolve(process.cwd(), 'src/storage/migrations');
 
 test('sqlite storage layers evidence, resolved fields, manual overrides, audit events, and effective-value precedence without mutating raw rows', () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nyc-housing-scout-evidence-'));
@@ -396,8 +399,279 @@ test('sqlite storage rejects non-canonical resolved field paths at the database 
   storage.close();
 });
 
+test('storage field-path list filters treat explicit invalid values as match-none instead of widening queries', () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nyc-housing-scout-evidence-filter-guards-'));
+  const fixture = seedEvidenceFixture(dataDir);
+  const {
+    storage,
+    observationId,
+    listingId,
+  } = fixture;
+
+  storage.recordEvidenceFragments({
+    entries: [{
+      observationId,
+      fragments: [{
+        fragmentKind: 'address_candidate',
+        fieldPath: 'location.address',
+        sourceSurface: 'body_text',
+        sourceRef: '/bodyText',
+        producerKind: 'heuristic',
+        producerVersion: 'evidence-v1',
+        rawText: '123 Bedford Ave',
+        normalized: { address: '123 Bedford Ave' },
+        confidence: 0.61,
+        metadata: { line: 1 },
+      }],
+    }],
+  });
+
+  storage.upsertResolvedField({
+    targetKind: 'listing_record',
+    targetId: listingId,
+    fieldPath: 'location.address',
+    status: 'accepted',
+    resolutionKind: 'address_resolution',
+    resolverVersion: 'address-resolver-v1',
+    value: '123 Bedford Ave, Brooklyn, NY',
+  });
+
+  storage.applyManualOverrideAction({
+    action: 'set',
+    targetKind: 'listing_record',
+    targetId: listingId,
+    fieldPath: 'location.address',
+    value: '125 Bedford Ave Apt 2R, Brooklyn, NY',
+    reason: 'Operator confirmed unit number.',
+    operatorId: 'claudius',
+  });
+
+  assert.equal(storage.listEvidenceFragments({
+    observationId,
+    fieldPath: '   ',
+  }).length, 0);
+  assert.equal(storage.listResolvedFields({
+    targetKind: 'listing_record',
+    targetId: listingId,
+    fieldPath: '   ',
+  }).length, 0);
+  assert.equal(storage.listResolvedFields({
+    targetKind: 'listing_record',
+    targetId: listingId,
+    fieldPaths: ['   '],
+  }).length, 0);
+  assert.equal(storage.listManualOverrides({
+    targetKind: 'listing_record',
+    targetId: listingId,
+    fieldPath: '   ',
+  }).length, 0);
+  assert.equal(storage.listManualOverrides({
+    targetKind: 'listing_record',
+    targetId: listingId,
+    fieldPaths: ['   '],
+  }).length, 0);
+  assert.equal(storage.selectResolvedFieldsByTargets('listing_record', [listingId], ['   ']).length, 0);
+  assert.equal(storage.selectManualOverridesByTargets('listing_record', [listingId], ['   ']).length, 0);
+  assert.equal(storage.listResolvedFields({
+    targetKind: 'listing_record',
+    targetId: listingId,
+    fieldPaths: ['   ', ' location.address '],
+  }).length, 1);
+  assert.equal(storage.listManualOverrides({
+    targetKind: 'listing_record',
+    targetId: listingId,
+    fieldPaths: ['   ', ' location.address '],
+  }).length, 1);
+
+  storage.close();
+});
+
+test('follow-up migration repairs manual-override audit payload ids after field-path dedupe already ran', () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nyc-housing-scout-manual-override-audit-repair-'));
+  const dbFile = path.join(dataDir, 'storage', 'nyc-housing-scout.sqlite');
+  const migrationsV3 = path.join(dataDir, 'migrations-v3');
+  const migrationsV4 = path.join(dataDir, 'migrations-v4');
+  const migrationsV5 = path.join(dataDir, 'migrations-v5');
+
+  copyMigrationFiles(migrationsV3, [
+    '0001_init.sql',
+    '0002_processing_pipeline.sql',
+    '0003_evidence_resolution_and_review.sql',
+  ]);
+  copyMigrationFiles(migrationsV4, [
+    '0001_init.sql',
+    '0002_processing_pipeline.sql',
+    '0003_evidence_resolution_and_review.sql',
+    '0004_field_path_normalization_guards.sql',
+  ]);
+  copyMigrationFiles(migrationsV5, [
+    '0001_init.sql',
+    '0002_processing_pipeline.sql',
+    '0003_evidence_resolution_and_review.sql',
+    '0004_field_path_normalization_guards.sql',
+    '0005_manual_override_audit_payload_canonicalization.sql',
+  ]);
+
+  let storage = new SqliteStorage({ dbFile, migrationsDir: migrationsV3 });
+  const fixture = seedEvidenceFixtureWithStorage(storage);
+  const {
+    source,
+    observationId,
+    listingId,
+  } = fixture;
+  const deletedManualOverrideId = 'mno_deleted_duplicate';
+  const survivorManualOverrideId = 'mno_survivor_canonical';
+  const auditSetId = 'evt_manual_override_set_duplicate';
+  const auditUpdateId = 'evt_manual_override_update_duplicate';
+
+  storage.db.prepare(`
+    INSERT INTO manual_overrides (
+      id, target_kind, target_id, source_id, observation_id, field_path, value_json, reason, operator_id,
+      status, metadata_json, created_at, updated_at, cleared_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    deletedManualOverrideId,
+    'listing_record',
+    listingId,
+    source.id,
+    observationId,
+    ' location.address ',
+    JSON.stringify('125 Bedford Ave Apt 2, Brooklyn, NY'),
+    'Older duplicate before field-path normalization.',
+    'claudius',
+    'active',
+    '{}',
+    '2026-03-17T10:00:00.000Z',
+    '2026-03-17T10:00:00.000Z',
+    null,
+  );
+  storage.db.prepare(`
+    INSERT INTO manual_overrides (
+      id, target_kind, target_id, source_id, observation_id, field_path, value_json, reason, operator_id,
+      status, metadata_json, created_at, updated_at, cleared_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    survivorManualOverrideId,
+    'listing_record',
+    listingId,
+    source.id,
+    observationId,
+    'location.address',
+    JSON.stringify('126 Bedford Ave Apt 3, Brooklyn, NY'),
+    'Latest canonical override.',
+    'claudius',
+    'active',
+    '{}',
+    '2026-03-17T10:01:00.000Z',
+    '2026-03-17T10:02:00.000Z',
+    null,
+  );
+  storage.db.prepare(`
+    INSERT INTO audit_events (
+      id, target_kind, target_id, source_id, observation_id, event_kind, actor_kind, actor_id, payload_json, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    auditSetId,
+    'listing_record',
+    listingId,
+    source.id,
+    observationId,
+    'manual_override_set',
+    'operator',
+    'claudius',
+    JSON.stringify({
+      action: 'created',
+      fieldPath: ' location.address ',
+      manualOverrideId: deletedManualOverrideId,
+      previous: null,
+      next: {
+        id: deletedManualOverrideId,
+        status: 'active',
+        value: '125 Bedford Ave Apt 2, Brooklyn, NY',
+      },
+    }),
+    '2026-03-17T10:00:01.000Z',
+  );
+  storage.db.prepare(`
+    INSERT INTO audit_events (
+      id, target_kind, target_id, source_id, observation_id, event_kind, actor_kind, actor_id, payload_json, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    auditUpdateId,
+    'listing_record',
+    listingId,
+    source.id,
+    observationId,
+    'manual_override_updated',
+    'operator',
+    'claudius',
+    JSON.stringify({
+      action: 'updated',
+      fieldPath: ' location.address ',
+      manualOverrideId: deletedManualOverrideId,
+      previous: {
+        id: deletedManualOverrideId,
+        status: 'active',
+        value: '125 Bedford Ave Apt 2, Brooklyn, NY',
+      },
+      next: {
+        id: deletedManualOverrideId,
+        status: 'active',
+        value: '126 Bedford Ave Apt 3, Brooklyn, NY',
+      },
+    }),
+    '2026-03-17T10:02:01.000Z',
+  );
+  storage.close();
+
+  storage = new SqliteStorage({ dbFile, migrationsDir: migrationsV4 });
+  assert.equal(storage.listManualOverrides({
+    targetKind: 'listing_record',
+    targetId: listingId,
+    limit: 10,
+  }).length, 1);
+  assert.equal(storage.listManualOverrides({
+    targetKind: 'listing_record',
+    targetId: listingId,
+    limit: 10,
+  })[0].id, survivorManualOverrideId);
+  assert.equal(storage.listAuditEvents({
+    auditEventId: auditSetId,
+    limit: 1,
+  })[0].payload.manualOverrideId, deletedManualOverrideId);
+  assert.equal(storage.listAuditEvents({
+    auditEventId: auditUpdateId,
+    limit: 1,
+  })[0].payload.previous.id, deletedManualOverrideId);
+  storage.close();
+
+  storage = new SqliteStorage({ dbFile, migrationsDir: migrationsV5 });
+
+  const repairedSetEvent = storage.listAuditEvents({
+    auditEventId: auditSetId,
+    limit: 1,
+  })[0];
+  const repairedUpdateEvent = storage.listAuditEvents({
+    auditEventId: auditUpdateId,
+    limit: 1,
+  })[0];
+
+  assert.equal(repairedSetEvent.payload.fieldPath, 'location.address');
+  assert.equal(repairedSetEvent.payload.manualOverrideId, survivorManualOverrideId);
+  assert.equal(repairedSetEvent.payload.next.id, survivorManualOverrideId);
+  assert.equal(repairedUpdateEvent.payload.fieldPath, 'location.address');
+  assert.equal(repairedUpdateEvent.payload.manualOverrideId, survivorManualOverrideId);
+  assert.equal(repairedUpdateEvent.payload.previous.id, survivorManualOverrideId);
+  assert.equal(repairedUpdateEvent.payload.next.id, survivorManualOverrideId);
+
+  storage.close();
+});
+
 function seedEvidenceFixture(dataDir) {
-  const storage = createStorage({ dataDir });
+  return seedEvidenceFixtureWithStorage(createStorage({ dataDir }));
+}
+
+function seedEvidenceFixtureWithStorage(storage) {
   const source = storage.getOrCreateSource({
     platform: 'facebook',
     sourceKey: 'nyc-housing-group',
@@ -501,4 +775,15 @@ function seedEvidenceFixture(dataDir) {
     observationId: observationEntry.observation.id,
     listingId: listingRecord.id,
   };
+}
+
+function copyMigrationFiles(targetDir, fileNames) {
+  fs.mkdirSync(targetDir, { recursive: true });
+
+  for (const fileName of fileNames) {
+    fs.copyFileSync(
+      path.join(STORAGE_MIGRATIONS_DIR, fileName),
+      path.join(targetDir, fileName),
+    );
+  }
 }
