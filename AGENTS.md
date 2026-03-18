@@ -53,6 +53,14 @@ Only treat `src/ui/planning/` as working context when you are actively changing 
 - Do not introduce abstractions, guards, renames, wrapper components, or new files unless they solve a concrete problem today. A comment is better than a defensive runtime check for a scenario that cannot currently happen. Three similar lines are better than a premature helper.
 - If existing code is already clean and correct, leave it alone. When in doubt, ask: "does removing this make the code worse?" If the answer is no, remove it.
 
+## Documentation Hygiene
+
+- Active doc directories should stay scannable. If a new PM or engineer cannot quickly tell what is current, the docs are too cluttered.
+- When a milestone closes or a doc is superseded, archive it in the same pass — do not leave it for a future cleanup. Move it to the relevant `archive/` subfolder, update the parent index, and add it to the archive index.
+- When archiving touches many files or cross-cutting references, dispatch a worker to handle the moves, index updates, and a reference-verification grep.
+- Prefer archive moves over deletion. Historical docs should stay discoverable, just not on the main stage.
+- Never archive canonical docs listed in Sources Of Truth above.
+
 ## Workflow Rules
 
 - Any new doc, note, pass log, or scratch writeup should use a New York timestamp prefix in `YYYY-MM-DD_HH-MM-SS_*` form when the filename is not otherwise fixed by convention.
@@ -87,6 +95,6 @@ Only treat `src/ui/planning/` as working context when you are actively changing 
 
 - `data/README.md` — what lives under `data/`, where it comes from, and which paths are legacy
 - `src/ui/planning/` — active dashboard planning and worker handoffs; useful for UI work, not canonical repo policy
-- `docs/passes/` — recent implementation changes
+- `docs/passes/` — recent implementation changes (older foundational passes live in `docs/passes/archive/`)
 - `docs/reviews/` — architectural assessments and tradeoffs
-- `docs/notes/` — exploratory or superseded context
+- `docs/notes/` — current planning inputs, deferred end-state notes, and active background (superseded and session-specific notes live in `docs/notes/archive/`)
