@@ -11,17 +11,19 @@ Your job is to regain footing quickly, reconstruct current state from the repo i
 
 Mode
 - Start in review / synthesis mode, not implementation mode.
-- Your first task is to understand current state, active work, deferred work, and the next milestone.
+- Your first task is to understand current state, active work, deferred work, and the current near-term milestone.
 - Only after that should you propose or dispatch work.
 
 What success looks like
 - You can explain where the project stands now.
-- You can identify the true next milestone.
-- You can distinguish active work, archived work, deferred backlog, and historical context.
-- You can tell whether there are open branches / stacked PRs that should land before new work starts.
+- You can identify the true current near-term milestone.
+- You can distinguish active work, deferred end-state work, archived work, and historical context.
+- You can tell whether there are open branches / PRs or uncommitted local changes that should land before new work starts.
 - You can produce a concrete recommendation for what to do next and what to delegate.
 
 Read order
+
+1. Canonical docs
 1. `README.md`
 2. `docs/INDEX.md`
 3. `docs/VISION_AND_ARCHITECTURE.md`
@@ -31,50 +33,62 @@ Read order
 7. `docs/LISTING_SCHEMA.md`
 8. `data/README.md`
 
-Then read the current PM / planning handoff docs:
-9. `docs/notes/2026-03-17_16-40-27_PM_HANDOFF_AND_NEXT_MILESTONE.md`
-10. `docs/notes/2026-03-17_18-32-59_PM_PLANNING_BRIEF_MULTI_SOURCE_RUNTIME.md`
-11. `docs/notes/2026-03-17_18-39-19_MV3_BROWSER_BRIDGE_RECOMMENDATION.md`
-12. `src/ui/planning/2026-03-17_16-26-05_SESSION_PROGRESS_OVERVIEW.md`
+2. Doc indexes
+9. `docs/notes/README.md`
+10. `docs/passes/README.md`
+11. `docs/reviews/README.md`
 
-Then inspect the doc indexes:
-13. `docs/passes/README.md`
-14. `docs/reviews/README.md`
-15. `docs/notes/README.md`
-16. `src/ui/planning/README.md`
-17. `src/ui/planning/archived/README.md`
+3. Current planning inputs
+- Read the notes currently listed under `Current Planning Input` in `docs/notes/README.md`.
+- If `docs/notes/README.md` has a `Deferred End-State Planning Input` section, read those only after you understand the current near-term milestone.
+- Do not assume a dated note is current just because it exists. Use the index sections and superseded markers.
 
-Then inspect the deferred backlog inputs:
-18. `docs/reviews/2026-03-17_17-05-01_OPERATOR_UI_REVIEW_AND_BACKLOG.md`
-19. `docs/reviews/2026-03-17_18-16-44_OPERATOR_UI_BACKLOG_REVALIDATION.md`
-20. `docs/reviews/2026-03-17_17-10-01_SQLITE_STORAGE_REFACTOR_REVIEW.md`
+4. Current implementation context
+- From `docs/passes/README.md`, read the latest relevant passes for the active near-term milestone.
+- From `docs/reviews/README.md`, read the latest relevant reviews for the same areas.
+- If the current planning docs indicate active UI/operator-surface work, then also inspect:
+  - `src/ui/planning/README.md`
+  - the latest relevant files under `src/ui/planning/`
+- Otherwise do not front-load UI planning docs.
 
-Then inspect repo / GitHub state
+5. Repo / Git state
 - Run:
   - `git status --short`
   - `git branch -vv`
   - `git log --oneline --decorate -n 20`
+- If GitHub CLI is installed and authenticated, also run:
   - `gh pr list --state open`
   - `gh pr view --json number,title,body,headRefName,baseRefName,url` for any relevant open PRs
-- Determine:
-  - what branch you are on
-  - whether there are stacked branches/PRs in flight
-  - whether there is uncommitted work
-  - whether there is active implementation that should be finished before starting a new milestone
+- If GitHub CLI is unavailable or unconfigured, say so briefly and continue with local repo state.
 
-Important current expectations
-- The evidence resolution / review milestone is complete and archived.
-- The next recommended milestone is multi-source collector runtime / ingest hardening.
-- The intended browser-boundary direction is a repo-owned MV3 Chrome extension + localhost bridge + Node browser client, replacing the OpenClaw dependency over time.
-- Deferred UI backlog and `sqlite-storage.js` refactor backlog exist, but they are not supposed to preempt the runtime milestone unless current repo state proves otherwise.
+Determine:
+- what branch you are on
+- whether there are stacked branches/PRs in flight
+- whether there is uncommitted work
+- whether there is active implementation that should be finished before starting a new milestone
+
+Important orientation rules
+- Prefer current canonical docs over dated notes.
+- Use `docs/notes/README.md` to decide which notes are current, deferred, or superseded.
+- Use `docs/ROADMAP.md` for the short-form answer to “what is next now.”
+- Use `docs/SHIP_PLAN.md` to separate the first deploy slice from the fuller end-state architecture.
+- Do not assume the next milestone from older notes without checking whether the canonical docs still agree.
+- Distinguish clearly between:
+  - canonical docs
+  - current planning notes
+  - deferred end-state notes
+  - reviews
+  - pass logs
+  - archived or superseded material
 
 What to evaluate
 1. Is the documentation still coherent and aligned?
-2. Is the next milestone still clearly multi-source collector runtime / ingest hardening?
-3. Are there open PRs/branches that must land first?
-4. Is there any uncommitted or partially-landed work that changes priorities?
-5. Are any deferred backlog docs now urgent enough to reprioritize?
-6. What exact planning or implementation step should happen next?
+2. What is the actual current near-term milestone?
+3. What work is explicitly deferred end-state work rather than immediate execution work?
+4. Are there open PRs/branches or uncommitted local changes that must land first?
+5. Is there any partially-landed work that changes priorities?
+6. Are any deferred backlog items now urgent enough to reprioritize?
+7. What exact planning or implementation step should happen next?
 
 Your output format
 Return these sections:
@@ -91,17 +105,17 @@ Return these sections:
 4. `Deferred Backlog`
 - important deferred work that exists but should not drive the next move unless priorities changed
 
-5. `Next Milestone Verdict`
-- say whether the next milestone is still multi-source collector runtime / ingest hardening
-- if not, explain what changed
+5. `Near-Term Milestone Verdict`
+- state the current near-term milestone according to the canonical docs and current planning notes
+- if older notes point elsewhere, explain why they are now deferred or superseded
 
 6. `Immediate Recommendation`
 - the exact next action to take now
 - examples:
   - land open PRs
-  - create the multi-source runtime planning bundle
-  - dispatch a repo-state assessment worker
-  - clean docs
+  - dispatch a crawl-policy hardening brief
+  - dispatch a storage modularization brief
+  - clean stale planning docs
   - review a branch
   - etc.
 
@@ -111,15 +125,8 @@ Return these sections:
 
 Working style requirements
 - Be skeptical of stale assumptions.
-- Prefer the repo's current docs, code, and PR state over memory.
-- Distinguish clearly between:
-  - canonical docs
-  - notes
-  - reviews
-  - active planning bundles
-  - archived bundles
+- Prefer the repo's current docs, code, and Git state over memory.
 - Do not jump straight into implementation until current state is reconstructed.
-- If the repo state is already clear, say so and move decisively.
-
-If you discover that the docs and repo state are already clean and the next move is obvious, do not manufacture extra process. Say that plainly and move to the next concrete action.
+- Do not manufacture process if the next move is already obvious after review.
+- If the repo state is already clear, say so plainly and move decisively.
 ```

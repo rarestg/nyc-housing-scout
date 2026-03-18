@@ -103,6 +103,23 @@ The local system should retain:
 
 The hosted product should expose a curated public-safe read model shaped for listing search and detail views.
 
+## Near-Term Delivery Boundary
+
+The near-term shipping boundary is:
+
+- local collection and canonical write-side state on one operator laptop
+- central local queue and processing
+- a hosted public read model derived from local canonical SQLite
+
+The immediate engineering risks are now:
+
+- crawl coverage and stopping policy
+- Facebook identity correctness and duplicate reuse
+- operator workflow clarity
+- minimal reliability guardrails for crawl, queue, and publish health
+
+Replacing the current browser-control dependency and promoting the full multi-source runtime remain part of the intended end state, but they are not the blocker for the first deploy slice.
+
 ## Current Architecture Direction
 
 ## Stage A — Source crawling / ingestion

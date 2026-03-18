@@ -1,5 +1,9 @@
 # PM Handoff And Next Milestone
 
+Status: superseded for near-term PM sequencing by `docs/notes/2026-03-18_01-41-19_PM_HANDOFF_FIRST_DEPLOY_SLICE.md`.
+
+This note remains historical context for the earlier recommendation that multi-source collector runtime / ingest hardening should be the next milestone.
+
 Short handoff for a new PM joining after the dashboard redesign and the evidence-resolution-and-review milestone.
 
 ## What Just Closed

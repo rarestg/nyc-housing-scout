@@ -47,6 +47,46 @@ These decisions are no longer provisional:
 - D1 is the first cloud database target for the public read model.
 - The public frontend is a separate hosted surface, not the current operator/debug UI deployed unchanged.
 
+## First Deploy Slice
+
+The first deploy slice is narrower than the full end-state architecture.
+
+Near-term shipping should optimize for getting a trustworthy public read side online without treating browser-runtime replacement as a prerequisite.
+
+The first deploy boundary is:
+
+- keep Facebook collection local on the operator laptop
+- keep SQLite as the canonical write-side
+- keep the current local CDP-backed collector path
+- process observations through the existing local queue/extraction pipeline
+- publish only a cloud-safe read model to D1
+- ship the public frontend against that published read model
+
+The first deploy slice is not blocked on:
+
+- replacing OpenClaw yet
+- finishing the repo-owned MV3 bridge
+- promoting the collector itself into a hosted runtime
+- proving the full multi-source manager-plus-lanes topology
+
+Those remain locked end-state directions. They are just no longer the immediate blocker for the first deploy slice.
+
+The first deploy gates are:
+
+1. crawl policy hardening so repeated runs are trustworthy
+2. Facebook identity merge/reuse hardening so canonical post identity is reliable
+3. storage modularization and schema cleanup so near-term data-model changes are cheap and auditable
+4. one supported operator workflow over the existing stage CLIs
+5. minimal reliability telemetry for crawl, queue, and publish health
+6. public read-model publication from local canonical SQLite
+
+Near-term schema policy:
+
+- keep changing the local schema directly while the first deploy model is still moving
+- do not preserve stale migration baggage for the sake of backward compatibility on a single-user local tool
+- once the first deploy schema is trustworthy, reset the local database baseline and squash historical migrations into one clean starting migration that reflects the learned model
+- treat migration squashing as a deliberate cleanup milestone after the schema settles, not as compatibility work to carry forever
+
 ## End-State Architecture
 
 ```text
@@ -118,6 +158,8 @@ We should reconsider a more isolated per-source process model if:
 Until that happens, the manager-plus-lanes model is the better fit for a single-user, single-browser-session system.
 
 ## Major Workstreams
+
+These are standing workstreams, not the short-term execution order for the first deploy slice by themselves.
 
 ### 1. Multi-Source Collector Runtime
 
@@ -257,44 +299,43 @@ Completion gate:
 
 ## Milestone Sequence
 
-The work should land in this order.
+The first deploy slice should land in this order.
 
-For PM planning purposes, the current roadmap item `multi-source collector runtime / ingest hardening` spans the first part of this ship sequence, especially Milestones 1 through 3 below. The roadmap is using a broader near-term milestone label, not a competing sequencing model.
-
-### Milestone 1: Own The Browser Boundary
+### Milestone 1: Harden Local Collection Coverage And Identity
 
 Deliver:
-- source runtime model
-- explicit source/tab targeting
-- MV3 bridge skeleton
-- relay protocol
+- deterministic source preflight and top-of-feed reset behavior
+- overlap-anchor and stale-zone stopping rules
+- crawl quality metrics that make repeated coverage auditable
+- Facebook identity merge/reuse hardening plus real regression fixtures
 
 Exit when:
-- one source can crawl end to end through the new bridge
-- the bridge exposes the primitives needed to replace OpenClaw
+- repeated local runs are trustworthy enough to avoid missing posts or wasting time in stale feed zones
+- known weak-identity and duplicate-overlap failure families are covered by regression tests and live validation
 
-### Milestone 2: Prove Parallel Local Collection
+### Milestone 2: Supported Operator Workflow And Minimal Telemetry
 
 Deliver:
-- multi-source leases
-- one logical collector lane per source
-- preflight/reset/recovery behavior
-- central enqueue-first collection loop behavior
+- one documented operator workflow over the existing stage CLIs
+- explicit preflight, collect, validate, enqueue, process, and retry steps
+- minimal health signals for crawl failure, queue lag, and publish failure
+- concise operator failure playbooks
 
 Exit when:
-- multiple sources can run in parallel on one signed-in browser session
-- local SQLite remains healthy under continuous ingest
+- a new operator can run the supported path without relying on session memory
+- unhealthy crawl or queue states are visible quickly enough for intervention
 
-### Milestone 3: Harden Downstream Processing
+### Milestone 3: Storage Modularization And Schema Cleanup
 
 Deliver:
-- central processing worker shape
-- concurrent writer hardening
-- extraction-quality review pass against real outputs
+- split `src/storage/sqlite-storage.js` into focused modules by concern
+- move dashboard/read-model presentation logic out of the storage layer
+- keep canonical write paths, queue/evidence operations, and read helpers independently understandable
+- settle the first-deploy local schema strongly enough to support a later migration squash/reset
 
 Exit when:
-- collection stays fast even when processing slows
-- listing production remains downstream-only and replayable
+- storage changes no longer require navigating one giant mixed-concern file
+- the first-deploy data model is explicit enough that a clean baseline schema can be defined with confidence
 
 ### Milestone 4: Publish The Public Read Model
 
@@ -330,6 +371,20 @@ Deliver:
 
 Exit when:
 - the system can stay up, recover, and publish reliably enough to trust with daily unattended operation
+
+### Milestone 7: End-State Runtime Hardening
+
+Deliver:
+- source runtime model
+- explicit source/tab targeting
+- MV3 bridge skeleton and relay protocol
+- multi-source leases and recovery semantics
+- parallel local collection without source/tab collisions
+
+Exit when:
+- the active collection path no longer requires OpenClaw
+- multiple sources can run in parallel on one signed-in browser session without ambiguity
+- the fuller runtime topology in this doc is real rather than provisional
 
 ## Benchmark Criteria
 
@@ -377,11 +432,15 @@ Use these to judge whether the plan is actually working.
 
 This doc should drive the next concrete specs:
 
-1. MV3 browser bridge design
-2. source/tab lease and runtime-state design
-3. public read-model schema
-4. local-to-D1 publisher design
-5. Cloudflare frontend/API deployment plan
+1. crawl policy hardening and stop-rule plan
+2. identity merge/reuse hardening and regression-fixture plan
+3. storage modularization and baseline-schema reset plan
+4. supported operator workflow and failure-handling runbook
+5. public read-model schema
+6. local-to-D1 publisher design
+7. later end-state runtime inputs:
+   - source/tab lease and runtime-state design
+   - MV3 browser bridge design
 
 ## External References
 
