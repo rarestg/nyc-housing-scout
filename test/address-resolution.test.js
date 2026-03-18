@@ -205,7 +205,7 @@ test('resolvedFieldRecordMatches shares storage normalization semantics across c
     resolvedFieldRecordMatches(
       existing,
       {
-        fieldPath: 'location.neighborhood',
+        fieldPath: ' location.neighborhood ',
         status: 'ambiguous',
         resolutionKind: ADDRESS_RESOLUTION_KIND,
         resolverVersion: ADDRESS_RESOLVER_VERSION,
@@ -217,7 +217,7 @@ test('resolvedFieldRecordMatches shares storage normalization semantics across c
             { value: 'Williamsburg', confidence: 0.7, fragmentIds: undefined },
           ],
         },
-        supportingFragmentIds: ['efg_1', ' efg_2 ', ''],
+        supportingFragmentIds: [' efg_2 ', 'efg_1', 'efg_2', ''],
         metadata: {
           ignored: undefined,
         },
@@ -292,7 +292,7 @@ test('upsertResolvedFieldsWithAudit skips stale duplicate resolution writes insi
       ambiguity: field.ambiguity,
       confidence: field.confidence,
       createdAt: '2026-03-17T16:12:01.000Z',
-      fieldPath: field.fieldPath,
+      fieldPath: ` ${field.fieldPath} `,
       metadata: field.metadata,
       resolutionKind: field.resolutionKind,
       resolverVersion: field.resolverVersion,

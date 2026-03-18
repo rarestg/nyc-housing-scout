@@ -1,3 +1,25 @@
+export function normalizeFieldPath(value) {
+  const normalized = String(value || '').trim();
+  return normalized || '';
+}
+
+export function normalizeFieldPathList(value) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => normalizeFieldPath(entry)).filter(Boolean);
+  }
+
+  const single = normalizeFieldPath(value);
+  return single ? [single] : [];
+}
+
+export function normalizeSupportingFragmentIds(value) {
+  return Array.from(new Set(
+    (Array.isArray(value) ? value : [value])
+      .map((entry) => String(entry ?? '').trim())
+      .filter(Boolean),
+  )).sort((left, right) => left.localeCompare(right));
+}
+
 export function buildResolvedFieldStorageShape(input = {}, resolvedTargetScope = null) {
   const target = resolvedTargetScope || input.resolvedTargetScope || null;
   const metadataInput = input.metadata ?? {};
@@ -7,14 +29,14 @@ export function buildResolvedFieldStorageShape(input = {}, resolvedTargetScope =
     targetId: target?.targetId || String(input.targetId || '').trim(),
     sourceId: target?.sourceId || normalizeNullableText(input.sourceId),
     observationId: target?.observationId || normalizeNullableText(input.observationId),
-    fieldPath: String(input.fieldPath || '').trim(),
+    fieldPath: normalizeFieldPath(input.fieldPath),
     status: String(input.status || '').trim(),
     resolutionKind: String(input.resolutionKind || '').trim(),
     resolverVersion: String(input.resolverVersion || '').trim(),
     value: normalizeJsonStorageValue(input.value),
     confidence: normalizeNullableNumber(input.confidence),
     ambiguity: normalizeJsonStorageValue(input.ambiguity),
-    supportingFragmentIds: normalizeStringList(input.supportingFragmentIds),
+    supportingFragmentIds: normalizeSupportingFragmentIds(input.supportingFragmentIds),
     metadata: normalizeJsonStorageValue(metadataInput, {}),
   };
 }
@@ -24,21 +46,27 @@ export function resolvedFieldRecordMatches(existing, input = {}, resolvedTargetS
     return false;
   }
 
+  const normalizedExisting = buildResolvedFieldStorageShape(existing, {
+    targetKind: existing.targetKind,
+    targetId: existing.targetId,
+    sourceId: existing.sourceId,
+    observationId: existing.observationId,
+  });
   const normalized = buildResolvedFieldStorageShape(input, resolvedTargetScope);
 
-  return existing.targetKind === normalized.targetKind
-    && existing.targetId === normalized.targetId
-    && existing.sourceId === normalized.sourceId
-    && existing.observationId === normalized.observationId
-    && existing.fieldPath === normalized.fieldPath
-    && existing.status === normalized.status
-    && existing.resolutionKind === normalized.resolutionKind
-    && existing.resolverVersion === normalized.resolverVersion
-    && existing.confidence === normalized.confidence
-    && stableStringify(existing.value) === stableStringify(normalized.value)
-    && stableStringify(existing.ambiguity) === stableStringify(normalized.ambiguity)
-    && stableStringify(existing.supportingFragmentIds) === stableStringify(normalized.supportingFragmentIds)
-    && stableStringify(existing.metadata) === stableStringify(normalized.metadata);
+  return normalizedExisting.targetKind === normalized.targetKind
+    && normalizedExisting.targetId === normalized.targetId
+    && normalizedExisting.sourceId === normalized.sourceId
+    && normalizedExisting.observationId === normalized.observationId
+    && normalizedExisting.fieldPath === normalized.fieldPath
+    && normalizedExisting.status === normalized.status
+    && normalizedExisting.resolutionKind === normalized.resolutionKind
+    && normalizedExisting.resolverVersion === normalized.resolverVersion
+    && normalizedExisting.confidence === normalized.confidence
+    && stableStringify(normalizedExisting.value) === stableStringify(normalized.value)
+    && stableStringify(normalizedExisting.ambiguity) === stableStringify(normalized.ambiguity)
+    && stableStringify(normalizedExisting.supportingFragmentIds) === stableStringify(normalized.supportingFragmentIds)
+    && stableStringify(normalizedExisting.metadata) === stableStringify(normalized.metadata);
 }
 
 function normalizeNullableText(value) {
@@ -53,15 +81,6 @@ function normalizeNullableNumber(value) {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
-}
-
-function normalizeStringList(value) {
-  if (Array.isArray(value)) {
-    return value.map((entry) => String(entry || '').trim()).filter(Boolean);
-  }
-
-  const single = String(value || '').trim();
-  return single ? [single] : [];
 }
 
 function stableStringify(value) {
