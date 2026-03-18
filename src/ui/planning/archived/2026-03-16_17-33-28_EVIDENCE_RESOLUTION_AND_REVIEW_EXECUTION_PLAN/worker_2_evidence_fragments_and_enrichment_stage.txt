@@ -37,4 +37,4 @@ Validation
 Coordination
 ------------
 Update only:
-- `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/archived/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/handoffs/worker_2_status.txt`
+- `src/ui/planning/archived/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/handoffs/worker_2_status.txt`

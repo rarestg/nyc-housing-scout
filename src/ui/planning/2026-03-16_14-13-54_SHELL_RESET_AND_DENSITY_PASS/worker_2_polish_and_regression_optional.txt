@@ -5,13 +5,13 @@ Use this only if Worker 1 lands and there is still meaningful cleanup left.
 
 Read order
 ----------
-1. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/README.txt`
-2. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/01_VERDICT_AND_GOALS.txt`
-3. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/02_EXECUTION_PLAN.txt`
-4. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/03_DISPATCH_PROTOCOL.txt`
-5. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/04_COORDINATION_BOARD.txt`
-6. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/handoffs/worker_1_status.txt`
-7. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/handoffs/worker_2_status.txt`
+1. `src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/README.txt`
+2. `src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/01_VERDICT_AND_GOALS.txt`
+3. `src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/02_EXECUTION_PLAN.txt`
+4. `src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/03_DISPATCH_PROTOCOL.txt`
+5. `src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/04_COORDINATION_BOARD.txt`
+6. `src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/handoffs/worker_1_status.txt`
+7. `src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/handoffs/worker_2_status.txt`
 
 Mission
 -------
@@ -45,7 +45,7 @@ Validation
 Coordination
 ------------
 - Update only:
-  - `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/handoffs/worker_2_status.txt`
+  - `src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/handoffs/worker_2_status.txt`
 
 Deliverable
 -----------

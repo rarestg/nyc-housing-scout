@@ -35,10 +35,10 @@ I do not recommend Postgres/Supabase as the first cloud target.
 
 ### What already works
 
-- The repo has a real browser UI: a React 19 SPA bundled with esbuild from [`src/ui/dashboard/app/build-dashboard.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/dashboard/app/build-dashboard.js#L11) and mounted from [`src/ui/dashboard/app/index.html`](/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/dashboard/app/index.html#L1).
-- The UI/API contract is already clear and stable enough to reuse. The current server exposes listings, posts, review, debug, and source endpoints from [`src/ui/inspection-server.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/inspection-server.js#L167).
-- The canonical data model is already queryable in SQLite, with durable tables for `sources`, `crawl_runs`, `post_observations`, `listing_records`, `processing_jobs`, and `processed_payloads` described in [`data/README.md`](/Users/claudius/claudius-repos/nyc-housing-scout/data/README.md#L155).
-- The project explicitly wants the read/query layer shaped for a future frontend, not ad hoc JSON exports ([`README.md`](/Users/claudius/claudius-repos/nyc-housing-scout/README.md#L35), [`docs/PIPELINE.md`](/Users/claudius/claudius-repos/nyc-housing-scout/docs/PIPELINE.md#L240)).
+- The repo has a real browser UI: a React 19 SPA bundled with esbuild from [`src/ui/dashboard/app/build-dashboard.js`](src/ui/dashboard/app/build-dashboard.js#L11) and mounted from [`src/ui/dashboard/app/index.html`](src/ui/dashboard/app/index.html#L1).
+- The UI/API contract is already clear and stable enough to reuse. The current server exposes listings, posts, review, debug, and source endpoints from [`src/ui/inspection-server.js`](src/ui/inspection-server.js#L167).
+- The canonical data model is already queryable in SQLite, with durable tables for `sources`, `crawl_runs`, `post_observations`, `listing_records`, `processing_jobs`, and `processed_payloads` described in [`data/README.md`](data/README.md#L155).
+- The project explicitly wants the read/query layer shaped for a future frontend, not ad hoc JSON exports ([`README.md`](README.md#L35), [`docs/PIPELINE.md`](docs/PIPELINE.md#L240)).
 - Current local scale is small:
   - `data/storage`: `10M`
   - `data/raw`: `35M`
@@ -48,10 +48,10 @@ I do not recommend Postgres/Supabase as the first cloud target.
 
 ### What is not deployable as-is
 
-- Collection is explicitly tied to an attached logged-in Chrome tab and `openclaw browser evaluate` ([`docs/PIPELINE.md`](/Users/claudius/claudius-repos/nyc-housing-scout/docs/PIPELINE.md#L5), [`src/core/browser-pipeline.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/core/browser-pipeline.js#L4)).
-- The current storage factory only supports a local SQLite file on disk ([`src/storage/storage.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/storage/storage.js#L4)).
-- The SQLite implementation is built on `DatabaseSync` from `node:sqlite` ([`src/storage/sqlite-storage.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/storage/sqlite-storage.js#L1)).
-- The inspection surface is a local `node:http` server with `server.listen(...)` and direct filesystem reads from `data/` ([`src/ui/inspection-server.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/inspection-server.js#L13), [`src/ui/inspection-server.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/inspection-server.js#L28), [`src/ui/inspection-server.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/inspection-server.js#L154)).
+- Collection is explicitly tied to an attached logged-in Chrome tab and `openclaw browser evaluate` ([`docs/PIPELINE.md`](docs/PIPELINE.md#L5), [`src/core/browser-pipeline.js`](src/core/browser-pipeline.js#L4)).
+- The current storage factory only supports a local SQLite file on disk ([`src/storage/storage.js`](src/storage/storage.js#L4)).
+- The SQLite implementation is built on `DatabaseSync` from `node:sqlite` ([`src/storage/sqlite-storage.js`](src/storage/sqlite-storage.js#L1)).
+- The inspection surface is a local `node:http` server with `server.listen(...)` and direct filesystem reads from `data/` ([`src/ui/inspection-server.js`](src/ui/inspection-server.js#L13), [`src/ui/inspection-server.js`](src/ui/inspection-server.js#L28), [`src/ui/inspection-server.js`](src/ui/inspection-server.js#L154)).
 - The app exposes operator/debug surfaces that should not be public unchanged:
   - `/posts`
   - `/review`
@@ -73,11 +73,11 @@ The current backend is not.
 
 The repo purpose and pipeline docs are explicit:
 
-- local-first pipeline ([`README.md`](/Users/claudius/claudius-repos/nyc-housing-scout/README.md#L3))
-- attached Chrome tab for collection ([`README.md`](/Users/claudius/claudius-repos/nyc-housing-scout/README.md#L45))
-- raw artifacts and SQLite live under `data/` ([`README.md`](/Users/claudius/claudius-repos/nyc-housing-scout/README.md#L68), [`data/README.md`](/Users/claudius/claudius-repos/nyc-housing-scout/data/README.md#L3))
+- local-first pipeline ([`README.md`](README.md#L3))
+- attached Chrome tab for collection ([`README.md`](README.md#L45))
+- raw artifacts and SQLite live under `data/` ([`README.md`](README.md#L68), [`data/README.md`](data/README.md#L3))
 
-Your current collector shells out to `openclaw` and assumes your logged-in browser profile is present locally ([`src/core/browser-pipeline.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/core/browser-pipeline.js#L4)).
+Your current collector shells out to `openclaw` and assumes your logged-in browser profile is present locally ([`src/core/browser-pipeline.js`](src/core/browser-pipeline.js#L4)).
 
 That is the right place to keep it for now.
 
@@ -91,7 +91,7 @@ The hosted surface today is:
 - local file serving for artifacts
 - direct local SQLite access
 
-That shape is documented in [`docs/PIPELINE.md`](/Users/claudius/claudius-repos/nyc-housing-scout/docs/PIPELINE.md#L204) and implemented in [`src/ui/inspection-server.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/inspection-server.js#L13).
+That shape is documented in [`docs/PIPELINE.md`](docs/PIPELINE.md#L204) and implemented in [`src/ui/inspection-server.js`](src/ui/inspection-server.js#L13).
 
 Even with Cloudflare's expanding Node compatibility, this exact implementation is still the wrong deployment shape because:
 
@@ -116,11 +116,11 @@ The dashboard storage helpers currently:
 
 See:
 
-- [`src/storage/sqlite-storage.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/storage/sqlite-storage.js#L1401)
-- [`src/storage/sqlite-storage.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/storage/sqlite-storage.js#L1484)
-- [`src/storage/sqlite-storage.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/storage/sqlite-storage.js#L1673)
-- [`src/storage/sqlite-storage.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/storage/sqlite-storage.js#L1933)
-- [`src/storage/sqlite-storage.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/storage/sqlite-storage.js#L3341)
+- [`src/storage/sqlite-storage.js`](src/storage/sqlite-storage.js#L1401)
+- [`src/storage/sqlite-storage.js`](src/storage/sqlite-storage.js#L1484)
+- [`src/storage/sqlite-storage.js`](src/storage/sqlite-storage.js#L1673)
+- [`src/storage/sqlite-storage.js`](src/storage/sqlite-storage.js#L1933)
+- [`src/storage/sqlite-storage.js`](src/storage/sqlite-storage.js#L3341)
 
 That is acceptable for the current local dataset.
 It is not the edge API I would ship unchanged.
@@ -225,7 +225,7 @@ The current schema and docs explicitly treat latitude/longitude as downstream en
 - `location.lng`
 - `geocodeConfidence`
 
-are later-stage fields, not first-pass extraction targets ([`docs/LISTING_SCHEMA.md`](/Users/claudius/claudius-repos/nyc-housing-scout/docs/LISTING_SCHEMA.md#L21)).
+are later-stage fields, not first-pass extraction targets ([`docs/LISTING_SCHEMA.md`](docs/LISTING_SCHEMA.md#L21)).
 
 Right now, most useful location data is still:
 
@@ -418,7 +418,7 @@ That is not public-safe by default.
 
 ### 2. Query execution model
 
-Current dashboard listing/post/review helpers do too much filtering and pagination in JavaScript after loading candidates from SQLite ([`src/storage/sqlite-storage.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/storage/sqlite-storage.js#L1508), [`src/storage/sqlite-storage.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/storage/sqlite-storage.js#L1684), [`src/storage/sqlite-storage.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/storage/sqlite-storage.js#L1936)).
+Current dashboard listing/post/review helpers do too much filtering and pagination in JavaScript after loading candidates from SQLite ([`src/storage/sqlite-storage.js`](src/storage/sqlite-storage.js#L1508), [`src/storage/sqlite-storage.js`](src/storage/sqlite-storage.js#L1684), [`src/storage/sqlite-storage.js`](src/storage/sqlite-storage.js#L1936)).
 
 The cloud API should push more of that work into SQL.
 
@@ -429,7 +429,7 @@ Current dashboard build is intentionally simple and dev-oriented:
 - `process.env.NODE_ENV` forced to `"development"`
 - `minify: false`
 
-See [`src/ui/dashboard/app/build-dashboard.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/dashboard/app/build-dashboard.js#L15).
+See [`src/ui/dashboard/app/build-dashboard.js`](src/ui/dashboard/app/build-dashboard.js#L15).
 
 That is fine locally, but the cloud app should have a production build path.
 
@@ -479,13 +479,13 @@ Observed results:
 
 ### Repo references
 
-- [`README.md`](/Users/claudius/claudius-repos/nyc-housing-scout/README.md)
-- [`docs/PIPELINE.md`](/Users/claudius/claudius-repos/nyc-housing-scout/docs/PIPELINE.md)
-- [`data/README.md`](/Users/claudius/claudius-repos/nyc-housing-scout/data/README.md)
-- [`src/ui/inspection-server.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/inspection-server.js)
-- [`src/storage/sqlite-storage.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/storage/sqlite-storage.js)
-- [`src/storage/storage.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/storage/storage.js)
-- [`src/core/browser-pipeline.js`](/Users/claudius/claudius-repos/nyc-housing-scout/src/core/browser-pipeline.js)
+- [`README.md`](README.md)
+- [`docs/PIPELINE.md`](docs/PIPELINE.md)
+- [`data/README.md`](data/README.md)
+- [`src/ui/inspection-server.js`](src/ui/inspection-server.js)
+- [`src/storage/sqlite-storage.js`](src/storage/sqlite-storage.js)
+- [`src/storage/storage.js`](src/storage/storage.js)
+- [`src/core/browser-pipeline.js`](src/core/browser-pipeline.js)
 
 ### Cloudflare references
 

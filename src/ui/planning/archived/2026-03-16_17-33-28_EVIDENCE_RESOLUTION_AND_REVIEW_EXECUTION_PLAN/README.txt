@@ -60,7 +60,7 @@ Primary design note
 -------------------
 The storage and precedence contract for this milestone lives here:
 
-- `/Users/claudius/claudius-repos/nyc-housing-scout/docs/notes/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_OVERRIDE_DESIGN.md`
+- `docs/notes/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_OVERRIDE_DESIGN.md`
 
 Relationship to other active planning
 -------------------------------------

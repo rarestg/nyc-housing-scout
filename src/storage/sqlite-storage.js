@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { ensureDir } from '../core/file-utils.js';
+import { buildResolvedFieldStorageShape, resolvedFieldRecordMatches } from '../core/resolved-field-storage.js';
 import {
   buildProcessingDedupeKey,
   DEFAULT_LEASE_MS,
@@ -3504,10 +3505,11 @@ export class SqliteStorage {
   writeResolvedFieldRecord(input = {}) {
     const now = input.updatedAt || new Date().toISOString();
     const target = input.resolvedTargetScope || this.resolveTargetScope(input);
-    const fieldPath = String(input.fieldPath || '').trim();
-    const status = String(input.status || '').trim();
-    const resolutionKind = String(input.resolutionKind || '').trim();
-    const resolverVersion = String(input.resolverVersion || '').trim();
+    const resolvedField = buildResolvedFieldStorageShape(input, target);
+    const fieldPath = resolvedField.fieldPath;
+    const status = resolvedField.status;
+    const resolutionKind = resolvedField.resolutionKind;
+    const resolverVersion = resolvedField.resolverVersion;
 
     if (!fieldPath) {
       throw new Error('storage.upsertResolvedField requires fieldPath');
@@ -3526,7 +3528,6 @@ export class SqliteStorage {
     }
 
     const existing = this.selectResolvedFieldByTargetField(target.targetKind, target.targetId, fieldPath);
-    const supportingFragmentIds = normalizeStringList(input.supportingFragmentIds);
 
     if (existing) {
       this.db.prepare(`
@@ -3540,11 +3541,11 @@ export class SqliteStorage {
         status,
         resolutionKind,
         resolverVersion,
-        toJson(input.value),
-        normalizeNullableNumber(input.confidence),
-        toJson(input.ambiguity),
-        toJson(supportingFragmentIds, []),
-        toJson(input.metadata || {}, {}),
+        toJson(resolvedField.value),
+        resolvedField.confidence,
+        toJson(resolvedField.ambiguity),
+        toJson(resolvedField.supportingFragmentIds, []),
+        toJson(resolvedField.metadata, {}),
         now,
         existing.id,
       );
@@ -3553,21 +3554,9 @@ export class SqliteStorage {
     }
 
     const createdAt = input.createdAt || now;
-    const resolvedField = {
+    const resolvedFieldRecord = {
       id: this.nextId('resolvedField', 'rfd'),
-      targetKind: target.targetKind,
-      targetId: target.targetId,
-      sourceId: target.sourceId,
-      observationId: target.observationId,
-      fieldPath,
-      status,
-      resolutionKind,
-      resolverVersion,
-      value: input.value,
-      confidence: normalizeNullableNumber(input.confidence),
-      ambiguity: input.ambiguity,
-      supportingFragmentIds,
-      metadata: input.metadata || {},
+      ...resolvedField,
       createdAt,
       updatedAt: now,
     };
@@ -3579,25 +3568,25 @@ export class SqliteStorage {
         created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      resolvedField.id,
-      resolvedField.targetKind,
-      resolvedField.targetId,
-      resolvedField.sourceId,
-      resolvedField.observationId,
-      resolvedField.fieldPath,
-      resolvedField.status,
-      resolvedField.resolutionKind,
-      resolvedField.resolverVersion,
-      toJson(resolvedField.value),
-      resolvedField.confidence,
-      toJson(resolvedField.ambiguity),
-      toJson(resolvedField.supportingFragmentIds, []),
-      toJson(resolvedField.metadata, {}),
-      resolvedField.createdAt,
-      resolvedField.updatedAt,
+      resolvedFieldRecord.id,
+      resolvedFieldRecord.targetKind,
+      resolvedFieldRecord.targetId,
+      resolvedFieldRecord.sourceId,
+      resolvedFieldRecord.observationId,
+      resolvedFieldRecord.fieldPath,
+      resolvedFieldRecord.status,
+      resolvedFieldRecord.resolutionKind,
+      resolvedFieldRecord.resolverVersion,
+      toJson(resolvedFieldRecord.value),
+      resolvedFieldRecord.confidence,
+      toJson(resolvedFieldRecord.ambiguity),
+      toJson(resolvedFieldRecord.supportingFragmentIds, []),
+      toJson(resolvedFieldRecord.metadata, {}),
+      resolvedFieldRecord.createdAt,
+      resolvedFieldRecord.updatedAt,
     );
 
-    return resolvedField;
+    return resolvedFieldRecord;
   }
 
   resolveTargetScope(input = {}) {
@@ -5761,41 +5750,6 @@ function readEvidenceProducerIdentity(fragments = []) {
   };
 }
 
-function resolvedFieldRecordMatches(existing, input = {}, resolvedTargetScope = null) {
-  if (!existing) {
-    return false;
-  }
-
-  const target = resolvedTargetScope || input.resolvedTargetScope || null;
-  const fieldPath = String(input.fieldPath || '').trim();
-  const status = String(input.status || '').trim();
-  const resolutionKind = String(input.resolutionKind || '').trim();
-  const resolverVersion = String(input.resolverVersion || '').trim();
-  const confidence = normalizeNullableNumber(input.confidence);
-  const supportingFragmentIds = normalizeStringList(input.supportingFragmentIds);
-  const metadata = input.metadata || {};
-
-  if (target) {
-    if (existing.targetKind !== target.targetKind || existing.targetId !== target.targetId) {
-      return false;
-    }
-
-    if (existing.sourceId !== target.sourceId || existing.observationId !== target.observationId) {
-      return false;
-    }
-  }
-
-  return existing.fieldPath === fieldPath
-    && existing.status === status
-    && existing.resolutionKind === resolutionKind
-    && existing.resolverVersion === resolverVersion
-    && existing.confidence === confidence
-    && stableStringify(existing.value) === stableStringify(input.value)
-    && stableStringify(existing.ambiguity) === stableStringify(input.ambiguity)
-    && stableStringify(existing.supportingFragmentIds) === stableStringify(supportingFragmentIds)
-    && stableStringify(existing.metadata) === stableStringify(metadata);
-}
-
 function hasEffectiveFallbackValue(value) {
   if (value === null || value === undefined) {
     return false;
@@ -5849,14 +5803,6 @@ function compactObject(value) {
 
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
-function stableStringify(value) {
-  if (value === null || value === undefined) return String(value);
-  if (typeof value !== 'object') return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
-
-  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
 }
 
 function toJson(value, fallback = null) {

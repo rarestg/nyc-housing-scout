@@ -4,6 +4,7 @@ import {
   ADDRESS_RESOLVER_VERSION,
   buildListingAddressResolutions,
 } from '../core/address-resolution.js';
+import { resolvedFieldRecordMatches } from '../core/resolved-field-storage.js';
 
 export function runAddressResolution(storage, input = {}) {
   const resolutionKind = normalizeString(input.resolutionKind) || ADDRESS_RESOLUTION_KIND;
@@ -42,6 +43,12 @@ export function runAddressResolution(storage, input = {}) {
         limit: ADDRESS_RESOLVED_FIELD_PATHS.length + 10,
       }).map((row) => [row.fieldPath, row]),
     );
+    const resolvedFieldScope = {
+      targetKind: 'listing_record',
+      targetId: listing.id,
+      sourceId: listing.sourceId,
+      observationId: listing.observationId,
+    };
 
     const changedFields = [];
     let listingUnchangedCount = 0;
@@ -49,7 +56,7 @@ export function runAddressResolution(storage, input = {}) {
     for (const nextField of nextFields) {
       const existing = existingByField.get(nextField.fieldPath) || null;
 
-      if (resolvedFieldMatches(existing, nextField)) {
+      if (resolvedFieldRecordMatches(existing, nextField, resolvedFieldScope)) {
         listingUnchangedCount += 1;
         unchangedCount += 1;
         continue;
@@ -154,29 +161,6 @@ function getObservationEvidenceFragments(storage, cache, observationId) {
   });
   cache.set(observationId, fragments);
   return fragments;
-}
-
-function resolvedFieldMatches(existing, nextField) {
-  if (!existing) {
-    return false;
-  }
-
-  return existing.status === nextField.status
-    && existing.resolutionKind === nextField.resolutionKind
-    && existing.resolverVersion === nextField.resolverVersion
-    && existing.confidence === nextField.confidence
-    && stableStringify(existing.value) === stableStringify(nextField.value)
-    && stableStringify(existing.ambiguity) === stableStringify(nextField.ambiguity)
-    && stableStringify(existing.supportingFragmentIds) === stableStringify(nextField.supportingFragmentIds)
-    && stableStringify(existing.metadata) === stableStringify(nextField.metadata);
-}
-
-function stableStringify(value) {
-  if (value === null || value === undefined) return String(value);
-  if (typeof value !== 'object') return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
-
-  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
 }
 
 function compactObject(value) {

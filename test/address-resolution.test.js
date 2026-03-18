@@ -10,6 +10,7 @@ import {
   ADDRESS_RESOLVER_VERSION,
   buildListingAddressResolutions,
 } from '../src/core/address-resolution.js';
+import { resolvedFieldRecordMatches } from '../src/core/resolved-field-storage.js';
 import { buildObservationEvidenceFragments } from '../src/core/evidence-fragments.js';
 import { createCollectedPost } from '../src/core/collected-post.js';
 import { runEvidenceEnrichment } from '../src/processing/run-evidence-enrichment.js';
@@ -111,14 +112,15 @@ test('runAddressResolution writes accepted, ambiguous, and unresolved resolved-f
     eventKind: 'address_resolution_recorded',
     limit: 10,
   });
+  const expectedFieldCount = ADDRESS_RESOLVED_FIELD_PATHS.length;
 
-  assert.equal(acceptedRows.length, 5);
-  assert.equal(ambiguousRows.length, 5);
+  assert.equal(acceptedRows.length, expectedFieldCount);
+  assert.equal(ambiguousRows.length, expectedFieldCount);
   assert.equal(acceptedAuditRows.length, 1);
   assert.equal(acceptedAuditRows[0].actorKind, 'system');
-  assert.equal(acceptedAuditRows[0].payload.fieldCount, 5);
+  assert.equal(acceptedAuditRows[0].payload.fieldCount, expectedFieldCount);
   assert.equal(ambiguousAuditRows.length, 1);
-  assert.equal(ambiguousAuditRows[0].payload.fieldCount, 5);
+  assert.equal(ambiguousAuditRows[0].payload.fieldCount, expectedFieldCount);
 
   const acceptedByField = new Map(acceptedRows.map((row) => [row.fieldPath, row]));
   const ambiguousByField = new Map(ambiguousRows.map((row) => [row.fieldPath, row]));
@@ -175,6 +177,60 @@ test('runAddressResolution writes accepted, ambiguous, and unresolved resolved-f
   assert.deepEqual(afterAcceptedListing.payload, beforeAcceptedListing.payload);
 
   storage.close();
+});
+
+test('resolvedFieldRecordMatches shares storage normalization semantics across callers', () => {
+  const existing = {
+    targetKind: 'listing_record',
+    targetId: 'lst_fixture_shared_compare',
+    sourceId: 'src_fixture_shared_compare',
+    observationId: 'obs_fixture_shared_compare',
+    fieldPath: 'location.neighborhood',
+    status: 'ambiguous',
+    resolutionKind: ADDRESS_RESOLUTION_KIND,
+    resolverVersion: ADDRESS_RESOLVER_VERSION,
+    confidence: 0.7,
+    value: null,
+    ambiguity: {
+      reason: 'multiple_neighborhood_candidates',
+      candidates: [
+        { value: 'Williamsburg', confidence: 0.7 },
+      ],
+    },
+    supportingFragmentIds: ['efg_1', 'efg_2'],
+    metadata: {},
+  };
+
+  assert.equal(
+    resolvedFieldRecordMatches(
+      existing,
+      {
+        fieldPath: 'location.neighborhood',
+        status: 'ambiguous',
+        resolutionKind: ADDRESS_RESOLUTION_KIND,
+        resolverVersion: ADDRESS_RESOLVER_VERSION,
+        confidence: '0.7',
+        value: undefined,
+        ambiguity: {
+          reason: 'multiple_neighborhood_candidates',
+          candidates: [
+            { value: 'Williamsburg', confidence: 0.7, fragmentIds: undefined },
+          ],
+        },
+        supportingFragmentIds: ['efg_1', ' efg_2 ', ''],
+        metadata: {
+          ignored: undefined,
+        },
+      },
+      {
+        targetKind: 'listing_record',
+        targetId: existing.targetId,
+        sourceId: existing.sourceId,
+        observationId: existing.observationId,
+      },
+    ),
+    true,
+  );
 });
 
 test('upsertResolvedFieldsWithAudit skips stale duplicate resolution writes inside the transaction', () => {
@@ -277,6 +333,122 @@ test('upsertResolvedFieldsWithAudit skips stale duplicate resolution writes insi
   assert.equal(staleDuplicateWrite.auditEvent, null);
   assert.equal(storedFields.length, ADDRESS_RESOLVED_FIELD_PATHS.length);
   assert.equal(auditRows.length, 1);
+
+  storage.close();
+});
+
+test('upsertResolvedFieldsWithAudit treats undefined JSON keys as no-op after normalization', () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nyc-housing-scout-address-normalization-'));
+  const fixture = seedAddressResolutionFixture(dataDir);
+  const { storage, acceptedListingId } = fixture;
+
+  const firstWrite = storage.upsertResolvedFieldsWithAudit({
+    actorId: `${ADDRESS_RESOLUTION_KIND}:${ADDRESS_RESOLVER_VERSION}`,
+    actorKind: 'system',
+    createdAt: '2026-03-17T16:13:00.000Z',
+    eventKind: 'address_resolution_recorded',
+    fields: [{
+      ambiguity: {
+        reason: 'single_candidate',
+      },
+      confidence: 0.91,
+      createdAt: '2026-03-17T16:13:00.000Z',
+      fieldPath: 'location.address',
+      metadata: {
+        source: {
+          method: 'heuristic',
+        },
+      },
+      resolutionKind: ADDRESS_RESOLUTION_KIND,
+      resolverVersion: ADDRESS_RESOLVER_VERSION,
+      status: 'accepted',
+      supportingFragmentIds: ['efg-normalized-1'],
+      updatedAt: '2026-03-17T16:13:00.000Z',
+      value: {
+        line1: '123 Bedford Ave',
+        neighborhood: 'Williamsburg',
+      },
+    }],
+    payload: {
+      fieldCount: 1,
+      resolutionKind: ADDRESS_RESOLUTION_KIND,
+      resolverVersion: ADDRESS_RESOLVER_VERSION,
+    },
+    targetId: acceptedListingId,
+    targetKind: 'listing_record',
+  });
+
+  const storedBeforeRerun = storage.listResolvedFields({
+    targetKind: 'listing_record',
+    targetId: acceptedListingId,
+    resolutionKind: ADDRESS_RESOLUTION_KIND,
+    resolverVersion: ADDRESS_RESOLVER_VERSION,
+    limit: 10,
+  });
+
+  const secondWrite = storage.upsertResolvedFieldsWithAudit({
+    actorId: `${ADDRESS_RESOLUTION_KIND}:${ADDRESS_RESOLVER_VERSION}`,
+    actorKind: 'system',
+    createdAt: '2026-03-17T16:13:01.000Z',
+    eventKind: 'address_resolution_recorded',
+    fields: [{
+      ambiguity: {
+        reason: 'single_candidate',
+        note: undefined,
+      },
+      confidence: 0.91,
+      createdAt: '2026-03-17T16:13:01.000Z',
+      fieldPath: 'location.address',
+      metadata: {
+        source: {
+          method: 'heuristic',
+          note: undefined,
+        },
+      },
+      resolutionKind: ADDRESS_RESOLUTION_KIND,
+      resolverVersion: ADDRESS_RESOLVER_VERSION,
+      status: 'accepted',
+      supportingFragmentIds: ['efg-normalized-1'],
+      updatedAt: '2026-03-17T16:13:01.000Z',
+      value: {
+        line1: '123 Bedford Ave',
+        neighborhood: 'Williamsburg',
+        apartment: undefined,
+      },
+    }],
+    payload: {
+      fieldCount: 1,
+      resolutionKind: ADDRESS_RESOLUTION_KIND,
+      resolverVersion: ADDRESS_RESOLVER_VERSION,
+    },
+    targetId: acceptedListingId,
+    targetKind: 'listing_record',
+  });
+
+  const auditRows = storage.listAuditEvents({
+    targetKind: 'listing_record',
+    targetId: acceptedListingId,
+    eventKind: 'address_resolution_recorded',
+    limit: 10,
+  });
+
+  assert.equal(firstWrite.fields.length, 1);
+  assert.equal(secondWrite.fields.length, 0);
+  assert.deepEqual(secondWrite.skippedFieldPaths, ['location.address']);
+  assert.equal(secondWrite.auditEvent, null);
+  assert.equal(auditRows.length, 1);
+  assert.deepEqual(storedBeforeRerun[0].value, {
+    line1: '123 Bedford Ave',
+    neighborhood: 'Williamsburg',
+  });
+  assert.deepEqual(storedBeforeRerun[0].ambiguity, {
+    reason: 'single_candidate',
+  });
+  assert.deepEqual(storedBeforeRerun[0].metadata, {
+    source: {
+      method: 'heuristic',
+    },
+  });
 
   storage.close();
 });
