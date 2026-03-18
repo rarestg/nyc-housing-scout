@@ -24,7 +24,7 @@ These are the best entry points once you know which area you are touching.
 |------|------|
 | [passes/README.md](passes/README.md) | Implementation log index |
 | [reviews/README.md](reviews/README.md) | Architecture review index |
-| [notes/README.md](notes/README.md) | Historical notes and superseded planning docs |
+| [notes/README.md](notes/README.md) | Planning notes, deferred end-state inputs, and background context |
 | [../src/cli/README.md](../src/cli/README.md) | CLI entrypoint map by stage |
 | [../src/ui/ARCHITECTURE.md](../src/ui/ARCHITECTURE.md) | Operator UI architecture and route/API map |
 | [../src/ui/planning/README.md](../src/ui/planning/README.md) | Temporary dashboard planning bundles and handoffs |
@@ -36,12 +36,13 @@ These are the best entry points once you know which area you are touching.
 1. [../README.md](../README.md)
 2. [VISION_AND_ARCHITECTURE](VISION_AND_ARCHITECTURE.md)
 3. [ROADMAP](ROADMAP.md)
-4. [notes/2026-03-17_16-40-27_PM_HANDOFF_AND_NEXT_MILESTONE.md](notes/2026-03-17_16-40-27_PM_HANDOFF_AND_NEXT_MILESTONE.md)
-5. [notes/2026-03-17_18-32-59_PM_PLANNING_BRIEF_MULTI_SOURCE_RUNTIME.md](notes/2026-03-17_18-32-59_PM_PLANNING_BRIEF_MULTI_SOURCE_RUNTIME.md)
-6. [notes/2026-03-17_18-39-19_MV3_BROWSER_BRIDGE_RECOMMENDATION.md](notes/2026-03-17_18-39-19_MV3_BROWSER_BRIDGE_RECOMMENDATION.md)
-7. [SHIP_PLAN](SHIP_PLAN.md)
-8. [PIPELINE](PIPELINE.md)
-9. [reviews/2026-03-16_00-40-29_CLOUDFLARE_DEPLOYMENT_READINESS_REVIEW.md](reviews/2026-03-16_00-40-29_CLOUDFLARE_DEPLOYMENT_READINESS_REVIEW.md)
+4. [SHIP_PLAN](SHIP_PLAN.md)
+5. [notes/2026-03-18_01-41-19_PM_HANDOFF_FIRST_DEPLOY_SLICE.md](notes/2026-03-18_01-41-19_PM_HANDOFF_FIRST_DEPLOY_SLICE.md)
+6. [notes/2026-03-18_01-36-14_ENG_STATUS_AND_DEPLOY_PRIORITIES_MEMO.md](notes/2026-03-18_01-36-14_ENG_STATUS_AND_DEPLOY_PRIORITIES_MEMO.md)
+7. [PIPELINE](PIPELINE.md)
+8. [reviews/2026-03-16_00-40-29_CLOUDFLARE_DEPLOYMENT_READINESS_REVIEW.md](reviews/2026-03-16_00-40-29_CLOUDFLARE_DEPLOYMENT_READINESS_REVIEW.md)
+9. [notes/2026-03-17_18-32-59_PM_PLANNING_BRIEF_MULTI_SOURCE_RUNTIME.md](notes/2026-03-17_18-32-59_PM_PLANNING_BRIEF_MULTI_SOURCE_RUNTIME.md) *(deferred end-state)*
+10. [notes/2026-03-17_18-39-19_MV3_BROWSER_BRIDGE_RECOMMENDATION.md](notes/2026-03-17_18-39-19_MV3_BROWSER_BRIDGE_RECOMMENDATION.md) *(deferred end-state)*
 
 ### Operator
 
