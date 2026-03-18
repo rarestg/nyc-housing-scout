@@ -1801,6 +1801,7 @@ export class SqliteStorage {
     const clauses = [];
     const params = [];
     const fragmentIds = normalizeStringList(input.fragmentIds || input.fragmentId);
+    const fieldPath = normalizeOptionalFieldPathFilter(input.fieldPath);
 
     if (fragmentIds.length) {
       clauses.push(`f.id IN (${buildPlaceholders(fragmentIds.length)})`);
@@ -1832,7 +1833,10 @@ export class SqliteStorage {
       params.push(input.sourceKey);
     }
 
-    const fieldPath = normalizeFieldPath(input.fieldPath);
+    if (fieldPath === '') {
+      return [];
+    }
+
     if (fieldPath) {
       clauses.push('f.field_path = ?');
       params.push(fieldPath);
@@ -1880,7 +1884,7 @@ export class SqliteStorage {
     const params = [];
     const resolvedFieldIds = normalizeStringList(input.resolvedFieldIds || input.resolvedFieldId);
     const targetIds = normalizeStringList(input.targetIds || input.targetId);
-    const fieldPaths = normalizeFieldPathList(input.fieldPaths || input.fieldPath);
+    const fieldPaths = normalizeOptionalFieldPathListFilter(input.fieldPaths ?? input.fieldPath);
 
     if (resolvedFieldIds.length) {
       clauses.push(`rf.id IN (${buildPlaceholders(resolvedFieldIds.length)})`);
@@ -1917,7 +1921,11 @@ export class SqliteStorage {
       params.push(input.sourceKey);
     }
 
-    if (fieldPaths.length) {
+    if (fieldPaths && fieldPaths.length === 0) {
+      return [];
+    }
+
+    if (fieldPaths?.length) {
       clauses.push(`rf.field_path IN (${buildPlaceholders(fieldPaths.length)})`);
       params.push(...fieldPaths);
     }
@@ -1962,7 +1970,7 @@ export class SqliteStorage {
     const params = [];
     const manualOverrideIds = normalizeStringList(input.manualOverrideIds || input.manualOverrideId);
     const targetIds = normalizeStringList(input.targetIds || input.targetId);
-    const fieldPaths = normalizeFieldPathList(input.fieldPaths || input.fieldPath);
+    const fieldPaths = normalizeOptionalFieldPathListFilter(input.fieldPaths ?? input.fieldPath);
 
     if (manualOverrideIds.length) {
       clauses.push(`mo.id IN (${buildPlaceholders(manualOverrideIds.length)})`);
@@ -1999,7 +2007,11 @@ export class SqliteStorage {
       params.push(input.sourceKey);
     }
 
-    if (fieldPaths.length) {
+    if (fieldPaths && fieldPaths.length === 0) {
+      return [];
+    }
+
+    if (fieldPaths?.length) {
       clauses.push(`mo.field_path IN (${buildPlaceholders(fieldPaths.length)})`);
       params.push(...fieldPaths);
     }
@@ -3247,11 +3259,15 @@ export class SqliteStorage {
     return mapResolvedField(row);
   }
 
-  selectResolvedFieldsByTargets(targetKind, targetIds = [], fieldPaths = []) {
+  selectResolvedFieldsByTargets(targetKind, targetIds = [], fieldPaths = null) {
     const normalizedTargetIds = normalizeStringList(targetIds);
-    const normalizedFieldPaths = normalizeFieldPathList(fieldPaths);
+    const normalizedFieldPaths = normalizeOptionalFieldPathListFilter(fieldPaths);
 
     if (!normalizedTargetIds.length) {
+      return [];
+    }
+
+    if (normalizedFieldPaths && normalizedFieldPaths.length === 0) {
       return [];
     }
 
@@ -3261,7 +3277,7 @@ export class SqliteStorage {
     ];
     const params = [targetKind, ...normalizedTargetIds];
 
-    if (normalizedFieldPaths.length) {
+    if (normalizedFieldPaths?.length) {
       clauses.push(`rf.field_path IN (${buildPlaceholders(normalizedFieldPaths.length)})`);
       params.push(...normalizedFieldPaths);
     }
@@ -3299,11 +3315,15 @@ export class SqliteStorage {
     return mapManualOverride(row);
   }
 
-  selectManualOverridesByTargets(targetKind, targetIds = [], fieldPaths = []) {
+  selectManualOverridesByTargets(targetKind, targetIds = [], fieldPaths = null) {
     const normalizedTargetIds = normalizeStringList(targetIds);
-    const normalizedFieldPaths = normalizeFieldPathList(fieldPaths);
+    const normalizedFieldPaths = normalizeOptionalFieldPathListFilter(fieldPaths);
 
     if (!normalizedTargetIds.length) {
+      return [];
+    }
+
+    if (normalizedFieldPaths && normalizedFieldPaths.length === 0) {
       return [];
     }
 
@@ -3313,7 +3333,7 @@ export class SqliteStorage {
     ];
     const params = [targetKind, ...normalizedTargetIds];
 
-    if (normalizedFieldPaths.length) {
+    if (normalizedFieldPaths?.length) {
       clauses.push(`mo.field_path IN (${buildPlaceholders(normalizedFieldPaths.length)})`);
       params.push(...normalizedFieldPaths);
     }
@@ -4190,6 +4210,22 @@ function normalizeStringList(value) {
 
   const single = String(value || '').trim();
   return single ? [single] : [];
+}
+
+function normalizeOptionalFieldPathFilter(value) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  return normalizeFieldPath(value);
+}
+
+function normalizeOptionalFieldPathListFilter(value) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  return normalizeFieldPathList(value);
 }
 
 function uniqueStrings(values) {
