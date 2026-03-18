@@ -1,5 +1,9 @@
 # PM Planning Brief: Multi-Source Collector Runtime
 
+Status: deferred background planning input for the fuller end-state runtime.
+
+Use this note when the team is ready to resume the multi-source runtime / MV3 browser-boundary milestone. It is no longer the active next-milestone brief for the first deploy slice.
+
 Use this note when a future PM needs to create the execution bundle for the next milestone.
 
 This is not the execution bundle itself. It is the map for producing one without depending on session memory.

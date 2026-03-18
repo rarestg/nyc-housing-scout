@@ -4,12 +4,20 @@ Historical field notes, one-off operating docs, and superseded planning material
 
 ## Current Planning Input
 
-These notes are the active PM-facing planning inputs for the next milestone. Treat them as current until they are replaced or absorbed into a more canonical doc.
+These notes are the active PM-facing planning inputs for the current near-term milestone. Treat them as current until they are replaced or absorbed into a more canonical doc.
 
 | Doc | What it is |
 |-----|-----------|
-| [2026-03-17_16-40-27_PM_HANDOFF_AND_NEXT_MILESTONE](2026-03-17_16-40-27_PM_HANDOFF_AND_NEXT_MILESTONE.md) | Current PM handoff: what just closed, why the next milestone is multi-source collector runtime / ingest hardening, and why other candidates are sequenced later |
-| [2026-03-17_18-32-59_PM_PLANNING_BRIEF_MULTI_SOURCE_RUNTIME](2026-03-17_18-32-59_PM_PLANNING_BRIEF_MULTI_SOURCE_RUNTIME.md) | PM-facing map for creating the future multi-source collector runtime / MV3 browser-bridge execution bundle |
+| [2026-03-18_01-36-14_ENG_STATUS_AND_DEPLOY_PRIORITIES_MEMO](2026-03-18_01-36-14_ENG_STATUS_AND_DEPLOY_PRIORITIES_MEMO.md) | Current engineering memo: where the pipeline stands now, what is still missing for reliability, and the recommended P0/P1 path to a near-term deployment |
+| [2026-03-18_01-41-19_PM_HANDOFF_FIRST_DEPLOY_SLICE](2026-03-18_01-41-19_PM_HANDOFF_FIRST_DEPLOY_SLICE.md) | Current PM handoff: what just closed, why the next milestone is first-deploy hardening plus read-side publication, and how that differs from the fuller end-state runtime |
+
+## Deferred End-State Planning Input
+
+These notes remain useful, but they are not the active next-milestone brief for the first deploy slice.
+
+| Doc | What it is |
+|-----|-----------|
+| [2026-03-17_18-32-59_PM_PLANNING_BRIEF_MULTI_SOURCE_RUNTIME](2026-03-17_18-32-59_PM_PLANNING_BRIEF_MULTI_SOURCE_RUNTIME.md) | PM-facing map for creating the future multi-source collector runtime / MV3 browser-bridge execution bundle once the team moves past the first deploy slice |
 | [2026-03-17_18-39-19_MV3_BROWSER_BRIDGE_RECOMMENDATION](2026-03-17_18-39-19_MV3_BROWSER_BRIDGE_RECOMMENDATION.md) | Engineering recommendation for the repo-owned MV3 browser bridge, localhost relay shape, and phased replacement of OpenClaw |
 
 ## Still Useful Background
@@ -28,6 +36,7 @@ These notes are the active PM-facing planning inputs for the next milestone. Tre
 | Doc | Current source of truth |
 |-----|-------------------------|
 | [2026-03-13_12-22-00_PM_HANDOFF_AND_OPERATOR_GUIDE](2026-03-13_12-22-00_PM_HANDOFF_AND_OPERATOR_GUIDE.md) | Working heuristics now live in [VISION_AND_ARCHITECTURE](../VISION_AND_ARCHITECTURE.md); current state lives in [ROADMAP](../ROADMAP.md) and [PIPELINE](../PIPELINE.md) |
+| [2026-03-17_16-40-27_PM_HANDOFF_AND_NEXT_MILESTONE](2026-03-17_16-40-27_PM_HANDOFF_AND_NEXT_MILESTONE.md) | Superseded for near-term sequencing by [2026-03-18_01-41-19_PM_HANDOFF_FIRST_DEPLOY_SLICE](2026-03-18_01-41-19_PM_HANDOFF_FIRST_DEPLOY_SLICE.md) |
 | [2026-03-13_13-37-00_INGEST_LOOP_SPEC](2026-03-13_13-37-00_INGEST_LOOP_SPEC.md) | `ingest:loop` behavior is now documented in [PIPELINE](../PIPELINE.md) |
 | [2026-03-12_14-35-37_PROJECT_GOALS](2026-03-12_14-35-37_PROJECT_GOALS.md) | [VISION_AND_ARCHITECTURE](../VISION_AND_ARCHITECTURE.md) |
 | [2026-03-12_14-35-37_EXECUTION_PLAN](2026-03-12_14-35-37_EXECUTION_PLAN.md) | [ROADMAP](../ROADMAP.md) |
