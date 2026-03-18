@@ -1,6 +1,6 @@
 # Notes
 
-Historical field notes, one-off operating docs, and superseded planning material.
+Historical field notes, one-off operating docs, and planning material.
 
 ## Current Planning Input
 
@@ -10,6 +10,12 @@ These notes are the active PM-facing planning inputs for the current near-term m
 |-----|-----------|
 | [2026-03-18_01-36-14_ENG_STATUS_AND_DEPLOY_PRIORITIES_MEMO](2026-03-18_01-36-14_ENG_STATUS_AND_DEPLOY_PRIORITIES_MEMO.md) | Current engineering memo: where the pipeline stands now, what is still missing for reliability, and the recommended P0/P1 path to a near-term deployment |
 | [2026-03-18_01-41-19_PM_HANDOFF_FIRST_DEPLOY_SLICE](2026-03-18_01-41-19_PM_HANDOFF_FIRST_DEPLOY_SLICE.md) | Current PM handoff: what just closed, why the next milestone is first-deploy hardening plus read-side publication, and how that differs from the fuller end-state runtime |
+
+## PM Tooling
+
+| Doc | What it is |
+|-----|-----------|
+| [2026-03-18_00-30-48_CODEX_PM_BOOTSTRAP_PROMPT](2026-03-18_00-30-48_CODEX_PM_BOOTSTRAP_PROMPT.md) | Bootstrap prompt for a fresh Codex PM session to regain footing from the repo |
 
 ## Deferred End-State Planning Input
 
@@ -25,18 +31,10 @@ These notes remain useful, but they are not the active next-milestone brief for 
 | Doc | What it is |
 |-----|-----------|
 | [2026-03-12_21-27-18_CRAWL_STRATEGY_IDEAS](2026-03-12_21-27-18_CRAWL_STRATEGY_IDEAS.md) | Traversal-policy analysis: preflight, incremental/backfill split, overlap anchors |
-| [2026-03-12_19-35-38_DOM_ROOT_DISCOVERY_NOTE](2026-03-12_19-35-38_DOM_ROOT_DISCOVERY_NOTE.md) | Investigation note on missing time metadata and card-root discovery |
-| [2026-03-12_14-45-07_LIVE_BROWSE](2026-03-12_14-45-07_LIVE_BROWSE.md) | Manual browsing notes on real Facebook DOM structure and required operator actions |
-| [2026-03-12_15-16-00_TEST_RESULTS](2026-03-12_15-16-00_TEST_RESULTS.md) | Early MVP test findings |
-| [2026-03-13_13-16-00_BROWSER_RELAY_INGESTION_SOP](2026-03-13_13-16-00_BROWSER_RELAY_INGESTION_SOP.md) | Point-in-time relay/operator SOP for the old browser path |
 | [2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_OVERRIDE_DESIGN](2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_OVERRIDE_DESIGN.md) | Design note behind the evidence/resolution/review storage model |
 
-## Superseded Or Absorbed
+## Archive
 
-| Doc | Current source of truth |
-|-----|-------------------------|
-| [2026-03-13_12-22-00_PM_HANDOFF_AND_OPERATOR_GUIDE](2026-03-13_12-22-00_PM_HANDOFF_AND_OPERATOR_GUIDE.md) | Working heuristics now live in [VISION_AND_ARCHITECTURE](../VISION_AND_ARCHITECTURE.md); current state lives in [ROADMAP](../ROADMAP.md) and [PIPELINE](../PIPELINE.md) |
-| [2026-03-17_16-40-27_PM_HANDOFF_AND_NEXT_MILESTONE](2026-03-17_16-40-27_PM_HANDOFF_AND_NEXT_MILESTONE.md) | Superseded for near-term sequencing by [2026-03-18_01-41-19_PM_HANDOFF_FIRST_DEPLOY_SLICE](2026-03-18_01-41-19_PM_HANDOFF_FIRST_DEPLOY_SLICE.md) |
-| [2026-03-13_13-37-00_INGEST_LOOP_SPEC](2026-03-13_13-37-00_INGEST_LOOP_SPEC.md) | `ingest:loop` behavior is now documented in [PIPELINE](../PIPELINE.md) |
-| [2026-03-12_14-35-37_PROJECT_GOALS](2026-03-12_14-35-37_PROJECT_GOALS.md) | [VISION_AND_ARCHITECTURE](../VISION_AND_ARCHITECTURE.md) |
-| [2026-03-12_14-35-37_EXECUTION_PLAN](2026-03-12_14-35-37_EXECUTION_PLAN.md) | [ROADMAP](../ROADMAP.md) |
+Superseded, session-specific, and narrow investigation notes have been moved to [archive/](archive/INDEX.md).
+
+See `archive/INDEX.md` for the full list and the reasons each doc was moved.
