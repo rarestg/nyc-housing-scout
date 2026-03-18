@@ -5,28 +5,28 @@ Read order
 ----------
 Read these files in order before changing code:
 
-1. `/Users/claudius/claudius-repos/nyc-housing-scout/README.md`
-2. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/INDEX.md`
-3. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/VISION_AND_ARCHITECTURE.md`
-4. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/ROADMAP.md`
-5. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/PIPELINE.md`
-6. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/passes/2026-03-15_23-38-40_STAGE_CROSS_GROUP_DASHBOARD_INTEGRATION_PASS.md`
-7. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_00-10-47_UI_SPRINT_2_AND_DATA_QUALITY_PLAN/README.txt`
-8. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/README.txt`
-9. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/01_VERDICT_AND_GOALS.txt`
-10. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/02_EXECUTION_PLAN.txt`
-11. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/03_DISPATCH_PROTOCOL.txt`
-12. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/04_COORDINATION_BOARD.txt`
-13. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/handoffs/worker_1_status.txt`
+1. `README.md`
+2. `docs/INDEX.md`
+3. `docs/VISION_AND_ARCHITECTURE.md`
+4. `docs/ROADMAP.md`
+5. `docs/PIPELINE.md`
+6. `docs/passes/2026-03-15_23-38-40_STAGE_CROSS_GROUP_DASHBOARD_INTEGRATION_PASS.md`
+7. `src/ui/planning/2026-03-16_00-10-47_UI_SPRINT_2_AND_DATA_QUALITY_PLAN/README.txt`
+8. `src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/README.txt`
+9. `src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/01_VERDICT_AND_GOALS.txt`
+10. `src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/02_EXECUTION_PLAN.txt`
+11. `src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/03_DISPATCH_PROTOCOL.txt`
+12. `src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/04_COORDINATION_BOARD.txt`
+13. `src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/handoffs/worker_1_status.txt`
 
 Then inspect the current implementation:
 
-14. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/dashboard/app/AppShell.jsx`
-15. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/dashboard/components/DetailPane.jsx`
-16. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/dashboard/components/DataTable.jsx`
-17. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/dashboard/components/FilterControls.jsx`
-18. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/dashboard/components/RouteScaffold.jsx`
-19. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/dashboard/styles/dashboard.css`
+14. `src/ui/dashboard/app/AppShell.jsx`
+15. `src/ui/dashboard/components/DetailPane.jsx`
+16. `src/ui/dashboard/components/DataTable.jsx`
+17. `src/ui/dashboard/components/FilterControls.jsx`
+18. `src/ui/dashboard/components/RouteScaffold.jsx`
+19. `src/ui/dashboard/styles/dashboard.css`
 
 Mission
 -------
@@ -166,7 +166,7 @@ Coordination
 ------------
 - You are not alone in the codebase. Do not revert unrelated changes.
 - Update only:
-  - `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/handoffs/worker_1_status.txt`
+  - `src/ui/planning/2026-03-16_14-13-54_SHELL_RESET_AND_DENSITY_PASS/handoffs/worker_1_status.txt`
 - Update it when you start, if a blocker appears, and when you finish.
 
 Deliverable

@@ -3,29 +3,29 @@ Worker 1: Storage Contract And Precedence
 
 Read order
 ----------
-1. `/Users/claudius/claudius-repos/nyc-housing-scout/README.md`
-2. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/INDEX.md`
-3. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/VISION_AND_ARCHITECTURE.md`
-4. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/ROADMAP.md`
-5. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/PIPELINE.md`
-6. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/LISTING_SCHEMA.md`
-7. `/Users/claudius/claudius-repos/nyc-housing-scout/data/README.md`
-8. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/passes/README.md`
-9. `/Users/claudius/claudius-repos/nyc-housing-scout/docs/notes/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_OVERRIDE_DESIGN.md`
-10. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/archived/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/README.txt`
-11. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/archived/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/01_REPO_STATE_SYNTHESIS.txt`
-12. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/archived/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/02_STORAGE_AND_PRECEDENCE_DESIGN.txt`
-13. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/archived/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/03_EXECUTION_PLAN.txt`
-14. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/archived/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/04_DISPATCH_PROTOCOL.txt`
-15. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/archived/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/05_COORDINATION_BOARD.txt`
-16. `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/archived/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/handoffs/worker_1_status.txt`
+1. `README.md`
+2. `docs/INDEX.md`
+3. `docs/VISION_AND_ARCHITECTURE.md`
+4. `docs/ROADMAP.md`
+5. `docs/PIPELINE.md`
+6. `docs/LISTING_SCHEMA.md`
+7. `data/README.md`
+8. `docs/passes/README.md`
+9. `docs/notes/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_OVERRIDE_DESIGN.md`
+10. `src/ui/planning/archived/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/README.txt`
+11. `src/ui/planning/archived/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/01_REPO_STATE_SYNTHESIS.txt`
+12. `src/ui/planning/archived/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/02_STORAGE_AND_PRECEDENCE_DESIGN.txt`
+13. `src/ui/planning/archived/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/03_EXECUTION_PLAN.txt`
+14. `src/ui/planning/archived/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/04_DISPATCH_PROTOCOL.txt`
+15. `src/ui/planning/archived/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/05_COORDINATION_BOARD.txt`
+16. `src/ui/planning/archived/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/handoffs/worker_1_status.txt`
 
 Then inspect:
 
-17. `/Users/claudius/claudius-repos/nyc-housing-scout/src/storage/migrations/0001_init.sql`
-18. `/Users/claudius/claudius-repos/nyc-housing-scout/src/storage/migrations/0002_processing_pipeline.sql`
-19. `/Users/claudius/claudius-repos/nyc-housing-scout/src/storage/sqlite-storage.js`
-20. `/Users/claudius/claudius-repos/nyc-housing-scout/test/`
+17. `src/storage/migrations/0001_init.sql`
+18. `src/storage/migrations/0002_processing_pipeline.sql`
+19. `src/storage/sqlite-storage.js`
+20. `test/`
 
 Mission
 -------
@@ -70,4 +70,4 @@ Write one timestamped pass log under `docs/passes/`.
 Coordination
 ------------
 Update only:
-- `/Users/claudius/claudius-repos/nyc-housing-scout/src/ui/planning/archived/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/handoffs/worker_1_status.txt`
+- `src/ui/planning/archived/2026-03-16_17-33-28_EVIDENCE_RESOLUTION_AND_REVIEW_EXECUTION_PLAN/handoffs/worker_1_status.txt`
