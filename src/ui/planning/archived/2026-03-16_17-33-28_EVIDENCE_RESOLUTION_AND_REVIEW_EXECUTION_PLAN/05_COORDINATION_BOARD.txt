@@ -8,14 +8,15 @@ Status
 - Worker 3: completed
 - Worker 4: completed
 - Worker 5: completed
-- Worker 6: ready to dispatch
+- Worker 6: completed
+- Closeout blocker-fix pass: completed
 
 Current recommendation
 ----------------------
-Dispatch Worker 6 now.
+Bundle is complete and archived for historical reference.
 
-What is now stable before Worker 6
-----------------------------------
+What is now stable
+------------------
 - migration name and table shapes
 - precedence rules
 - storage helper names
@@ -31,6 +32,8 @@ What is now stable before Worker 6
   - `actions.manualOverride` from `GET /api/dashboard/review/:reviewId`
   - `POST /api/dashboard/review/manual-overrides`
   - `POST /api/dashboard/review/manual-overrides/clear`
+- enrichment and resolution writes now append durable system audit rows when they actually write data
+- Review override endpoints now reject unsupported Review items at the backend, while supported listing-backed items may edit the surfaced location fields advertised by `actions.manualOverride.fieldPaths`
 
 Program closeout
 ----------------
@@ -40,3 +43,11 @@ This bundle is complete when:
 - overrides are durable and audited
 - Review can show and act on layered values honestly
 - Debug remains forensic
+
+Current closeout state
+----------------------
+- all six workers landed
+- blocker follow-up pass fixed system audit coverage for enrichment/resolution
+- blocker follow-up pass fixed backend enforcement for unsupported Review override writes
+- closeout and hardening pass docs are recorded
+- bundle is archived

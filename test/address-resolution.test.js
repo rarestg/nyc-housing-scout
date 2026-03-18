@@ -99,9 +99,26 @@ test('runAddressResolution writes accepted, ambiguous, and unresolved resolved-f
     resolverVersion: ADDRESS_RESOLVER_VERSION,
     limit: 10,
   });
+  const acceptedAuditRows = storage.listAuditEvents({
+    targetKind: 'listing_record',
+    targetId: acceptedListingId,
+    eventKind: 'address_resolution_recorded',
+    limit: 10,
+  });
+  const ambiguousAuditRows = storage.listAuditEvents({
+    targetKind: 'listing_record',
+    targetId: ambiguousListingId,
+    eventKind: 'address_resolution_recorded',
+    limit: 10,
+  });
 
   assert.equal(acceptedRows.length, 5);
   assert.equal(ambiguousRows.length, 5);
+  assert.equal(acceptedAuditRows.length, 1);
+  assert.equal(acceptedAuditRows[0].actorKind, 'system');
+  assert.equal(acceptedAuditRows[0].payload.fieldCount, 5);
+  assert.equal(ambiguousAuditRows.length, 1);
+  assert.equal(ambiguousAuditRows[0].payload.fieldCount, 5);
 
   const acceptedByField = new Map(acceptedRows.map((row) => [row.fieldPath, row]));
   const ambiguousByField = new Map(ambiguousRows.map((row) => [row.fieldPath, row]));
@@ -129,10 +146,24 @@ test('runAddressResolution writes accepted, ambiguous, and unresolved resolved-f
     runId: run.id,
     limit: 10,
   });
+  const acceptedAuditRowsAfterRerun = storage.listAuditEvents({
+    targetKind: 'listing_record',
+    targetId: acceptedListingId,
+    eventKind: 'address_resolution_recorded',
+    limit: 10,
+  });
+  const ambiguousAuditRowsAfterRerun = storage.listAuditEvents({
+    targetKind: 'listing_record',
+    targetId: ambiguousListingId,
+    eventKind: 'address_resolution_recorded',
+    limit: 10,
+  });
 
   assert.equal(secondPass.resolvedCount, 2);
   assert.equal(secondPass.writtenCount, 0);
   assert.equal(secondPass.unchangedCount, 10);
+  assert.equal(acceptedAuditRowsAfterRerun.length, 1);
+  assert.equal(ambiguousAuditRowsAfterRerun.length, 1);
 
   const afterAcceptedListing = storage.listListings({
     observationId: acceptedObservationId,
@@ -142,6 +173,110 @@ test('runAddressResolution writes accepted, ambiguous, and unresolved resolved-f
   assert.equal(afterAcceptedListing.payload.location.address, beforeAcceptedListing.payload.location.address);
   assert.equal(afterAcceptedListing.payload.location.neighborhood, beforeAcceptedListing.payload.location.neighborhood);
   assert.deepEqual(afterAcceptedListing.payload, beforeAcceptedListing.payload);
+
+  storage.close();
+});
+
+test('upsertResolvedFieldsWithAudit skips stale duplicate resolution writes inside the transaction', () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nyc-housing-scout-address-race-'));
+  const fixture = seedAddressResolutionFixture(dataDir);
+  const { storage, run, acceptedObservationId, acceptedListingId } = fixture;
+
+  runEvidenceEnrichment(storage, {
+    runId: run.id,
+    limit: 10,
+  });
+
+  const listing = storage.listListings({
+    observationId: acceptedObservationId,
+    includePayload: true,
+    limit: 1,
+  })[0];
+  const fragments = storage.listEvidenceFragments({
+    observationId: acceptedObservationId,
+    limit: 100,
+  });
+  const nextFields = buildListingAddressResolutions(listing, fragments, {
+    resolutionKind: ADDRESS_RESOLUTION_KIND,
+    resolverVersion: ADDRESS_RESOLVER_VERSION,
+  });
+
+  const firstWrite = storage.upsertResolvedFieldsWithAudit({
+    actorId: `${ADDRESS_RESOLUTION_KIND}:${ADDRESS_RESOLVER_VERSION}`,
+    actorKind: 'system',
+    createdAt: '2026-03-17T16:12:00.000Z',
+    eventKind: 'address_resolution_recorded',
+    fields: nextFields.map((field) => ({
+      ambiguity: field.ambiguity,
+      confidence: field.confidence,
+      createdAt: '2026-03-17T16:12:00.000Z',
+      fieldPath: field.fieldPath,
+      metadata: field.metadata,
+      resolutionKind: field.resolutionKind,
+      resolverVersion: field.resolverVersion,
+      status: field.status,
+      supportingFragmentIds: field.supportingFragmentIds,
+      updatedAt: '2026-03-17T16:12:00.000Z',
+      value: field.value,
+    })),
+    payload: {
+      fieldCount: nextFields.length,
+      resolutionKind: ADDRESS_RESOLUTION_KIND,
+      resolverVersion: ADDRESS_RESOLVER_VERSION,
+    },
+    targetId: acceptedListingId,
+    targetKind: 'listing_record',
+  });
+  const staleDuplicateWrite = storage.upsertResolvedFieldsWithAudit({
+    actorId: `${ADDRESS_RESOLUTION_KIND}:${ADDRESS_RESOLVER_VERSION}`,
+    actorKind: 'system',
+    createdAt: '2026-03-17T16:12:01.000Z',
+    eventKind: 'address_resolution_recorded',
+    fields: nextFields.map((field) => ({
+      ambiguity: field.ambiguity,
+      confidence: field.confidence,
+      createdAt: '2026-03-17T16:12:01.000Z',
+      fieldPath: field.fieldPath,
+      metadata: field.metadata,
+      resolutionKind: field.resolutionKind,
+      resolverVersion: field.resolverVersion,
+      status: field.status,
+      supportingFragmentIds: field.supportingFragmentIds,
+      updatedAt: '2026-03-17T16:12:01.000Z',
+      value: field.value,
+    })),
+    payload: {
+      fieldCount: nextFields.length,
+      resolutionKind: ADDRESS_RESOLUTION_KIND,
+      resolverVersion: ADDRESS_RESOLVER_VERSION,
+    },
+    targetId: acceptedListingId,
+    targetKind: 'listing_record',
+  });
+
+  const storedFields = storage.listResolvedFields({
+    targetKind: 'listing_record',
+    targetId: acceptedListingId,
+    resolutionKind: ADDRESS_RESOLUTION_KIND,
+    resolverVersion: ADDRESS_RESOLVER_VERSION,
+    limit: 10,
+  });
+  const auditRows = storage.listAuditEvents({
+    targetKind: 'listing_record',
+    targetId: acceptedListingId,
+    eventKind: 'address_resolution_recorded',
+    limit: 10,
+  });
+
+  assert.equal(firstWrite.fields.length, ADDRESS_RESOLVED_FIELD_PATHS.length);
+  assert.equal(staleDuplicateWrite.fields.length, 0);
+  assert.deepEqual(
+    staleDuplicateWrite.skippedFieldPaths,
+    ADDRESS_RESOLVED_FIELD_PATHS,
+  );
+  assert.equal(staleDuplicateWrite.auditEvent, null);
+  assert.equal(storedFields.length, ADDRESS_RESOLVED_FIELD_PATHS.length);
+  assert.equal(auditRows.length, 1);
 
   storage.close();
 });
@@ -178,6 +313,19 @@ test('resolve-addresses CLI writes resolved rows and inspect-storage resolved re
     '--limit',
     '10',
   ]);
+  const auditResult = runCli('src/cli/inspect-storage.js', [
+    'audit',
+    '--data-dir',
+    dataDir,
+    '--target-kind',
+    'listing_record',
+    '--target-id',
+    fixture.acceptedListingId,
+    '--event-kind',
+    'address_resolution_recorded',
+    '--limit',
+    '10',
+  ]);
 
   assert.equal(resolveResult.command, 'resolve:addresses');
   assert.equal(resolveResult.result.resolvedCount, 2);
@@ -187,6 +335,10 @@ test('resolve-addresses CLI writes resolved rows and inspect-storage resolved re
   assert.equal(inspectResult.count, 5);
   assert.equal(inspectResult.results.every((row) => row.targetId === fixture.acceptedListingId), true);
   assert.equal(inspectResult.results.some((row) => row.fieldPath === 'location.address' && row.status === 'accepted'), true);
+  assert.equal(auditResult.command, 'audit');
+  assert.equal(auditResult.count, 1);
+  assert.equal(auditResult.results[0].eventKind, 'address_resolution_recorded');
+  assert.equal(auditResult.results[0].targetId, fixture.acceptedListingId);
 });
 
 function seedAddressResolutionFixture(dataDir) {

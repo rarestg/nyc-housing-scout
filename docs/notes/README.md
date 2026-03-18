@@ -2,6 +2,16 @@
 
 Historical field notes, one-off operating docs, and superseded planning material.
 
+## Current Planning Input
+
+These notes are the active PM-facing planning inputs for the next milestone. Treat them as current until they are replaced or absorbed into a more canonical doc.
+
+| Doc | What it is |
+|-----|-----------|
+| [2026-03-17_16-40-27_PM_HANDOFF_AND_NEXT_MILESTONE](2026-03-17_16-40-27_PM_HANDOFF_AND_NEXT_MILESTONE.md) | Current PM handoff: what just closed, why the next milestone is multi-source collector runtime / ingest hardening, and why other candidates are sequenced later |
+| [2026-03-17_18-32-59_PM_PLANNING_BRIEF_MULTI_SOURCE_RUNTIME](2026-03-17_18-32-59_PM_PLANNING_BRIEF_MULTI_SOURCE_RUNTIME.md) | PM-facing map for creating the future multi-source collector runtime / MV3 browser-bridge execution bundle |
+| [2026-03-17_18-39-19_MV3_BROWSER_BRIDGE_RECOMMENDATION](2026-03-17_18-39-19_MV3_BROWSER_BRIDGE_RECOMMENDATION.md) | Engineering recommendation for the repo-owned MV3 browser bridge, localhost relay shape, and phased replacement of OpenClaw |
+
 ## Still Useful Background
 
 | Doc | What it is |

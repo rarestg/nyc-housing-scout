@@ -1,8 +1,10 @@
 # Evidence Resolution And Override Design
 
+This note captured the design input for a milestone that is now complete. Keep using it as historical design context, not as the current "next milestone" source of truth.
+
 ## Purpose
 
-This note defines the minimum backend/storage design for the next milestone:
+This note defined the minimum backend/storage design for the evidence resolution and review milestone:
 
 - observation-scoped evidence enrichment
 - NYC-constrained address resolution

@@ -78,5 +78,7 @@ test('dashboard bundle includes Review override actions and keeps Debug non-edit
   assert.equal(bundleResponse.status, 200);
   assert.match(bundleText, /Save manual value/);
   assert.match(bundleText, /\/api\/dashboard\/review\/manual-overrides/);
+  assert.match(bundleText, /Open in Review/);
+  assert.doesNotMatch(bundleText, /Review this listing/);
   assert.match(bundleText, /Correction actions stay in Review so Debug remains forensic\./);
 });

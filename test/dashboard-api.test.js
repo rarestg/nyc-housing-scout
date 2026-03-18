@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { ADDRESS_RESOLVED_FIELD_PATHS } from '../src/core/address-resolution.js';
 import { createCollectedPost } from '../src/core/collected-post.js';
 import { createStorage } from '../src/storage/storage.js';
 import { startInspectionServer } from '../src/ui/inspection-server.js';
@@ -140,13 +141,7 @@ test('dashboard storage helpers group listing variants and expose review link ta
   assert.equal(ambiguousReviewDetail.actions.manualOverride.supported, true);
   assert.deepEqual(
     ambiguousReviewDetail.actions.manualOverride.fieldPaths,
-    [
-      'location.address',
-      'location.neighborhood',
-      'location.borough',
-      'location.city',
-      'location.state',
-    ],
+    ADDRESS_RESOLVED_FIELD_PATHS,
   );
   assert.match(ambiguousReviewItem.reasons.join(' '), /Neighborhood resolution is ambiguous/i);
   assert.match(incompleteReviewItem.reasons.join(' '), /Borough has a candidate value/i);
@@ -432,6 +427,51 @@ test('dashboard API routes expose paginated data while preserving inspector endp
     assert.equal(ambiguousReviewDetail.item.listingId, fixture.ambiguousListingId);
     assert.equal(ambiguousReviewDetail.actions.manualOverride.supported, true);
     assert.equal(ambiguousReviewDetail.actions.manualOverride.targetId, fixture.ambiguousListingId);
+    assert.deepEqual(
+      ambiguousReviewDetail.actions.manualOverride.fieldPaths,
+      ADDRESS_RESOLVED_FIELD_PATHS,
+    );
+
+    const unsupportedOverrideResponse = await fetch(`${server.url}/api/dashboard/review/manual-overrides`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        reviewId: `ambiguous:${fixture.processedListingId}`,
+        listingId: fixture.processedListingId,
+        fieldPath: 'location.neighborhood',
+        value: 'Williamsburg',
+        operatorId: 'claudius',
+        reason: 'This listing should not accept Review edits.',
+      }),
+    });
+    const unsupportedOverrideBody = await unsupportedOverrideResponse.json();
+    assert.equal(unsupportedOverrideResponse.status, 409);
+    assert.match(unsupportedOverrideBody.error, /Review manual override is not supported/i);
+
+    const supportedCityOverride = await fetchJson(
+      `${server.url}/api/dashboard/review/manual-overrides`,
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          reviewId: `ambiguous:${fixture.ambiguousListingId}`,
+          listingId: fixture.ambiguousListingId,
+          fieldPath: 'location.city',
+          value: 'New York',
+          operatorId: 'claudius',
+          reason: 'Lock the listing-level Review location-field contract.',
+        }),
+      },
+    );
+    assert.equal(supportedCityOverride.action, 'created');
+    assert.equal(supportedCityOverride.manualOverride.status, 'active');
+    assert.equal(supportedCityOverride.fieldState.fieldPath, 'location.city');
+    assert.equal(supportedCityOverride.fieldState.effectiveLayer, 'manual_override');
+    assert.equal(supportedCityOverride.listing.city, 'New York');
 
     const createdOverride = await fetchJson(
       `${server.url}/api/dashboard/review/manual-overrides`,

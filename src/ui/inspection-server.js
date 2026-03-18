@@ -118,7 +118,7 @@ async function handleRequest(request, response, context) {
     const body = await readJsonBody(request);
     const listingId = requireJsonString(body, 'listingId');
     const fieldPath = requireJsonString(body, 'fieldPath');
-    const reviewId = readJsonString(body, 'reviewId');
+    const reviewId = requireJsonString(body, 'reviewId');
     const operatorId = readJsonString(body, 'operatorId') || DEFAULT_REVIEW_OPERATOR_ID;
     const listingDetail = readWithRetry(() => context.storage.getDashboardListingDetail({ listingId }));
 
@@ -133,6 +133,14 @@ async function handleRequest(request, response, context) {
     if (!currentFieldState) {
       throw createHttpError(400, `Review overrides currently support dashboard location fields only: ${fieldPath}`);
     }
+
+    assertSupportedReviewManualOverrideAction({
+      currentFieldState,
+      fieldPath,
+      listingId,
+      reviewId,
+      storage: context.storage,
+    });
 
     const actionInput = {
       action: isReviewManualOverrideClear ? 'clear' : 'set',
@@ -160,9 +168,7 @@ async function handleRequest(request, response, context) {
     const updatedFieldState = Array.isArray(updatedListingDetail?.listing?.locationFieldStates)
       ? updatedListingDetail.listing.locationFieldStates.find((candidate) => candidate.fieldPath === fieldPath) || null
       : null;
-    const updatedReview = reviewId
-      ? readWithRetry(() => context.storage.getDashboardReviewItem({ reviewId }))
-      : null;
+    const updatedReview = readWithRetry(() => context.storage.getDashboardReviewItem({ reviewId }));
 
     writeJson(response, {
       action: actionResult.action,
@@ -481,6 +487,44 @@ async function handleRequest(request, response, context) {
   }
 
   throw createHttpError(404, `Route not found: ${pathname}`);
+}
+
+function assertSupportedReviewManualOverrideAction(input = {}) {
+  const listingId = String(input.listingId || '').trim();
+  const fieldPath = String(input.fieldPath || '').trim();
+  const reviewId = String(input.reviewId || '').trim();
+  const storage = input.storage;
+  const currentFieldState = input.currentFieldState || null;
+
+  if (!listingId || !fieldPath || !reviewId || !storage || !currentFieldState) {
+    throw createHttpError(400, 'Review manual override support check requires listing, field, review, and field state.');
+  }
+
+  const reviewDetail = readWithRetry(() => storage.getDashboardReviewItem({ reviewId }));
+  const manualOverrideAction = reviewDetail?.actions?.manualOverride;
+  const reviewSupportsField = Boolean(
+    manualOverrideAction?.supported
+      && manualOverrideAction.targetKind === 'listing_record'
+      && manualOverrideAction.targetId === listingId
+      && Array.isArray(manualOverrideAction.fieldPaths)
+      && manualOverrideAction.fieldPaths.includes(fieldPath),
+  );
+  const activeReviewOwnedManual = isReviewOwnedManualOverride(currentFieldState.layers?.manualOverride, reviewId);
+
+  if (reviewSupportsField || activeReviewOwnedManual) {
+    return;
+  }
+
+  throw createHttpError(409, `Review manual override is not supported for ${listingId}:${fieldPath}.`);
+}
+
+function isReviewOwnedManualOverride(manualOverride, reviewId) {
+  if (!manualOverride || manualOverride.status !== 'active') {
+    return false;
+  }
+
+  const metadata = readJsonObject(manualOverride.metadata);
+  return metadata.surface === 'review' && String(metadata.reviewId || '').trim() === reviewId;
 }
 
 async function loadStaticAssets() {

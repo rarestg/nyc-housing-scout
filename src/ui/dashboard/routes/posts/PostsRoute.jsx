@@ -527,7 +527,9 @@ function PostDetail({ detail }) {
                   >
                     Open listing
                   </Link>
-                  <Link to={buildReviewLink(listing)}>Review this listing</Link>
+                  {listing.reviewLinkTarget ? (
+                    <Link to={buildReviewLink(listing)}>Open in Review</Link>
+                  ) : null}
                 </div>
               </article>
             ))}
@@ -569,6 +571,10 @@ function PostDetail({ detail }) {
 }
 
 function buildReviewLink(listing) {
+  if (!listing?.reviewLinkTarget?.reviewId) {
+    return null;
+  }
+
   const searchParams = new URLSearchParams();
 
   if (listing?.reviewLinkTarget?.queue) {
@@ -581,7 +587,7 @@ function buildReviewLink(listing) {
   }
 
   const query = searchParams.toString();
-  return query ? `/review?${query}` : "/review";
+  return query ? `/review?${query}` : null;
 }
 
 function createPostsQueryActions(setQueryState) {

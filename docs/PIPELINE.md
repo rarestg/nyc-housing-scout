@@ -362,7 +362,9 @@ Canonical field precedence is fixed:
 `enrich:evidence`:
 - reads persisted observations, comments, media metadata, capture-derived metadata, and network-enrichment metadata
 - writes reusable observation-scoped `evidence_fragments`
+- appends one `audit_events` row per observation when fragment writes actually occur
 - skips observations already enriched by the same producer version by default
+- rerun no-ops do not append synthetic audit rows
 - does not mutate `post_observations`
 
 ### Current address-resolution stage
@@ -375,8 +377,10 @@ Canonical field precedence is fixed:
   - `location.borough`
   - `location.city`
   - `location.state`
+- appends one `audit_events` row per listing when one or more resolved-field rows are written or updated
 - constrains accepted results to NYC-supported neighborhood / borough evidence
 - stores explicit `accepted`, `candidate`, `ambiguous`, or `unresolved` status with confidence, ambiguity payload, and supporting fragment IDs
+- rerun no-ops do not append synthetic audit rows
 - does not mutate `listing_records`
 
 ### Effective-value dashboard behavior
@@ -400,8 +404,14 @@ Current endpoints:
   - returns review detail and `actions.manualOverride`
 - `POST /api/dashboard/review/manual-overrides`
   - creates or updates a durable `manual_overrides` row and appends an audit event in the same transaction
+  - rejects unsupported edits at the backend when the Review item does not support manual override actions
+  - for supported listing-backed Review items, the surfaced location fields listed in `actions.manualOverride.fieldPaths` are editable
+  - an existing active Review-owned override on the same field may still be updated even if the original review reason later drops away
 - `POST /api/dashboard/review/manual-overrides/clear`
   - clears the durable override row and appends an audit event in the same transaction
+  - rejects unsupported clears at the backend when the Review item does not support manual override actions
+  - the same supported listing-backed items may clear the surfaced location fields listed in `actions.manualOverride.fieldPaths`
+  - an existing active Review-owned override on the same field may still be cleared even if the original review reason later drops away
 
 ## Inspection Surfaces
 
