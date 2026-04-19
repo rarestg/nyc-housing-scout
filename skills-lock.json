@@ -31,6 +31,11 @@
       "sourceType": "github",
       "computedHash": "5b176c44c8cc18581fe77223bd0443df0ba587bfdbf827d34d4cfd22c7788ab4"
     },
+    "delegated-delivery": {
+      "source": "rarestg/rarestg-skills",
+      "sourceType": "github",
+      "computedHash": "2f9448e0614c084d71ed647ba2ebfc8566d89f9ecf540991cf55d488495f1f97"
+    },
     "gemini-api-dev": {
       "source": "google-gemini/gemini-skills",
       "sourceType": "github",
