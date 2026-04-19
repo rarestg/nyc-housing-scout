@@ -40,6 +40,7 @@ Only treat `src/ui/planning/` as working context when you are actively changing 
 
 - This is a single-user local tool. Optimize for speed of iteration, not backward compatibility, glue layers, or migration scaffolding.
 - SQLite is the system of record. Raw artifacts stay on disk. Derived exports are not canonical state.
+- Before first public release, prefer changing the local schema directly, resetting the local SQLite DB, and rewriting one clean baseline migration over carrying transitional migrations or compatibility code for stale local state.
 - Keep the pipeline stage-oriented and independently operable: collect, inspect, enqueue, process, extract, review.
 - Preserve provenance across stages. `postUrl` is important and should flow through collected posts, processing jobs, processed payloads, and listings.
 - Observation-centric processing is the current shape. Job/payload provenance is keyed by observation plus processor/schema/model versions.
@@ -49,7 +50,9 @@ Only treat `src/ui/planning/` as working context when you are actively changing 
 
 ## Code Simplicity
 
+- Optimize for honest, maintainable fixes over the smallest possible diff. Refactor lightly when it better solves the real lifecycle, state, or data-model problem.
 - Write the fewest lines of correct, readable code that get the job done. Every line should earn its place.
+- Keep code simple, modular, and local. Prefer small explicit helpers and narrow module-level interfaces; add abstraction only when it protects an important invariant or makes async/stateful behavior easier to reason about.
 - Do not introduce abstractions, guards, renames, wrapper components, or new files unless they solve a concrete problem today. A comment is better than a defensive runtime check for a scenario that cannot currently happen. Three similar lines are better than a premature helper.
 - If existing code is already clean and correct, leave it alone. When in doubt, ask: "does removing this make the code worse?" If the answer is no, remove it.
 
@@ -69,13 +72,14 @@ Only treat `src/ui/planning/` as working context when you are actively changing 
 - If you use `agent-browser`, always pass a unique named session on every command, for example `--session <task-name>`, instead of relying on the default session.
 - When browser automation is done or looks wedged, close that named `agent-browser` session first and check `agent-browser session list` plus running processes before killing Chrome/Chromium trees that may belong to the user.
 - Assume the worktree may contain concurrent collaborator edits. Do not revert, overwrite, or repackage changes you did not make unless the user explicitly tells you to do so.
-- If you dispatch a worker/coding agent, start it with fresh context rather than inheriting the current conversation when avoidable. Point it to an existing task file or write a short markdown handoff, and include the exact scope, constraints, relevant docs/code, write ownership, and success criteria so it can work independently and make sound tradeoffs.
+- If you dispatch a worker/coding agent, start it with fresh context rather than inheriting the current conversation when avoidable. Prefer `fork_context: false`. For substantive work, prefer `gpt-5.4` with `xhigh` reasoning. Point the worker to an existing task file or write a short markdown handoff, and include the exact repo context, scope, constraints, write ownership, success criteria, and expected output so it can work independently and make sound tradeoffs.
 - If you dispatch a worker/coding agent, give it at least 30 minutes before treating it as stalled.
 - Do not interrupt, close, cancel, or otherwise kill a dispatched worker/coding agent before that 30 minute mark just because you no longer need it. If you would not let it run, do not dispatch it in the first place.
+- Treat delegated work as input, not truth. Review it carefully against the current sources of truth, reuse the same reviewer for follow-up passes when practical, and do not ping workers early unless the task is actually blocked.
 - When you are working directly and own a self-contained change, prefer small scoped commits with descriptive messages as you go rather than one large end-of-session dump.
 - Keep commits limited to the files and behavior you actually changed. Do not bundle unrelated cleanup or neighboring collaborator edits into the same commit.
 - If a PM/operator is coordinating multiple agents or parallel slices, assume they own the final commit packaging unless they explicitly ask you to commit your slice yourself.
-- When the schema or storage shape needs to change, change it directly and update the current docs. Do not add compatibility shims for stale local state unless explicitly asked.
+- When the schema or storage shape needs to change, change it directly, update the current docs, and remove obsolete migration or compatibility code in the same pass. Do not add compatibility shims for stale local state unless explicitly asked.
 
 ## Validation / Definition Of Done
 
