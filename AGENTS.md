@@ -21,21 +21,29 @@
 
 Read in this order:
 
-1. `README.md`
-2. `docs/INDEX.md`
-3. `docs/VISION_AND_ARCHITECTURE.md`
-4. `docs/ROADMAP.md`
-5. `docs/SHIP_PLAN.md`
-6. `docs/PIPELINE.md`
-7. `docs/LISTING_SCHEMA.md`
-8. `data/README.md`
-9. `src/cli/README.md`
-10. `src/ui/ARCHITECTURE.md`
+1. `README.md` — current repo orientation, active shape, and fastest high-level reset
+2. `docs/INDEX.md` — doc map for finding the right deeper design or operational doc quickly
+3. `docs/VISION_AND_ARCHITECTURE.md` — north-star architecture, stage model, and durable system boundaries
+4. `docs/ROADMAP.md` — compact status view of what is done, what is active now, and what comes next
+5. `docs/SHIP_PLAN.md` — first-deploy and end-state shipping path, including milestone sequencing and deployment boundary
+6. `docs/PIPELINE.md` — operational command surface, crawl/queue semantics, inspection flows, and active runtime behavior
+7. `docs/LISTING_SCHEMA.md` — normalized listing contract and the shape downstream structured data is trying to preserve
+8. `data/README.md` — local artifact/storage layout, active versus legacy paths, and how disk state relates to SQLite
+9. `src/cli/README.md` — quick map of stage CLIs, their roles, and where operator-facing commands live
+10. `src/ui/ARCHITECTURE.md` — operator UI route/API map and contributor guidance for dashboard/inspection work
 
 Then:
 - use `docs/passes/README.md` to find the latest relevant implementation context
 - use `docs/reviews/` and `docs/notes/` for tradeoffs and background
 - treat `src/ui/planning/` as working context only when actively changing the dashboard
+
+## Navigation
+
+- `data/README.md` — best quick reference for what lives under `data/`, where it comes from, and which paths are legacy
+- `src/ui/planning/` — active dashboard planning notes and worker handoffs; useful for UI work, not canonical repo policy
+- `docs/passes/` — recent implementation changes and pass logs; older foundational passes live in `docs/passes/archive/`
+- `docs/reviews/` — architectural assessments, tradeoffs, and recommendations when a change needs historical reasoning
+- `docs/notes/` — current planning inputs and background notes; superseded and session-specific notes live in `docs/notes/archive/`
 
 ## Non-Negotiable Invariants
 
@@ -103,3 +111,4 @@ Then:
   - queue/processing: `npm run validate:queue -- --run-id <runId>`; use `enqueue:processing`, `inspect:jobs`, `process:jobs`, and `retry:jobs` as needed
   - UI: `npm run inspect:ui`, then verify `http://127.0.0.1:4310`
   - extractor spot checks: `npm run extract:text`, `npm run extract:html`, or `npm run gemini:extract`
+
